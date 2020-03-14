@@ -9,7 +9,7 @@ tags:   [reading]
 
 
 
-![]({{site.baseurl}}/img/04.jpg)
+![]({{site.baseurl}}/img/3-girl.jpg)
 
 可第二天，我又照样从中午起便捏起酒盅来。
 
@@ -41,6 +41,6 @@ tags:   [reading]
 
 坐在昏暗店堂内的由子脸上露出嫣然一笑。啊，她白皙的脸蛋，还有那不懂何为污秽的童贞，是如此珍贵。
 
-![]({{site.baseurl}}/img/04.jpg)
+![]({{site.baseurl}}/img/3-sunset.jpg)
 
 “我们认识的叶藏，又直爽又乖巧，要是不那么喝酒的话，不，即使是喝酒……也还是个像神一样的好孩子呢。”
