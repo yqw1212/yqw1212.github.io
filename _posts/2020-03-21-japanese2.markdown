@@ -2,9 +2,11 @@
 layout: post
 title:  日语学习(二)
 date:   2020-03-21 16:02:00 +0300
-image:  07.jpg
+image:  5-loveourplanet.jpg
 tags:   [Japanese]
 ---
+![]({{site.baseurl}}/img/5-cherry.jpg)
+
 ### 寒暄语
 
 |                    |        |
@@ -32,6 +34,6 @@ tags:   [Japanese]
 
 ### 日本常见姓及读音
 
-![]({{site.baseurl}}/img/04.jpg)
+![]({{site.baseurl}}/img/5-ergong.jpg)
 
 
