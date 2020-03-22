@@ -1,10 +1,9 @@
-﻿---
+---
 layout: post
 title:  多歧为贵,不取苟同
 date:   2019-04-26 00:00:00 +0300
 image:  05.jpg
 tags:   [writting]
-
 ---
 
 【作文题】阅读下面的材料，根据要求写作。
