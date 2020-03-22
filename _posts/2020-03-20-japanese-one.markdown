@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  日语学习（一）
+title:  日语学习1
 date:   2020-02-10 00:00:00 +0300
 image:  5-loveourplanet.jpg
 tags:   [Japanese]
