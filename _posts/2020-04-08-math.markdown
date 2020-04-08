@@ -1,0 +1,80 @@
+---
+layout: post
+title:  日语学习
+date:   2020-04-08 16:02:00 +0300
+image:  5-loveourplanet.jpg
+tags:   [Japanese]
+---
+
+
+
+# 实验一化简命题逻辑公式
+
+#### 真值表
+
+| X    | Y    | Z    | A(X,Y,Z) |
+| ---- | ---- | ---- | -------- |
+| 0    | 0    | 0    | 0        |
+| 0    | 0    | 1    | 0        |
+| 0    | 1    | 0    | 0        |
+| 0    | 1    | 1    | 1        |
+| 1    | 0    | 0    | 0        |
+| 1    | 0    | 1    | 1        |
+| 1    | 1    | 0    | 1        |
+| 1    | 1    | 1    | 1        |
+
+#### 主析取范式
+
+$$
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨(X∧Y∧\neg{Z})∨(X∧Y∧Z)
+$$
+
+#### 主合取范式
+
+$$
+(X∨Y∨Z)∧(X∨Y∨\neg{Z})∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)
+$$
+
+#### 化简主析取范式
+
+$$
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨(X∧Y∧\neg{Z})∨(X∧Y∧Z)\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨((X∧Y∧\neg{Z})∨(X∧Y∧Z))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨((X∧Y)∧(\neg{Z}∨Z))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨((X∧Y)∧T)\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧\neg{Y}∧Z)∨(X∧Y)\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨((X∧\neg{Y}∧Z)∨(X∧Y))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧((\neg{Y}∧Z)∨Y))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧((\neg{Y}∨Y)∧(Z∨Y)))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧(T∧(Z∨Y)))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨(X∧(Y∨Z))\Leftrightarrow\\
+(\neg{X}∧Y∧Z)∨((X∧Y)∨(X∧Z))\Leftrightarrow\\
+((\neg{X}∧Y∧Z)∨(X∧Y))∨(X∧Z)\Leftrightarrow\\
+(Y∧((\neg{X}∧Z)∨X))∨(X∧Z)\Leftrightarrow\\
+(Y∧((\neg{X}∨X)∧(Z∨X))∨(X∧Z)\Leftrightarrow\\
+(Y∧(T∧(Z∨X))∨(X∧Z)\Leftrightarrow\\
+(Y∧(Z∨X))∨(X∧Z)\Leftrightarrow\\
+((Y∧Z)∨(Y∧X))∨(X∧Z)
+$$
+
+#### 化简主合取范式
+
+$$
+(X∨Y∨Z)∧(X∨Y∨\neg{Z})∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+((X∨Y∨Z)∧(X∨Y∨\neg{Z}))∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+((X∨Y)∨(Z∧\neg{Z}))∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+((X∨Y)∨F)∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨Y)∧(X∨\neg{Y}∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨(Y∧(\neg{Y}∨Z)))∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨((Y∧\neg{Y})∨(Y∧Z)))∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨(F∨(Y∧Z)))∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨(Y∧Z))∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨Y)∧(X∨Z)∧(\neg{X}∨Y∨Z)\Leftrightarrow\\
+(X∨Y)∧((X∨Z)∧(\neg{X}∨Y∨Z))\Leftrightarrow\\
+(X∨Y)∧((X∧(\neg{X}∨Y))∨Z)\Leftrightarrow\\
+(X∨Y)∧(((X∧\neg{X})∨(X∧Y))∨Z)\Leftrightarrow\\
+(X∨Y)∧((F∨(X∧Y))∨Z)\Leftrightarrow\\
+(X∨Y)∧((X∧Y)∨Z)\Leftrightarrow\\
+(X∨Y)∧(X∨Z)∧(Y∨Z)
+$$
+
