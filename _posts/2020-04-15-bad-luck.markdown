@@ -1,0 +1,87 @@
+---
+layout: post
+title:  Can bad luck be explained?
+date:   2020-04-15 00:00:00 +0300
+image:  6.jpg
+tags:   [English]
+---
+
+
+
+  Toast always lands butter side down. It always rains on bank holidays . You never win the lottery, but other people you know seem to … Do you ever get the impression that you were born unlucky? Even the most rational person can be convinced at times that there is a force out there making mishaps occur at the worst possible time. We all like to believe that Murphy's Law is true ("if it can go wrong, it will").
+
+
+
+  Part of the explanation for bad luck is mathematical, but part is psychological. Indeed there is a very close connection between people's perception of bad luck and interesting coincidences.
+
+
+
+  For example, take the belief that "bad things always happen in threes" ( just like buses …! ) This popular notion would be unlikely to stand the scrutiny of any scientific study, but it must have some basis in experience, otherwise the phrase would never have arisen in the first place. What might be the rational explanation?
+
+
+
+  The first question is "what is bad?"
+
+
+
+  Some things are only marginally bad, for example the train arriving five minutes late. Some are extremely bad, such as failing an exam or being sacked. So badness is much better represented as being on a spectrum rather than something which is there or not there.
+
+
+
+  A particular event may only be a misfortune because of the circumstances around it. The train arriving five minutes late is a neutral event if you are in no hurry and reading an interesting newspaper article while you wait. It is bad if you are late for an important meeting.
+
+
+
+  When it comes to bad things happening in threes, what may be most important of all is the duration and memorability of the first event. Take a burst pipe while you are away on holiday, for example. It may take less than an hour to flood the house, but this one bad event can remain alive and kicking for many months, with the cleaning up operation and the debate with your insurers acting as constant reminders of the original event.
+
+
+
+  The longer the first bad event sticks in the front of your mind, the more opportunities you will have to experience two more bad events. A month later someone bumps the back of your car and a week after that you lose your wedding ring. The mind which is already on a low from the first event will quickly leap to connect the subsequent misfortunes as part of the series. It wouldn't matter that there could be a two-month timescale over which everything happened. By the time you have recovered from the water damage you are actively looking out for the next disaster. The timescale has been extended as long as is necessary to confirm the original prophecy.
+
+
+
+  As with coincidences, in bad luck there is a tendency to look for the examples which confirm the theory, and ignore those which don't (because they are less interesting). Single bad events happen all the time. That alone should be enough to disprove the theory. Bad things also come in twos. But it is more likely that a friend will tell you "three bad things have happened to me, isn't that typical" than "only two bad things have happened to me, which just proves that the theory doesn't work". After all, the latter is tempting fate!
+
+
+
+   There is, however, at least one rational reason why bad events might cluster together. It is related to probability and independence. Unlucky events are not always independent of each other. Anybody who is made redundant is bound to suffer some depression. That will lower the body's defences, making the person vulnerable to illness, and also making them less alert and responsive (so they may be more likely to drop a precious vase, for example). So while the probability of being made redundant on any particular day and the probability of being sick may both be small, the chance of both occurring is almost certainly higher than the product of the two probabilities.
+
+
+
+**Map reading misfortunes**
+
+
+
+   So much for the general incidents of bad luck which crop up in life. Let's get on to a specific one that everyone has encountered.
+
+
+
+   You are off to visit a friend who lives at the other end of the city. You look up the road in the street atlas, and discover that it is right on the edge of the page. This means that finding the precise route becomes a chore of flicking backwards and forwards from one page to the next. Either the road is half on one page and half on the other, or it's spread across the fold in the middle of the book. And if it's an ordnance survey map, then your destination is at just the point where you folded the map over.
+
+
+
+   It doesn't seem fair. After all a map only has a tiny bit of "edge" but plenty of "middle" in which your destination could be situated. Or has it? In fact the chance of picking a destination which is close to the edge of the map is a lot higher than you might expect.
+
+
+
+   Take a look at the map in the diagram.
+
+![]({{site.baseurl}}/img/5-cherry.jpg)
+
+You will have a problem if your destination is anywhere in the shaded area marked on the map. This shaded area is just 1 cm into the page all the way around. It looks insignificant. However, the shaded area adds up to 56 cm2. That represents 28 per cent of the area of the whole page of the map, which means that any specific point that you are seeking on this map has a 28 per cent chance (that's nearly one in three) of being in an awkward position within 1 cm of the edge of the page. And if you regard being within 2 cm of the edge of the page as being awkward, the chance of ill-fortune climbs to 52 per cent. In other words, you might expect this misfortune to occur on almost every other Journey.
+
+
+
+   As in most bad luck stories, you forget about the number of times the road doesn't land awkwardly and remember the times it does, and in this case the chance of a bad result is so high that before long you are bound to be cursing your misfortune, or the map's printer, or both. This, incidentally, is why many modern road maps allow significant overlaps between adjacent map pages. In a good road atlas, at least 30 per cent of the page is duplicated elsewhere.
+
+
+
+**The lights are always red when I'm in a hurry**
+
+
+
+   One of the best examples of selective memory where an unfair comparison is made between good and bad is in the relative frequency of red and green lights on a journey. For once, the perception of "I always seem to get red lights when I'm in a hurry" is true and verifiable. To simplify the situation, think of a traffic light as being like tossing a coin, with a 50 per cent chance of being red, and 50 per cent of being green. (In fact most traffic lights spend more time on red.) If you encounter six traffic lights on a journey, then you are no more likely to escape a red light than you are to toss six consecutive heads, the chance of which is 1 in 64.
+
+
+
+   Red lights come up just as often when the driver is not in a hurry; it's just that the disadvantage of the red light is considerably less if time is not critical. The false part of the perception is that red lights happen more than green lights. The reason for this is simply that a driver has more time to think about a red light than a green light, because while the latter is gone in seconds – and indeed is an experience no different from just driving along the open road – the red light forces a change of behaviour, a moment of exertion and stress, and then a deprivation of freedom for a minute or so. Red lights stick in the mind, while green lights are instantly forgotten.
