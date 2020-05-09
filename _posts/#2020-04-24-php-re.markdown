@@ -1,0 +1,204 @@
+
+
+---
+layout: post
+title:  PHP学习(二)
+date:   2020-04-24 14:02:00 +0300
+image:  5-loveourplanet.jpg
+tags:   [PHP]
+---
+
+## 正则表达式
+
+| 元字符 | 功能说明                                               |
+| ------ | ------------------------------------------------------ |
+| *      | 是代表匹配前面的一个原子,匹配0次或者任意多次前面的字符 |
+| +      | 匹配一次或多次前面的字符                               |
+| ?      |                                                        |
+| .      | 匹配除了\n以外的所有字符                               |
+| \|     |                                                        |
+| ^      | 必须要以抑扬符之后的字符串开始                         |
+| $      | 必须要以￥之前的字符结尾                               |
+| \b     | 词边界                                                 |
+| \B     | 非边界                                                 |
+| {m}    |                                                        |
+| {n,m}  |                                                        |
+| {m,}   |                                                        |
+| ()     |                                                        |
+
+```php
+<?php
+
+$zz = '/^猪哥好帅\w+/';
+
+$string1 = "猪哥好帅abccdaaaasds";
+//$string2没有以猪哥好帅开始
+$string2 = "帅abccdaaaasds";
+
+
+if (preg_match($zz, $string1, $matches)) {
+   echo '匹配到了，结果为：';
+   var_dump($matches);
+} else {
+   echo '没有匹配到';
+}
+
+?>
+    
+通过实验发现以下结论：
+    1.$string1匹配成功，$string2没有匹配成功
+    2.因为$string1是以指定的字符开始的
+    3.而$string2并没有以^之后的字符开始
+    4.翻译这个正则的意思就是：以要猪哥好帅开始后面接a-zA-Z0-9_最少一个字符。
+```
+
+\b词边界，就是指必须要在最前或者最后。
+
+\B非边界，就是不能在一个正则表达示的最前或者最后。
+
+```php
+<?php
+
+$zz = '/\w+\b/';
+
+$string1 = "this is a apple";
+$string2 = "thisis a apple";
+$string3 = "thisisaapple";
+
+if (preg_match($zz, $string1, $matches)) {
+   echo '匹配到了，结果为：';
+   var_dump($matches);
+} else {
+   echo '没有匹配到';
+}
+
+?>
+    
+结论：
+    1.$string1、$string2和$string3都匹配成功。
+    2.$string1匹配的时候this 空格是边界
+    3.$string2匹配的时候thisis是边界
+    4.$string3匹配的时候，thisisaapple到了整个正则表达示的最后，因此也是边界。所以匹配成功。
+```
+
+```php
+<?php
+
+$zz = '/\Bthis/';
+
+$string1 = "hellothis9";
+
+//$string2 = "hello this9";
+//$string2 = "this9中国万岁";
+
+if (preg_match($zz, $string1, $matches)) {
+   echo '匹配到了，结果为：';
+   var_dump($matches);
+} else {
+   echo '没有匹配到';
+}
+
+?>
+    
+总结：
+    1.匹配$string1成功而$string2不成功。
+    2.因为\B后接的是this，所以this不能在词边界（空格和开始结尾）的位置出现。
+```
+
+## 模式修正符
+
+| 模式匹配符 | 功能                                   |
+| ---------- | -------------------------------------- |
+| i          | 模式中的字符将同时匹配大小写字母       |
+| m          | 字符串视为多行                         |
+| s          | 将字符串视为单行，换行符作为普通字符   |
+| x          | 将模式中的空白忽略                     |
+| A          | 强制仅从目标字符串的开头开始匹配       |
+| D          | 模式中的美元字符仅匹配目标字符串的结尾 |
+| U          | 匹配最近的字符                         |
+
+```php
+<?php
+
+$pattern = '/新的未来.+\d+/';
+
+$string = '新的未来
+987654321';
+
+if (preg_match($pattern, $string, $matches)) {
+   echo '匹配到了，结果为：';
+   var_dump($matches);
+} else {
+   echo '没有匹配到';
+}
+
+?>
+```
+
+```php
+<?php
+
+$pattern = '/新的未来.+\d+/s';
+
+$string = "新的未来
+987654321";
+
+if (preg_match($pattern, $string, $matches)) {
+   echo '匹配到了，结果为：';
+   var_dump($matches);
+} else {
+   echo '没有匹配到';
+}
+
+?>
+    
+//匹配成功！
+```
+
+e模式也叫逆向引用。主要的功能是将正则表达式括号里的内容取出来，放到替换项里面替换原字符串。
+
+使用这个模式匹配符前必须要使用到preg_replace()。
+
+```php
+<?php
+$string = "{April 15, 2003}";
+
+//'w'匹配字母，数字和下划线，'d'匹配0-99数字，'+'元字符规定其前导字符必须在目标对象中连续出现一次或多次
+$pattern = "/{(\w+) (\d+), (\d+)}/i";
+
+$replacement = "\$2";
+
+//字符串被替换为与第 n 个被捕获的括号内的子模式所匹配的文本
+echo preg_replace($pattern, $replacement, $string);
+
+?>
+/*
+结论：
+上例中\$2 指向的是正则表达示的第一个(\d+)。相当于把15又取出来了
+替换的时候，我写上\$2。将匹配项取出来，用来再次替换匹配的结果。
+*/
+```
+
+**D 结束$符后不准有回车**
+
+如果设定了此修正符，模式中的美元元字符仅匹配目标字符串的结尾。没有此选项时，如果最后一个字符是换行符的话，美元符号也会匹配此字符之前。
+
+```php
+<?php 
+$pattern = '/\w+this$/'; 
+$pattern1 = '/\w+this$/D'; 
+$string = "hellothis "; 
+if (preg_match($pattern1, $string, $match)) {
+echo '匹配到了，结果为：'; 
+var_dump($match);
+}else {
+echo '没有匹配到'; 
+} 
+?>
+/*
+结论：
+    1.如pattern 在匹配$string的时候，$string的字符串this后有一个回车。在没有加D匹配符的时候也能匹配成功
+    2.如pattern 在匹配$string的时候，加上了D。$string的字符串this后有空格，匹配不成功。
+*/
+```
+
