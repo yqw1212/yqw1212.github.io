@@ -66,7 +66,7 @@ tags:   [English]
 
    Take a look at the map in the diagram.
 
-![]({{site.baseurl}}/img/5-cherry.jpg)
+![]({{site.baseurl}}/img/6-map.jpg)
 
 You will have a problem if your destination is anywhere in the shaded area marked on the map. This shaded area is just 1 cm into the page all the way around. It looks insignificant. However, the shaded area adds up to 56 cm2. That represents 28 per cent of the area of the whole page of the map, which means that any specific point that you are seeking on this map has a 28 per cent chance (that's nearly one in three) of being in an awkward position within 1 cm of the edge of the page. And if you regard being within 2 cm of the edge of the page as being awkward, the chance of ill-fortune climbs to 52 per cent. In other words, you might expect this misfortune to occur on almost every other Journey.
 
