@@ -2,7 +2,7 @@
 layout: post
 title:  逐梦扬帆新时代
 date:   2018-06-16 00:00:00 +0300
-image:  2-chicago.jpg
+image:  2018-06-16-chicago.jpg
 tags:   [writting]
 ---
 阅读下面的材料，根据要求写作。（60分） 
@@ -25,7 +25,7 @@ tags:   [writting]
 
 一代人有一代人的际遇和机缘、使命和挑战。你们与新世纪的中国一路同行、成长， 和中国的新时代一起追梦、圆梦。以上材料触发了你怎样的联想和思考？请据此写一篇 文章，想象它装进“时光瓶”留待2035年开启，给那时18岁的一代人阅读。要求：选好角度，确定立意，明确文体，自拟标题，不要套作，不得抄袭，不得泄 露个人信息；不少于800字。
 
-![]({{site.baseurl}}/img/2-hong.jpg)
+![]({{site.baseurl}}/img/2018-06-16-hong.jpg)
 
 **逐梦扬帆新时代**
 
@@ -43,4 +43,4 @@ tags:   [writting]
 
 九万里风鹏正举，风休住，让我们逐梦扬帆新时代！
 
-![]({{site.baseurl}}/img/2-fantasy.jpg)
+![]({{site.baseurl}}/img/2018-06-16-fantasy.jpg)

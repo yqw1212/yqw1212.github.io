@@ -109,3 +109,4 @@ tags:   [Japanese]
 
 * B:はい、部屋に　あります。
 
+![]({{site.baseurl}}/img/2020-04-10-night.jpg)
