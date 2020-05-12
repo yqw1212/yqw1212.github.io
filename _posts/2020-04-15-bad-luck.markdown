@@ -85,3 +85,5 @@ You will have a problem if your destination is anywhere in the shaded area marke
 
 
    Red lights come up just as often when the driver is not in a hurry; it's just that the disadvantage of the red light is considerably less if time is not critical. The false part of the perception is that red lights happen more than green lights. The reason for this is simply that a driver has more time to think about a red light than a green light, because while the latter is gone in seconds – and indeed is an experience no different from just driving along the open road – the red light forces a change of behaviour, a moment of exertion and stress, and then a deprivation of freedom for a minute or so. Red lights stick in the mind, while green lights are instantly forgotten.
+
+![]({{site.baseurl}}/img/2020-04-15-young-child.jpg)

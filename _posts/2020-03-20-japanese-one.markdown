@@ -2,7 +2,7 @@
 layout: post
 title:  日语学习(一)
 date:   2020-03-20 00:00:00 +0300
-image:  4-mushroom.jpg
+image:  2020-03-20-younggirl.jpg
 tags:   [Japanese]
 ---
 ![]({{site.baseurl}}/img/4-snowdrop.jpg)
