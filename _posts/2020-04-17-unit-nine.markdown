@@ -3,7 +3,7 @@ layout: post
 title:  初级日语第九课
 date:   2020-04-17 00:00:00 +0300
 image:  2020-04-17-1.jpg
-tags:   [English]
+tags:   [Japanese]
 ---
 
 # 第九课
