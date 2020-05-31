@@ -2,7 +2,7 @@
 layout: post
 title:  初级日语第五课
 date:   2020-05-14 00:00:01 +0300
-image:  2020-05-17-fairy-tale.jpg
+image:  2020-05-14-fairy-tale.jpg
 tags:   [Japanese]
 ---
 
@@ -196,4 +196,4 @@ tags:   [Japanese]
 
 * いつま**は**　七時ごろです
 
-![]({{site.baseurl}}/img/2020-05-17-fantasy.jpg)
+![]({{site.baseurl}}/img/2020-05-14-fantasy.jpg)
