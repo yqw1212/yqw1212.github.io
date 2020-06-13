@@ -18,7 +18,7 @@
 | 协议              | allow_url_fopen | allow_url_include | 用法                                                         |
 | ----------------- | --------------- | ----------------- | ------------------------------------------------------------ |
 | file://           | off/on          | off/on            | ?file=file://D:/phpcode.text                                 |
-| php://filter      | off/on          | off/on            | ?file=php://fileter/read=convert.base64-encode/resource=./index.php |
+| php://filter      | off/on          | off/on            | ?file=php://filter/read=convert.base64-encode/resource=./index.php |
 | php://input       | off/on          | **on**            | ?file=php://input <?php phpinfo()?>                          |
 | zip://            | off/on          | off/on            | ?file=zip://D:/file.zip%23phpcode.text                       |
 | compress.bzip2:// | off/on          | off/on            | ?file=conpress.bzip2://D://file.bz2\|?file=compress.bzip2://./file.bz2 |
