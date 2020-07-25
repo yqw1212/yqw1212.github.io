@@ -2,7 +2,7 @@
 layout: post
 title:  easy-100(LCTF)
 date:   2020-07-25 00:00:01 +0300
-image:  2020-07-25-hack.jpg
+image:  2020-07-25-portrait.jpg
 tags:   [ctf][reverse][android]
 ---
 
