@@ -1,0 +1,286 @@
+---
+layout: post
+title:  easy-100(LCTF)
+date:   2020-07-25 00:00:01 +0300
+image:  2020-07-25-hack.jpg
+tags:   [ctf][reverse][android]
+---
+
+jeb打开apk文件查看源码
+
+依次查看每个类，可以看到有用的类为Mainactivity，a，c，d
+
+在d中if为真得到flag
+
+```java
+package com.example.ring.myapplication;
+
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+class d implements View$OnClickListener {
+    d(MainActivity arg1) {
+        this.a = arg1;
+        super();
+    }
+
+    public void onClick(View arg5) {
+        if(MainActivity.a(this.a, MainActivity.a(this.a), this.a.findViewById(0x7F0B0056).getText().toString())) {
+            View v0 = this.a.findViewById(0x7F0B0054);
+            Toast.makeText(this.a.getApplicationContext(), "Congratulations!", 1).show();
+            ((TextView)v0).setText(0x7F060022);
+        }
+        else {
+            Toast.makeText(this.a.getApplicationContext(), "Oh no.", 1).show();
+        }
+    }
+}
+```
+
+传入的参数一个是MainActivity.a(this.a)，一个是this.a.findViewById(0x7F0B0056).getText().toString()，也就是我们输入文本框的内容
+
+MainActivity的a方法
+
+```java
+static String a(MainActivity arg1) {
+        return arg1.v;
+}
+```
+
+返回的是私有属性v
+
+私有属性v在p方法中赋值
+
+```java
+private void p() {
+    try {
+        InputStream v0_1 = this.getResources().getAssets().open("url.png");
+        int v1 = v0_1.available();
+        byte[] v2 = new byte[v1];
+        v0_1.read(v2, 0, v1);
+        byte[] v0_2 = new byte[16];
+        System.arraycopy(v2, 0x90, v0_2, 0, 16);
+        this.v = new String(v0_2, "utf-8");
+    }
+    catch(Exception v0) {
+        v0.printStackTrace();
+    }
+}
+```
+
+可以看出v是通过url.png图片来赋值
+
+新建java工程，解包得到url.png图片，放在工程目录下，编写java脚本，得到v的值
+
+```java
+String pp() {
+    try {
+        FileInputStream v0_1 = new FileInputStream("url.png");
+        int v1 = v0_1.available();
+        byte[] v2 = new byte[v1];
+        v0_1.read(v2, 0, v1);
+        byte[] v0_2 = new byte[16];
+        System.arraycopy(v2, 0x90, v0_2, 0, 16);
+        String v = new String(v0_2, "utf-8");
+        return v;
+    }
+    catch(Exception v0) {
+        v0.printStackTrace();
+    }
+    return null;
+}
+```
+
+判断正确flag的条件是
+
+```java
+if(MainActivity.a(this.a, MainActivity.a(this.a), this.a.findViewById(0x7F0B0056).getText().toString()))
+```
+
+查看三个参数的a方法
+
+```java
+static boolean a(MainActivity arg1, String arg2, String arg3) {
+    return arg1.a(arg2, arg3);
+}
+```
+
+查看两个参数的a方法
+
+```java
+private boolean a(String arg4, String arg5) {
+        return new c().a(arg4, arg5).equals(new String(new byte[]{21, -93, -68, -94, 86, 0x75, -19, -68, -92, 33, 50, 0x76, 16, 13, 1, -15, -13, 3, 4, 103, -18, 81, 30, 68, 54, -93, 44, -23, 93, 98, 5, 59}));
+}
+```
+
+查看c类的a方法
+
+```java
+public String a(String arg5, String arg6) {
+    String v0 = this.a(arg5);
+    String v1 = "";
+    a v2 = new a();
+    v2.a(v0.getBytes());
+    try {
+        v0 = new String(v2.b(arg6.getBytes()), "utf-8");
+    }
+    catch(Exception v0_1) {
+        v0_1.printStackTrace();
+        v0 = v1;
+    }
+    return v0;
+}
+```
+
+其中对传入的参数v（之前从图片中的得到）进行了a方法的操作，查看a方法
+
+```java
+private String a(String arg4) {
+    String v0_2;
+    try {
+        arg4.getBytes("utf-8");
+        StringBuilder v1 = new StringBuilder();
+        int v0_1;
+        for(v0_1 = 0; v0_1 < arg4.length(); v0_1 += 2) {
+            v1.append(arg4.charAt(v0_1 + 1));
+            v1.append(arg4.charAt(v0_1));
+        }
+        v0_2 = v1.toString();
+    }
+    catch(UnsupportedEncodingException v0) {
+        v0.printStackTrace();
+        v0_2 = null;
+    }
+        return v0_2;
+}
+```
+
+不多bb，直接复制粘贴进java脚本，用于对v的操作
+
+得到的byte数组传入a类的a方法，查看a类的a方法
+
+```java
+package com.example.ring.myapplication;
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+
+public class a {
+    private SecretKeySpec a;
+    private Cipher b;
+
+    public a() {
+        super();
+    }
+
+    protected void a(byte[] arg4) {
+        if(arg4 != null) {
+            goto label_15;
+    }
+
+        try {
+            this.a = new SecretKeySpec(MessageDigest.getInstance("MD5").digest("".getBytes("utf-8")), "AES");
+            this.b = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            return;
+        label_15:
+            this.a = new SecretKeySpec(arg4, "AES");
+            this.b = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        }
+        catch(UnsupportedEncodingException v0) {
+            v0.printStackTrace();
+        }
+        catch(NoSuchAlgorithmException v0_1) {
+            v0_1.printStackTrace();
+        }
+        catch(NoSuchPaddingException v0_2) {
+            v0_2.printStackTrace();
+        }
+    }
+
+    protected byte[] b(byte[] arg4) {
+        this.b.init(1, this.a);
+        return this.b.doFinal(arg4);
+    }
+}
+```
+
+此类主要用AES加密，构造函数将传入的参数设为为密钥，b方法将传入的参数加密，返回加密后的byte[]数组。
+
+由于Cipher不仅可以加密，还可以解密，所以直接编写java脚本，解密出我们应该输入文本框的内容。
+
+```java
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+/**
+ * @author: yqw
+ * @date: 2020/7/25
+ * @description:
+ */
+public class P {
+    public static void main(String[] args) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        P p = new P();
+        String str = p.pp();
+        String a = a(str);
+        byte[] bytes = a.getBytes();
+        //设置密钥
+        SecretKeySpec secretKeySpec = new SecretKeySpec(bytes,"AES");
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        //解密模式
+        cipher.init(Cipher.DECRYPT_MODE,secretKeySpec);
+        byte[] result = cipher.doFinal(new byte[]{21, -93, -68, -94, 86, 0x75, -19, -68, -92, 33, 50, 0x76, 16, 13, 1, -15, -13, 3, 4, 103, -18, 81, 30, 68, 54, -93, 44, -23, 93, 98, 5, 59});
+        System.out.println(new String(result));
+    }
+
+    String pp() {
+        try {
+            FileInputStream v0_1 = new FileInputStream("url.png");
+            int v1 = v0_1.available();
+            byte[] v2 = new byte[v1];
+            v0_1.read(v2, 0, v1);
+            byte[] v0_2 = new byte[16];
+            System.arraycopy(v2, 0x90, v0_2, 0, 16);
+            String v = new String(v0_2, "utf-8");
+            return v;
+
+        }
+        catch(Exception v0) {
+            v0.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String a(String arg4) {
+        String v0_2;
+        try {
+            arg4.getBytes("utf-8");
+            StringBuilder v1 = new StringBuilder();
+            int v0_1;
+            for(v0_1 = 0; v0_1 < arg4.length(); v0_1 += 2) {
+                v1.append(arg4.charAt(v0_1 + 1));
+                v1.append(arg4.charAt(v0_1));
+            }
+            v0_2 = v1.toString();
+        }
+        catch(UnsupportedEncodingException v0) {
+            v0.printStackTrace();
+            v0_2 = null;
+        }
+        return v0_2;
+    }
+}
+```
+
+得到flag
