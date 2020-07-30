@@ -124,7 +124,7 @@ int func()
 
 由此编写C语言脚本
 
-```c
+```assembly
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -163,3 +163,4 @@ int main()
 ```
 
 得到flag中的花括号间的字符串
+
