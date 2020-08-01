@@ -10,7 +10,7 @@ tags:   [ctf,reverse]
 
 浏览器打开查看源码
 
-```javascript
+```assembly
 document.getElementById("prompt").onclick = function () {
 	var flag = document.getElementById("flag").value;
     var rotFlag = flag.replace(/[a-zA-Z]/g, function(c){
