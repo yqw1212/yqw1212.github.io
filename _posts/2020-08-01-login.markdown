@@ -1,0 +1,76 @@
+---
+layout: post
+title:  login(FlareOn4)
+date:   2020-08-01 00:01:01 +0300
+image:  2020-08-01-historically.jpg
+tags:   [ctf,reverse]
+---
+
+解压文件得到一个html文件，所以为JavaScript逆向
+
+浏览器打开查看源码
+
+```javascript
+document.getElementById("prompt").onclick = function () {
+	var flag = document.getElementById("flag").value;
+    var rotFlag = flag.replace(/[a-zA-Z]/g, function(c){
+        return String.fromCharCode((c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);});
+    if ("PyvragFvqrYbtvafNerRnfl@syner-ba.pbz" == rotFlag) {
+    	alert("Correct flag!");
+    } else {
+        alert("Incorrect flag, rot again");
+    }
+}
+        
+```
+
+可以看出该算法对输入的字符串（flag花括号之间的部分）中的大小写字母转换，其他字符不改变。
+
+于是想遍历所有字母（大小写）经过题目给出的算法转换，得到的字符与结果字符串中的字符比较，找出比较相同的那一个字符。
+
+编写C语言脚本（python没学好）
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    char a[37] = "PyvragFvqrYbtvafNerRnfl@syner-ba.pbz";
+    for(int i=0;i<36;i++)
+    {
+        int flag = 0;
+        for(char j='A';j<='Z';j++)
+        {
+            char result = 90 >= (j + 13) ? j+13 : j - 13;
+            if(result==a[i])
+            {
+                printf("%c",j);
+                flag = 1;
+            }
+        }
+        for(char j='a';j<='z';j++)
+        {
+            char result = 122 >= (j + 13) ? j+13 : j - 13;
+            if(result==a[i])
+            {
+                printf("%c",j);
+                flag = 1;
+            }
+        }
+        if(flag == 0)
+        {
+            printf("%c",a[i]);
+        }
+    }
+    return 0;
+}
+
+```
+
+得到字符串
+
+```assembly
+ClientSideLoginsAreEasy@flare-on.com
+```
+
