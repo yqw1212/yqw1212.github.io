@@ -1,0 +1,118 @@
+---
+layout: post
+title:  IgniteMe(FlareOn4)
+date:   2020-08-04 00:01:01 +0300
+image:  2020-08-04-cat.jpg
+tags:   [ctf,reverse]
+---
+
+ida打开文件，看到start函数F5反编译，查看代码
+
+```assembly
+void __noreturn start()
+{
+    DWORD NumberOfBytesWritten; // [esp+0h] [ebp-4h]
+
+    NumberOfBytesWritten = 0;
+    hFile = GetStdHandle(0xFFFFFFF6);
+    dword_403074 = GetStdHandle(0xFFFFFFF5);
+    WriteFile(dword_403074, aG1v3M3T3hFl4g, 0x13u, &NumberOfBytesWritten, 0);
+    sub_4010F0(NumberOfBytesWritten);
+    if ( sub_401050() )
+      WriteFile(dword_403074, aG00dJ0b, 0xAu, &NumberOfBytesWritten, 0);
+    else
+      WriteFile(dword_403074, aN0tT00H0tRWe7r, 0x24u, &NumberOfBytesWritten, 0);
+    ExitProcess(0);
+}
+```
+
+依次查看每个函数，sub_4010F0()函数将读取的内容存入Buffer数组，并把输入字符串中的/r/n去掉存入byte_403078[]数组。sub_401050()函数就是将字符串逆向做了异或操作之后，与已知字符串byte_403000对比。
+
+查看sub_401050()函数代码
+
+```assembly
+signed int sub_401050()
+{
+    int v0; // ST04_4
+    int i; // [esp+4h] [ebp-8h]
+    unsigned int j; // [esp+4h] [ebp-8h]
+    char v4; // [esp+Bh] [ebp-1h]
+
+    v0 = sub_401020(byte_403078);
+    v4 = sub_401000();
+    for ( i = v0 - 1; i >= 0; --i )
+    {
+        byte_403180[i] = v4 ^ byte_403078[i];
+        v4 = byte_403078[i];
+    }
+    for ( j = 0; j < 0x27; ++j )
+    {
+        if ( byte_403180[j] != (unsigned __int8)byte_403000[j] )
+        	return 0;
+    }
+  	return 1;
+}
+```
+
+正向分析，从最后一位开始将每一位字符与v4异或操作，并把当前位的字符赋值给v4。
+
+但是想要由此还原出输入的字符还需要知道v4的初始值。查看sub_401000()函数。
+
+```assembly
+__int16 sub_401000()
+{
+    return (unsigned __int16)__ROL4__(-2147024896, 4) >> 1;
+}
+```
+
+网上查找__ROL4\_\_()这个函数
+
+```assembly
+汇编语言指令 ROL
+循环左移指令：ROL DEST，COUNT
+指令功能：把目的地址中的数据循环左移COUNT次，每次从最高位（最左）移出的数据位都补充到最低位（最右），最后从最高位（最左）移出的数据位保存到CF标志位。
+标志位影响：CF标志用于保存最后从最高位移出的数据位。如果COUNT=1，OF标志有意义，如果移位前后数据的符号位发生了变化，OF=1；如果符号位没有发生变化，OF=0。如果COUNT>1，OF标志不确定（没有意义）。
+```
+
+所以猜测这个函数是把-2147024896循环左移4位。
+
+```assembly
+循环左移n: (a>>(N-n))|(a>>n)
+
+循环右移n: (a<<(N-n))|(a>>n)
+```
+
+由此编写C语言脚本
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    int byte_403180[40] = {0x0D,0x26,0x49,0x45,0x2A,0x17,0x78,0x44,0x2B,0x6C,0x5D,0x5E,0x45,0x12,0x2F,0x17,0x2B,0x44,0x6F,0x6E,0x56,
+                0x09,0x5F,0x45,0x47,0x73,0x26,0x0A,0x0D,0x13,0x17,0x48,0x42,0x01,0x40,0x4D,0x0C,0x02,0x69,0x00};
+    int v4 = ((-2147024896>>(32-4))|(-2147024896>>4)) >> 1;
+    int byte_403078[40] = {0};
+    for (int i = 38; i >= 0; --i )
+    {
+        byte_403078[i] = byte_403180[i] ^ v4;
+        v4 = byte_403078[i];
+    }
+    for(int i=0;i<39;i++)
+    {
+        printf("%c",byte_403078[i]);
+    }
+    return 0;
+}
+
+```
+
+运行结果是乱码，以十进制形式输出数组的每一个值发现全是负数。
+
+怀疑是v4的值出了问题，因为还原的算法是没有问题的，所以输出v4的值为-4；而通过动态调试发现v4的值应为+4。将v4的值改为4，重新运行得到flag
+
+```assembly
+R_y0u_H0t_3n0ugH_t0_1gn1t3@flare-on.com
+```
+
