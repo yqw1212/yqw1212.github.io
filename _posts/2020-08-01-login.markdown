@@ -3,7 +3,7 @@ layout: post
 title:  login(FlareOn4)
 date:   2020-08-01 00:01:01 +0300
 image:  2020-08-01-historically.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,reverse,FlareOn]
 ---
 
 解压文件得到一个html文件，所以为JavaScript逆向

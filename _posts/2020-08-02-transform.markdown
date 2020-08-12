@@ -3,7 +3,7 @@ layout: post
 title:  Transform(MRCTF2020)
 date:   2020-08-02 00:01:01 +0300
 image:  2020-08-02-moon.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,reverse,MRCTF]
 ---
 
 ida打开文件，进入主函数，F5反编译，查看代码。

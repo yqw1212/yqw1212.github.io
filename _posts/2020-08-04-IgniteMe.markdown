@@ -3,7 +3,7 @@ layout: post
 title:  IgniteMe(FlareOn4)
 date:   2020-08-04 00:01:01 +0300
 image:  2020-08-04-cat.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,reverse,FlareOn]
 ---
 
 ida打开文件，看到start函数F5反编译，查看代码

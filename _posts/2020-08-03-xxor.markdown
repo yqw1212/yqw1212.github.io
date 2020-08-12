@@ -3,7 +3,7 @@ layout: post
 title:  xxor(GWCTF 2019)
 date:   2020-08-03 00:01:01 +0300
 image:  2020-08-03-crescent.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,reverse,GWCTF]
 ---
 
 ida64打开文件进入main函数反编译，查看代码

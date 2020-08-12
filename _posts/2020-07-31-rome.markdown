@@ -3,7 +3,7 @@ layout: post
 title:  rome(ACTF新生赛2020)
 date:   2020-07-31 00:00:01 +0300
 image:  2020-07-31-thunderstorm.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,reverse,ACTF新生赛]
 ---
 
 解压，ida打开

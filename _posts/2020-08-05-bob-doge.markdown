@@ -1,0 +1,104 @@
+---
+layout: post
+title:  Bob Doge(FlareOn1)
+date:   2020-08-05 00:01:01 +0300
+image:  2020-08-05-cat.jpg
+tags:   [ctf,reverse,FlareOn]
+---
+
+下载题目得到c1.exe文件,打开发现是一个类似于安装包的程序
+
+![]({{site.baseurl}}/img/2020-08-05-reg.jpg)
+
+翻译一下许可证的内容，看看有没有flag的线索
+
+```assembly
+BY CLICKING ON THE "ACCEPT" BUTTON, YOU OR THE ENTITY THAT YOU REPRESENT ("LICENSEE", "YOU" OR END-USER") ARE UNCONDITIONALLY CONSENTING TO BE BOUND BY AND ARE BECOMING A PARTY TO THIS END USER LICENSE AGREEMENT ("AGREEMENT") WITH FIREEYE, INC. AND ITS AFFILIATES ("FIREEYE" OR "LICENSOR"). IF THESE TERMS ARE CONSIDERED AN OFFER, ACCEPTANCE IS EXPRESSLY LIMITED TO SUCH TERMS. LICENSOR RESERVES ALL RIGHTS NOT EXPRESSLY GRANTED TO YOU.  IF LICENSEE DOES NOT UNCONDITIONALLY AGREE TO THE FOREGOING, CLICK THE "CANCEL" BUTTON AND THE INSTALLATION PROCESS WILL NOT CONTINUE. IF YOU CLICK THE "ACCEPT" BUTTON TO CONTINUE WITH INSTALLATON YOU ARE REPRESENTING AND WARRANTING THAT YOU ARE AUTHORIZED TO BIND LICENSEE.  IN ADDTION, DOWNLOAD, EXTRACTION, INSTALLATION, OR USE OF THE SOFTWARE CONSTITUTES ACCEPTANCE OF THESE TERMS AND/OR AGREEMENT THAT THEY ARE BINDING ON YOU.  
+
+1.	Grant of License and Restrictions. Subject to the terms hereof, and any applicable user/use limitations, FireEye grants Licensee a personal, nonsublicensable, nonexclusive, right to use the software that is directly accessible through this installation process, but only: (i) in object code form only ("Software"); and (ii)  in accordance with FireEye鈥檚 applicable user documentation, if any ("Documentation"). FireEye retains ownership of the Software and Licensee will maintain the copyright notice and any other notices that appear on the Software or on any media containing the Software.  
+
+2.	Restrictions.  Licensee will not allow any third party to): (i) reverse engineer or attempt to discover any source code or underlying ideas or algorithms of the Software (except to the limited extent that applicable law prohibits reverse engineering restrictions); (ii) provide, lease, lend, disclose, use for timesharing or service bureau purposes, or otherwise use or allow others to use for the benefit of any third party, the Software (except as expressly and specifically authorized by FireEye);  (iii) without the express prior written consent of FireEye, conduct any benchmarking or comparative study or analysis involving the Software ("Benchmarking") for any reason or purpose except, to the limited extent absolutely necessary, to determine the suitability of the Software to interoperate with  Licensee鈥檚 internal computer systems; (iv) disclose to any third party any Benchmarking or any other information related thereto; (v) use the Software or any Benchmarking in connection with the development of products that compete with the Software; or (vi) reproduce, alter or modify the Software.  Prior to disposing of any media or apparatus containing any part of the Software, Licensee shall completely destroy the Software contained therein.  All the limitations and restrictions on Software in this Agreement also apply to Documentation and screens. Further, Software licensed without charge or for a nominal charge will be deemed a free evaluation license and only may be used for purposes of the FireEye Labs Advanced Reverse Engineering Challenge, and not for any productive use.  LICENSEE ACKNOWLEDGES THAT THE SOFTWARE MAY INCLUDE FEATURES TO PREVENT USE AFTER THE APPLICABLE LICENSE PERIOD AND/OR USE INCONSISTENT HEREWITH.   Licensee acknowledges that Software may be distributed alongside or contain or use certain open source or other third party software ("Third Party Software").  THIRD PARTY SOFTWARE IS (IN ADDITION TO THE TERMS AND CONDITIONS OF THIS AGREEMENT), SUBJECT TO AND GOVERNED BY (AND LICENSEE AGREES TO, AND WILL INDEMNIFY FIREEYE FOR NONCOMPLIANCE WITH) THE RESPECTIVE LICENSES FOR SUCH THIRD PARTY SOFTWARE.  No rights or licenses are granted other than as expressly and unambiguously set forth herein.
+
+The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. The Software is licensed, not sold.  This license granted to You for the Software by Licensor is limited to a non-transferable license to use the Software on any computer that You own or control.  This license does not allow You to use the Software on any computer that You do not own or control, and You may not distribute or make the Software available over a network where it could be used by multiple computers at the same time. You may not rent, lease, lend, sell, redistribute or sublicense the Software. You may not copy (except as expressly permitted by this EULA), modify, or create derivative works of the Software.
+
+3.	Confidentiality. The Software in source code form remains a confidential trade secret of FireEye and/or its suppliers. The Software is protected by the copyright and other intellectual property laws of the United States and international treaties. Licensee acknowledges that, in the course of using the Software, Licensee may obtain or learn information relating to the Software, which may include, without limitation, information relating to the performance, reliability or stability of the Software, operation of the Software, know-how, techniques, processes, ideas, algorithms, and software design and architecture ("Proprietary Information"). As between the parties, such Proprietary Information shall belong solely to FireEye.  During and after the term of this Agreement, Licensee shall hold in confidence and protect, and shall not use (except as expressly authorized by this Agreement) or disclose, Proprietary Information to any third party.
+
+4. 	 WARNING: (a) Dangerous Malicious Code - The Software contains dangerous malicious computer code that will cause damage to Your or others computers and/or networks if not used properly.  Licensor is not responsible for the misuse or accidental misuse of this Software and the End-User accepts all responsibility for any damage incurred by the End-User. (b) Safe Environment - The Software should not be run without a safe environment that can easily be restored to a prior state, such as a virtual machine.  The End-User agrees that in no case shall the Software be used by the End-User on production systems or systems that contain sensitive or valuable information. (c) Prohibition on Connecting this Software to the Internet - The End-User agrees that the Software will not be used on systems connected to the Internet due to the risks posed to the machine running the Software as well as the risks posed to the greater Internet.
+
+5.	DESCRIPTION OF OTHER RIGHTS AND LIMITATIONS: (a) Maintenance of Copyright Notices - The End-User agrees to not remove or alter any copyright notices on any and all copies of the Software. (b) Distribution - The End-User agrees to not redistribute copies of the Software to third parties. (c) Support Services - Licensor does not provide any support services related to the Software. (d) Compliance with Applicable Laws - The End-User agrees to comply with all applicable federal, state, local, local country, and international agreements/treaties/laws regarding use of the Software. (e) Prohibited Educational Uses - Use of the Software for instructor-led training is prohibited without expressed written consent from Licensor. (f) Modification - Modifications must not be made to the Software.  By downloading, extracting, and installing the Software, the End-User agrees that they will not modify the Software. (g) Educational Purposes Only - The Software is meant for use with learning for educational purposes only.  The End-User agrees to use the Software for educational purposes only.
+
+6.	TERMINATION: The EULA is effective until terminated by You or Licensor. Your rights under this license will terminate automatically without notice from Licensor if You fail to comply with any term(s) of this EULA. Upon termination of the license, You shall cease all use of the Software, and destroy all copies, full or partial, of the Software.
+
+7.	INTELLECTUAL PROPERTY: You agree that the Software contains proprietary content, information and material that is protected by applicable intellectual property and other laws, including but not limited to copyright, and that You will not use such proprietary content, information or materials in any way whatsoever except for permitted use of the Software. This EULA grants You no intellectual property rights.
+
+8.	 NO WARRANTIES AND DISCLAIMER: To the extent not prohibited by law, Licensor expressly disclaims any warranty for the Software. The Software is provided 'As Is' without any express or implied warranty of any kind, including but not limited to any warranties of merchantability, non-infringement, or fitness of a particular purpose. Licensor does not warrant or assume responsibility for the accuracy or completeness of any information, text, graphics, links or other items contained within the Software. Licensor makes no warranties respecting any harm that may be caused by the transmission of a computer virus, worm, time bomb, logic bomb, or other such computer program. Licensor further expressly disclaims any warranty or representation to authorized End User or to any third party.  FIREEYE AND ITS SUPPLIERS DO NOT WARRANT THAT THE FUNC卢TIONS CONTAINED IN THE SOFTWARE WILL MEET LICENSEE鈥橲 REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR FREE. THE SOFTWARE IS PROVIDED TO LICENSEE WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. THIS LIMITED WARRANTY GIVES LICENSEE SPECIFIC LEGAL RIGHTS, AND LICENSEE MAY ALSO HAVE OTHER RIGHTS WHICH VARY FROM JURISDICTION TO JURISDICTION.
+
+9.	 LIMITATION OF LIABILITY: In no event shall Licensor be liable for any damages (including, without limitation, lost profits, business interruption, or lost information) rising out of Your use of or inability to use the Software, even if Licensor has been advised of the possibility of such damages. In no event will Licensor be liable for loss of data or for indirect, special, incidental, consequential (including lost profit), or other damages based in contract, tort or otherwise. Licensor shall have no liability with respect to the content of the Software or any part thereof, including but not limited to errors or omissions contained therein, libel, infringements of rights of publicity, privacy, trademark rights, business interruption, personal injury, loss of privacy, moral rights or the disclosure of confidential information.  IN NO EVENT WILL FIREEYE OR ANYONE ELSE WHO HAS BEEN INVOLVED IN THE CREATION, PRODUC卢TION, OR DELIVERY OF THE SOFTWARE BE LIABLE FOR ANY INDIRECT, INCIDENTAL OR CONSEQUENTIAL DAMAGES, INCLUDING WITHOUT LIMITATION, LOST PROFITS OR LOST DATA, EVEN IF THEY HAVE BEEN ADVISED OF THE POSSIBIL卢ITY OF SUCH DAMAGES.
+
+10.	Confidentiality. The Software in source code form remains a confidential trade secret of FireEye and/or its suppliers. The Software is protected by the copyright and other intellectual property laws of the United States and international treaties. Licensee acknowledges that, in the course of using the Software, Licensee may obtain or learn information relating to the Software, which may include, without limitation, information relating to the performance, reliability or stability of the Software, operation of the Software, know-how, techniques, processes, ideas, algorithms, and software design and architecture ("Proprietary Information"). As between the parties, such Proprietary Information shall belong solely to FireEye.  During and after the term of this Agreement, Licensee shall hold in confidence and protect, and shall not use (except as expressly authorized by this Agreement) or disclose, Proprietary Information to any third party.
+
+11.	Anticorruption Laws. 	Licensee acknowledges that it is familiar with and understands the provisions of the U.S. Foreign Corrupt Practices Act (the "FCPA") and the U.K. Bribery Act of 2010 ("UKBA") and agrees to comply with its terms as well as any provisions of local law or FireEye鈥檚 corporate policies and procedures related thereto. Licensee further understands the provisions relating to the FCPA and UKBA鈥檚 prohibitions regarding the payment or giving of anything of value, including but not limited to payments, gifts, travel, entertainment and meals, either directly or indirectly, to an official of a foreign government or political party for the purpose of influencing an act or decision in his or her official capacity or inducing the official to use his or her party's influence with that government, to obtain or retain business involving the Software. Licensee agrees to not violate or knowingly let anyone violate the FCPA or UKBA, and Licensee agrees that no payment it makes will constitute a bribe, influence payment, kickback, rebate, or other payment that violates the FCPA, the UKBA, or any other applicable anticorruption or antibribery law.  
+
+12.		U.S. Government Restricted Rights.	The Software and Documentation are "commercial items", "commercial computer software" and "commercial computer software documentation," respectively, pursuant to DFAR Section 227.7202 and FAR Section 12.212, as applicable.  Any use, modification, reproduction, release, performance, display or disclosure of the Software and Documentation by the United States Government shall be governed solely by the terms of this Agreement and shall be prohibited except to the extent expressly permitted by the terms of this Agreement. The Software was developed fully at private expense.
+
+13.	Miscellaneous.  Neither this arrangement nor the licenses granted hereunder are assignable or transferable by Licensee (and any attempt to do so shall be void).  FireEye may freely assign, delegate, license and/or transfer this Agreement, in whole or in part, without consent. This Agreement shall be deemed to have been made in, and shall be construed pursuant to the laws of the State of California and the United States without regard to conflicts of laws provisions thereof, and without regard to the United Nations Convention on the International Sale of Goods or the Uniform Computer Information Transactions Act.  Subject to the foregoing, the provisions hereof are for the benefit of the parties only and not for any other person or entity.  Any notice, report, approval, authorization, agreement or consent required or permitted hereunder shall be in writing; notices shall be sent to the address the applicable party has or may provide by written notice or, if there is no such address, the most recent address the party giving notice can locate using reasonable efforts. No failure or delay in exercising any right hereunder will operate as a waiver thereof, nor will any partial exercise of any right or power hereunder preclude further exercise. If any provision shall be adjudged by any court of competent jurisdiction to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary so that this arrangement shall otherwise remain in full force and effect and enforceable. This is the complete and exclusive statement of the mutual understanding of the parties with respect to the license granted herein and supersedes and cancels all previous written and oral agreements and communications relating to such license and any waivers or amendments shall be effective only if executed  in writing by FireEye; however, any pre-printed or standard terms of any purchase order, confirmation, or similar form, unless signed by FireEye after the effectiveness hereof, shall have no force or effect.  The substantially prevailing party in any action to enforce this agreement will be entitled to recover its attorney鈥檚 fees and costs in connection with such action. FireEye, Inc. is committed to the provisions outlined in the Equal Opportunity Clauses of Executive Order 11246, the Rehabilitation Act of 1973, the Vietnam Era Veterans Readjustment Act of 1974, the Jobs for Veterans Act of 2003, as well as any other regulations pertaining to these orders.
+
+```
+
+正常的许可证内容，并没有flag的线索。
+
+那就安装这个程序试试。选择安装位置，得到一个exe文件。
+
+运行文件
+
+![]({{site.baseurl}}/img/2020-08-05-open.jpg)
+
+点击decode按钮
+
+![]({{site.baseurl}}/img/2020-08-05-decode.jpg)
+
+显然程序中图片上方的乱码应该是被加密后的flag。
+
+dnSpy打开文件分析代码
+
+```assembly
+private void btnDecode_Click(object sender, EventArgs e)
+{
+    this.pbRoge.Image = Resources.bob_roge;
+    byte[] dat_secret = Resources.dat_secret;
+    string text = "";
+    foreach (byte b in dat_secret)
+    {
+    	text += (char)((b >> 4 | ((int)b << 4 & 240)) ^ 41);
+    }
+    text += "\0";
+    string text2 = "";
+    for (int j = 0; j < text.Length; j += 2)
+    {
+    	text2 += text[j + 1];
+    	text2 += text[j];
+    }
+    string text3 = "";
+    for (int k = 0; k < text2.Length; k++)
+    {
+    	char c = text2[k];
+    	text3 += (char)((byte)text2[k] ^ 102);
+    }
+    this.lbl_title.Text = text3;
+}
+```
+
+但是由于被加密后的字符串不能复制，所以我们并不能通过逆向来取得flag。
+
+所以我们通过加断点调试程序来直接取得text的值。
+
+```assembly
+text = "3rmahg3rd.b0b.d0ge@flare-on.com\0"
+```
+
+得到flag
+
+```assembly
+flag{3rmahg3rd.b0b.d0ge@flare-on.com}
+```
+
