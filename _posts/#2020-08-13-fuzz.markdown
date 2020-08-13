@@ -1,0 +1,50 @@
+## AFL原理解析 Fuzzing For CVEs
+
+## 漏洞挖掘与模糊测试技术
+
+漏洞挖掘的常用方式
+
+* 代码审计、逆向分析、手工测试
+* 静态分析、漏洞扫描
+* 模糊测试/Fuzzing
+* 符号执行、约束求解
+* 数据流分析、污点分析
+* 形式验证
+
+模糊测试（fuzz testing，fuzzing）是一种软件测试技术。其核心思想是将自动化或半自动生成的随机数据输入到一个程序中，并监视程序异常，如崩溃、断言（assertion）失败，以发现可能的程序错误，比如内存泄露。模糊测试常常用于检测软件或计算机系统的安全漏洞。
+
+模糊测试分类
+
+* 根据数据生成的方式
+
+  * 基于生成的测试（generation-based）
+
+  * **基于变异的测试**
+
+* 根据对目标程序的理解程度
+
+  * 白盒测试（white box testing）
+
+  * **灰盒测试（grey box testing）**
+
+  * 黑盒测试（black box testing）
+
+* 根据Fuzz过程中的反馈情况
+
+  * **反馈制导测试（Feedback Driven Fuzzing）**
+
+  * 盲测（Dumb Fuzzing）
+
+## AFL基本原理解析
+
+常规基于路径覆盖反馈制导的Fuzzer基本组件
+
+* Seed Selector
+* Mutator/Generator
+* Monitor/Filter
+* Programe Instrumentor
+
+AFL的使用
+
+github
+
