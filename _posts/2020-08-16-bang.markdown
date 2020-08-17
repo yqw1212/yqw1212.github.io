@@ -1,0 +1,72 @@
+---
+layout: post
+title:  bang[网鼎杯2020青龙组]
+date:   2020-08-16 00:01:01 +0300
+image:  2020-08-16-sparkler.jpg
+tags:   [ctf,reverse,网鼎杯]
+---
+
+下载文件是一个apx文件
+
+在手机上运行看看找找线索
+
+![]({{site.baseurl}}/img/2020-08-16-main.jpg)
+
+当我们随便输入一些字符在密码框，再点击LOGIN，会弹出wrong
+
+jeb打开文件，根据"passwd"、"LOGIN"等字符串查找关键类或者关键方法，无果。
+
+解压apk文件，在/assets/meta-data/目录下看到了rsa.pub和rsa.sig文件，根据文件名判断——rsa算法，打开pub文件，看到已经给出了n和e的值，而sig文件应该是rsa签名的数据。
+
+哈哈，看来这是一道密码学的题。
+
+于是哼哧哼哧肝了半个小时，无果，参考了别人的wp。~~卧槽，B了狗了~~
+
+原来这是一道安卓脱壳题，好坑啊，没有经验的话是很难想到这上面去的。
+
+看到别人使用了frida解题，于是学习一下。
+
+frida是一款基于python + java 的hook框架，可运行在android、ios、linux、win、osx等各平台，主要使用动态二进制插桩技术。
+
+安装方法参见项目readmehttps://github.com/frida/frida
+
+接下来是手机端安装frida服务端
+
+先查看手机CPU属于什么架构
+
+```assembly
+adb shell
+getprop|grep arm
+```
+
+根据自己的手机类型去下载相对应的frida-server，解压，将其放到手机/data/local/tmp，并进行端口转发，运行frida
+
+```assembly
+adb forward tcp:27043 tcp:27043
+adb shell
+su                          
+cd /data/local/tmp
+chmod 777 文件名
+./文件名
+```
+
+由于我是使用真机安装，我的手机没有root权限，所以不能成功执行，于是只能换用安卓模拟器。
+
+下载安卓模拟器，再次执行上述步骤，运行frida。
+
+注意，模拟器中frida-server下载x86版本,不然可能报错:unable to inject library into process without libc .
+
+了解到有一款脱壳工具Frida-Apk-Unpackhttps://github.com/GuoQiang1993/Frida-Apk-Unpack，clone。
+
+在模拟器上打开要脱壳的app，执行
+
+```assembly
+frida -U -f com.example.how_debug -l dexDump.js --no-pause
+```
+
+![]({{site.baseurl}}/img/2020-08-16-dump.jpg)
+
+将dex文件dump下来，保存在了data/data/packageName目录
+
+导出dex文件进行分析，直接拖入jeb，在MainActivity类中直接看到了flag字符串。
+
