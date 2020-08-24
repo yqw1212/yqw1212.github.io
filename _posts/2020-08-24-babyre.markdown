@@ -1,0 +1,259 @@
+---
+layout: post
+title:  babyre[网鼎杯2018]
+date:   2020-08-24 00:01:01 +0300
+image:  2020-08-24-window.jpg
+tags:   [ctf,reverse,网鼎杯]
+---
+
+直接运行文件
+
+![]({{site.baseurl}}/img/2020-08-24-run.jpg)
+
+而且每次点击flag后，button的位置都会改变，目的应该是为了防止使用鼠标点击器，看来只能老老实实逆向。
+
+ida载入文件时发现是.Net文件
+
+![]({{site.baseurl}}/img/2020-08-24-net.jpg)
+
+直接搜索字符串"回车"（当然这里搜其他关键字符串也行），来定位关键代码。
+
+```assembly
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.CompilerServices;
+using System.Windows.Forms;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+namespace WindowsApp1
+{
+	// Token: 0x02000008 RID: 8
+	[DesignerGenerated]
+	public class Form1 : Form
+	{
+		// Token: 0x06000013 RID: 19 RVA: 0x00002300 File Offset: 0x00000500
+		public Form1()
+		{
+			base.Load += this.Form1_Load;
+			base.KeyDown += this.KeyCheck;
+			this.i = 0;
+			this.j = 0;
+			this.contents = "flag{ca201ed0-9e07";
+			this.InitializeComponent();
+		}
+
+		// Token: 0x06000014 RID: 20 RVA: 0x0000235C File Offset: 0x0000055C
+		public void Form1_Load(object sender, EventArgs e)
+		{
+			ref string ptr = ref this.contents;
+			this.contents = ptr + "-11e8-b6dd";
+			ptr = ref this.contents;
+			this.contents = ptr + "-000c29dcabfd}";
+		}
+
+		// Token: 0x06000015 RID: 21 RVA: 0x00002394 File Offset: 0x00000594
+		public void KeyCheck(object sender, KeyEventArgs e)
+		{
+			bool flag = e.KeyCode == Keys.Return;
+			if (flag)
+			{
+				Interaction.MsgBox("不允许敲回车噢！", MsgBoxStyle.OkOnly, null);
+			}
+			else
+			{
+				bool flag2 = e.KeyCode == Keys.Space;
+				if (flag2)
+				{
+					Interaction.MsgBox("不允许敲空格噢！", MsgBoxStyle.OkOnly, null);
+				}
+			}
+		}
+
+		// Token: 0x06000016 RID: 22 RVA: 0x000023E0 File Offset: 0x000005E0
+		public void Button1_Click(object sender, EventArgs e)
+		{
+			Random random = new Random();
+			int num = 1000;
+			ref int ptr = ref this.i;
+			checked
+			{
+				this.i = ptr + 1;
+				bool flag = this.i < num;
+				if (flag)
+				{
+					Interaction.MsgBox(Conversion.Str(this.i) + "/" + Conversion.Str(num), MsgBoxStyle.Information, "flag的价值");
+					this.Button1.Top = random.Next(171) + 48;
+					this.Button1.Left = random.Next(380) + 12;
+				}
+				else
+				{
+					this.i = 0;
+					bool flag2 = this.j < this.contents.Length;
+					if (flag2)
+					{
+						Interaction.MsgBox(string.Concat(new string[]
+						{
+							"第 ",
+							Conversion.Str(this.j + 1),
+							"/",
+							Conversion.Str(this.contents.Length),
+							" ，拿去吧"
+						}), MsgBoxStyle.OkOnly, null);
+						TextBox textBox;
+						(textBox = this.TextBox1).Text = textBox.Text + Conversions.ToString(this.contents[this.j]);
+						ptr = ref this.j;
+						this.j = ptr + 1;
+					}
+					else
+					{
+						Interaction.MsgBox("已经。。。没有了", MsgBoxStyle.OkOnly, null);
+					}
+					bool flag3 = this.j > 5;
+					if (flag3)
+					{
+						this.TextBox1.PasswordChar = '*';
+					}
+				}
+			}
+		}
+
+		// Token: 0x06000017 RID: 23 RVA: 0x0000256C File Offset: 0x0000076C
+		private void KeyCheck(object sender, KeyPressEventArgs e)
+		{
+		}
+
+		// Token: 0x06000018 RID: 24 RVA: 0x00002570 File Offset: 0x00000770
+		[DebuggerNonUserCode]
+		protected override void Dispose(bool disposing)
+		{
+			try
+			{
+				bool flag = disposing && this.components != null;
+				if (flag)
+				{
+					this.components.Dispose();
+				}
+			}
+			finally
+			{
+				base.Dispose(disposing);
+			}
+		}
+
+		// Token: 0x06000019 RID: 25 RVA: 0x000025C0 File Offset: 0x000007C0
+		[DebuggerStepThrough]
+		private void InitializeComponent()
+		{
+			ComponentResourceManager componentResourceManager = new ComponentResourceManager(typeof(Form1));
+			this.Button1 = new Button();
+			this.TextBox1 = new TextBox();
+			this.Label1 = new Label();
+			this.Label2 = new Label();
+			base.SuspendLayout();
+			this.Button1.AccessibleRole = AccessibleRole.None;
+			this.Button1.CausesValidation = false;
+			this.Button1.Cursor = Cursors.No;
+			this.Button1.Location = new Point(191, 131);
+			this.Button1.Name = "Button1";
+			this.Button1.Size = new Size(80, 30);
+			this.Button1.TabIndex = 0;
+			this.Button1.TabStop = false;
+			this.Button1.Text = "flag";
+			this.Button1.UseVisualStyleBackColor = true;
+			this.TextBox1.Location = new Point(126, 12);
+			this.TextBox1.Name = "TextBox1";
+			this.TextBox1.Size = new Size(255, 21);
+			this.TextBox1.TabIndex = 1;
+			this.Label1.AutoSize = true;
+			this.Label1.Location = new Point(118, 66);
+			this.Label1.Name = "Label1";
+			this.Label1.Size = new Size(209, 12);
+			this.Label1.TabIndex = 2;
+			this.Label1.Text = "1000次点击换1个字符，童叟无欺了啊~";
+			this.Label2.AutoSize = true;
+			this.Label2.Location = new Point(79, 15);
+			this.Label2.Name = "Label2";
+			this.Label2.Size = new Size(41, 12);
+			this.Label2.TabIndex = 3;
+			this.Label2.Text = "flag->";
+			base.AutoScaleDimensions = new SizeF(6f, 12f);
+			base.AutoScaleMode = AutoScaleMode.Font;
+			base.ClientSize = new Size(484, 261);
+			base.Controls.Add(this.Label2);
+			base.Controls.Add(this.Label1);
+			base.Controls.Add(this.TextBox1);
+			base.Controls.Add(this.Button1);
+			base.Icon = (Icon)componentResourceManager.GetObject("$this.Icon");
+			base.KeyPreview = true;
+			base.Name = "Form1";
+			this.Text = "一百遍啊一百遍";
+			base.ResumeLayout(false);
+			base.PerformLayout();
+		}
+
+		// Token: 0x1700000A RID: 10
+		// (get) Token: 0x0600001A RID: 26 RVA: 0x00002895 File Offset: 0x00000A95
+		// (set) Token: 0x0600001B RID: 27 RVA: 0x0000289F File Offset: 0x00000A9F
+		internal virtual TextBox TextBox1 { get; [MethodImpl(MethodImplOptions.Synchronized)] set; }
+
+		// Token: 0x1700000B RID: 11
+		// (get) Token: 0x0600001C RID: 28 RVA: 0x000028A8 File Offset: 0x00000AA8
+		// (set) Token: 0x0600001D RID: 29 RVA: 0x000028B2 File Offset: 0x00000AB2
+		internal virtual Label Label1 { get; [MethodImpl(MethodImplOptions.Synchronized)] set; }
+
+		// Token: 0x1700000C RID: 12
+		// (get) Token: 0x0600001E RID: 30 RVA: 0x000028BB File Offset: 0x00000ABB
+		// (set) Token: 0x0600001F RID: 31 RVA: 0x000028C5 File Offset: 0x00000AC5
+		internal virtual Label Label2 { get; [MethodImpl(MethodImplOptions.Synchronized)] set; }
+
+		// Token: 0x1700000D RID: 13
+		// (get) Token: 0x06000020 RID: 32 RVA: 0x000028CE File Offset: 0x00000ACE
+		// (set) Token: 0x06000021 RID: 33 RVA: 0x000028D8 File Offset: 0x00000AD8
+		public virtual Button Button1
+		{
+			[CompilerGenerated]
+			get
+			{
+				return this._Button1;
+			}
+			[CompilerGenerated]
+			[MethodImpl(MethodImplOptions.Synchronized)]
+			set
+			{
+				KeyEventHandler value2 = new KeyEventHandler(this.KeyCheck);
+				EventHandler value3 = new EventHandler(this.Button1_Click);
+				Button button = this._Button1;
+				if (button != null)
+				{
+					button.KeyUp -= value2;
+					button.Click -= value3;
+				}
+				this._Button1 = value;
+				button = this._Button1;
+				if (button != null)
+				{
+					button.KeyUp += value2;
+					button.Click += value3;
+				}
+			}
+		}
+
+		// Token: 0x0400000B RID: 11
+		private int i;
+
+		// Token: 0x0400000C RID: 12
+		private int j;
+
+		// Token: 0x0400000D RID: 13
+		private string contents;
+
+		// Token: 0x0400000E RID: 14
+		private IContainer components;
+	}
+}
+```
+
+得到flag

@@ -292,3 +292,31 @@ int main()
 flag{757515121f3d478}
 
 当然这种题也可以通过算法逆向来解，有时间补。
+
+突然了解到，这道题也可以用符号执行解，来试一波。
+
+### 何谓符号执行
+
+**符号执行** （Symbolic Execution）是一种[程序分析技术](https://zh.wikipedia.org/wiki/程序分析)。其可以通过分析程序来得到让特定代码区域执行的输入。使用符号执行分析一个程序时，该程序会使用符号值作为输入，而非一般执行程序时使用的具体值。在达到目标代码时，分析器可以得到相应的路径约束，然后通过约束求解器来得到可以触发目标代码的具体值。[[1\]](https://zh.wikipedia.org/wiki/符号执行#cite_note-Schwartz-1)
+
+[符号模拟技术](https://zh.wikipedia.org/w/index.php?title=符号模拟技术&action=edit&redlink=1)（symbolic simulation）则把类似的思想用于硬件分析。[符号计算](https://zh.wikipedia.org/w/index.php?title=符号计算&action=edit&redlink=1)（Symbolic computation）则用于数学[表达式分析](https://zh.wikipedia.org/w/index.php?title=表达式分析&action=edit&redlink=1)。
+
+### 安装说明
+
+angr is a python library, so it must be installed into your python environment before it can be used. It is built for Python 3: Python 2 support is not feasible due to the looming EOL and the small size of our team.
+
+We highly recommend using a [python virtual environment](https://virtualenvwrapper.readthedocs.org/en/latest/) to install and use angr. Several of angr's dependencies (z3, pyvex) require libraries of native code that are forked from their originals, and if you already have libz3 or libVEX installed, you definitely don't want to overwrite the official shared objects with ours. In general, don't expect support for problems arising from installing angr outside of a virtualenv.
+
+exp:
+
+```assembly
+import angr
+
+p = angr.Project('./signal.exe', auto_load_libs=False)   #指定angr跑的程序
+state = p.factory.entry_state()    #新建一个SimState的对象，得到一个初始化到二进制入口函数的SimState对象。
+simgr = p.factory.simgr(state)   #创建simulation manager，angr的主要入口
+simgr.explore(find=0x0040179E, avoid=0x004016E6)  #争取跑到输出成功的地址，避免跑到输出wrong的地址
+flag = simgr.found[0].posix.dumps(0)     #得到flag
+print(flag)
+```
+
