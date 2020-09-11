@@ -1,0 +1,281 @@
+---
+layout: post
+title:  5get_it
+date:   2020-09-06 00:01:01 +0300
+image:  2020-09-06-buildings.jpg
+tags:   [ctf,reverse,FlareOn]
+---
+
+ida打开文件
+
+大部分函数都可以归为一类，即返回一个字符，跳转到外部引用，找到sub_10009EB0()函数。
+
+```assembly
+const char *sub_10009EB0()
+{
+  const char *result; // eax
+  signed __int16 i; // [esp+4h] [ebp-4h]
+
+  for ( i = 8; ; ++i )
+  {
+    if ( i > 222 )
+      return 0;
+    if ( GetAsyncKeyState(i) == -32767 )
+      break;
+LABEL_2:
+    ;
+  }
+  switch ( i )
+  {
+    case 39:
+      return sub_100093B0();
+    case 40:
+      return (const char *)sub_100093C0();
+    case 41:
+      return (const char *)sub_100093D0();
+    case 42:
+      return (const char *)sub_100093E0();
+    case 43:
+      return (const char *)sub_100093F0();
+    case 44:
+      return (const char *)sub_10009400();
+    case 45:
+      return (const char *)sub_10009410();
+    case 46:
+      return (const char *)sub_10009420();
+    case 47:
+      return (const char *)sub_10009430();
+    case 48:
+      return (const char *)sub_10009440();
+    case 49:
+      return (const char *)sub_10009490();
+    case 50:
+      return (const char *)sub_100094A0();
+    case 51:
+      return (const char *)sub_100094B0();
+    case 52:
+      return (const char *)sub_100094C0();
+    case 53:
+      return (const char *)sub_100094D0();
+    case 54:
+      return (const char *)sub_10009520();
+    case 55:
+      return (const char *)sub_10009530();
+    case 56:
+      return (const char *)sub_10009540();
+    case 57:
+      return (const char *)sub_10009550();
+    case 58:
+      return (const char *)sub_10009560();
+    case 59:
+      return (const char *)sub_10009570();
+    case 60:
+      return (const char *)sub_10009580();
+    case 61:
+      return (const char *)sub_10009590();
+    case 62:
+      return (const char *)sub_100095A0();
+    case 63:
+      return (const char *)sub_100095B0();
+    case 65:
+      return (const char *)sub_100097D0();
+    case 66:
+      return (const char *)sub_10009840();
+    case 67:
+      return (const char *)sub_10009850();
+    case 68:
+      return (const char *)sub_10009880();
+    case 69:
+      return (const char *)sub_10009910();
+    case 70:
+      return (const char *)sub_10009960();
+    case 71:
+      return (const char *)sub_10009990();
+    case 72:
+      return (const char *)sub_10009A00();
+    case 73:
+      return (const char *)sub_10009A30();
+    case 74:
+      return (const char *)sub_10009A60();
+    case 75:
+      return (const char *)sub_10009A70();
+    case 76:
+      return (const char *)sub_10009AA0();
+    case 77:
+      return (const char *)sub_10009AF0();
+    case 78:
+      return (const char *)sub_10009B10();
+    case 79:
+      return (const char *)sub_10009B60();
+    case 80:
+      return (const char *)sub_10009C10();
+    case 81:
+      return (const char *)sub_10009C20();
+    case 82:
+      return (const char *)sub_10009C30();
+    case 83:
+      return (const char *)sub_10009CA0();
+    case 84:
+      return (const char *)sub_10009CD0();
+    case 85:
+      return (const char *)sub_10009D80();
+    case 86:
+      return (const char *)sub_10009DB0();
+    case 87:
+      return (const char *)sub_10009DC0();
+    case 88:
+      return (const char *)sub_10009DD0();
+    case 89:
+      return (const char *)sub_10009DE0();
+  }
+  switch ( i )
+  {
+    case 8:
+      result = (const char *)sub_10009E60();
+      break;
+    case 9:
+      result = (const char *)sub_10009E70();
+      break;
+    case 13:
+      result = (const char *)sub_10009E50();
+      break;
+    case 16:
+      result = (const char *)sub_10009E30();
+      break;
+    case 17:
+      result = (const char *)sub_10009E80();
+      break;
+    case 20:
+      result = (const char *)sub_10009EA0();
+      break;
+    case 32:
+      result = (const char *)sub_10009340();
+      break;
+    case 46:
+      result = (const char *)sub_10009E90();
+      break;
+    case 96:
+      result = (const char *)sub_10009440();
+      break;
+    case 97:
+      result = (const char *)sub_10009490();
+      break;
+    case 98:
+      result = (const char *)sub_100094A0();
+      break;
+    case 99:
+      result = (const char *)sub_100094B0();
+      break;
+    case 100:
+      result = (const char *)sub_100094C0();
+      break;
+    case 101:
+      result = (const char *)sub_100094D0();
+      break;
+    case 102:
+      result = (const char *)sub_10009520();
+      break;
+    case 103:
+      result = (const char *)sub_10009530();
+      break;
+    case 104:
+      result = (const char *)sub_10009540();
+      break;
+    case 105:
+      result = (const char *)sub_10009550();
+      break;
+    case 190:
+      result = (const char *)sub_10009E40();
+      break;
+    default:
+      goto LABEL_2;
+  }
+  return result;
+}
+```
+
+看来程序是要求我们输入字符串，然后根据每个字符执行不同的步骤。
+
+随便进入一个返回字符串的函数
+
+```assembly
+const char *sub_100094D0()
+{
+  if ( dword_10019498 <= 0 )
+  {
+    if ( dword_100194B0 <= 0 )
+    {
+      _cfltcvt_init();
+    }
+    else
+    {
+      dword_100194B0 = 0;
+      dword_100194B4 = 1;
+    }
+  }
+  else
+  {
+    dword_10019498 = 0;
+    dword_1001949C = 1;
+  }
+  return "5";
+}
+```
+
+程序的执行必然和这些dword变量有关系，又发现_cfltcvt_init()函数给变量初始化
+
+```assembly
+void _cfltcvt_init()
+{
+  dword_10017000 = 1;
+  dword_10019460 = 0;
+  dword_10019464 = 0;
+  dword_10019468 = 0;
+  dword_1001946C = 0;
+  dword_10019470 = 0;
+  dword_10019474 = 0;
+  dword_10019478 = 0;
+  dword_1001947C = 0;
+  dword_10019480 = 0;
+  dword_10019484 = 0;
+  dword_10019488 = 0;
+  dword_1001948C = 0;
+  dword_10019490 = 0;
+  dword_10019494 = 0;
+  dword_10019498 = 0;
+  dword_1001949C = 0;
+  dword_100194A0 = 0;
+  dword_100194A4 = 0;
+  dword_100194A8 = 0;
+  dword_100194AC = 0;
+  dword_100194B0 = 0;
+  dword_100194B4 = 0;
+  dword_100194B8 = 0;
+  dword_100194BC = 0;
+  dword_100194C0 = 0;
+  dword_100194C4 = 0;
+  dword_100194C8 = 0;
+  dword_100194CC = 0;
+  dword_100194D0 = 0;
+  dword_100194D4 = 0;
+  dword_100194D8 = 0;
+  dword_100194DC = 0;
+  dword_100194E0 = 0;
+  dword_100194E4 = 0;
+  dword_100194E8 = 0;
+  dword_100194EC = 0;
+  dword_100194F0 = 0;
+  dword_100194F4 = 0;
+  dword_100194F8 = 0;
+  dword_100194FC = 0;
+  dword_10019500 = 0;
+}
+```
+
+由此推测，程序从dword_10017000到dword_10019500一步一步执行，通过查看外部交叉引用分析，推测出字符串为
+
+```assembly
+l0ggingdoturdot5tr0ke5atflaredashondotcom
+```
+
+更改为flag要求的格式提交即可。

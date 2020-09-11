@@ -46,5 +46,24 @@
 
 AFL的使用
 
-github
+* git clone https://github.com/google/AFL
+* cd AFL
+* make
+* afl-clang test.c -o fuzzme
+* echo SEED > in/SEED
+* afl-fuzz -i in -o out -- ./fuzzme @@
+* \# wait for crashes
 
+AFL运行实例流程分析
+
+* 种子的选择与队列管理
+  * 种子选择器
+
+* 种子变异
+  * 变异器
+
+* 目标程序改造
+  * 插桩
+
+* 插桩Testcase的筛选与过滤
+  * Monitor/Filter

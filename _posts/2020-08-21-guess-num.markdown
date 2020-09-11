@@ -130,7 +130,7 @@ io.interactive()
 
 ~~艰难的~~过程
 
-```
+```assembly
 D:\pwn\guess_num>python2 job.py
 [x] Opening connection to 220.249.52.133 on port 31398
 [x] Opening connection to 220.249.52.133 on port 31398: Trying 220.249.52.133

