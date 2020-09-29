@@ -95,6 +95,8 @@ shellcode = asm(shellcraft.sh())
 
 然而有了NX保护之后，堆、栈、bss段就没有执行权限了
 
+### ROP
+
 ROP，全称为Return-oriented Programming（面向返回的编程）是一种新型的基于代码复用技术的攻击，攻击者从已有的库或可执行文件中提取指令片段，构建恶意代码。这种高级的内存攻击技术可以用来绕过现代操作系统的各种通用防御（比如内存不可执行和代码签名等）。其主要思想是在栈溢出的基础上，利用程序中已有的小片段（gadgets）来改变某些寄存器或者变量的值，从而控制程序的执行流程。
 
 核心思想
@@ -122,6 +124,128 @@ ROP攻击一般的满足如下条件
 ROP攻击的防范
 
 ROP攻击的程序主要使用栈溢出的漏洞，实现程序控制流的劫持。因此栈溢出漏洞的防护是阻挡ROP攻击最根源性的方法。如果解决了栈溢出问题，ROP攻击将会在很大程度上受到抑制。
+
+-----------------------------------
+
+#### Linux_x64下的Gadget
+
+##### 通用Gadget
+
+通用gadget之所以叫通用，说明这是可以广泛使用的。
+
+程序编译的过程中，会自动加入一些通用函数做初始化的工作，这些初始化函数都是相同的，所以我们可以考虑在这些函数中找到一些通用的 gadget，在64位的链接库中就有一个这样的gadget,存在于\__libc_csu_init()。函数__libc_csu_init()用于对libc进行初始化，只要程序调用了libc，就一定存在这个函数。
+
+```assembly
+.text:0000000000400700 ; void init(void)
+.text:0000000000400700 init            proc near               ; DATA XREF: start+16↑o
+.text:0000000000400700 ; __unwind {
+.text:0000000000400700                 push    r15
+.text:0000000000400702                 mov     r15d, edi
+.text:0000000000400705                 push    r14
+.text:0000000000400707                 mov     r14, rsi
+.text:000000000040070A                 push    r13
+.text:000000000040070C                 mov     r13, rdx
+.text:000000000040070F                 push    r12
+.text:0000000000400711                 lea     r12, off_600E10
+.text:0000000000400718                 push    rbp
+.text:0000000000400719                 lea     rbp, off_600E18
+.text:0000000000400720                 push    rbx
+.text:0000000000400721                 sub     rbp, r12
+.text:0000000000400724                 xor     ebx, ebx
+.text:0000000000400726                 sar     rbp, 3
+.text:000000000040072A                 sub     rsp, 8
+.text:000000000040072E                 call    _init_proc
+.text:0000000000400733                 test    rbp, rbp
+.text:0000000000400736                 jz      short loc_400756
+.text:0000000000400738                 nop     dword ptr [rax+rax+00000000h]
+.text:0000000000400740
+.text:0000000000400740 loc_400740:                             ; CODE XREF: init+54↓j
+.text:0000000000400740                 mov     rdx, r13
+.text:0000000000400743                 mov     rsi, r14
+.text:0000000000400746                 mov     edi, r15d
+.text:0000000000400749                 call    qword ptr [r12+rbx*8]
+.text:000000000040074D                 add     rbx, 1
+.text:0000000000400751                 cmp     rbx, rbp
+.text:0000000000400754                 jnz     short loc_400740
+.text:0000000000400756
+.text:0000000000400756 loc_400756:                             ; CODE XREF: init+36↑j
+.text:0000000000400756                 add     rsp, 8
+.text:000000000040075A                 pop     rbx
+.text:000000000040075B                 pop     rbp
+.text:000000000040075C                 pop     r12
+.text:000000000040075E                 pop     r13
+.text:0000000000400760                 pop     r14
+.text:0000000000400762                 pop     r15
+.text:0000000000400764                 retn
+.text:0000000000400764 ; } // starts at 400700
+```
+
+先从**0x40075A**开始执行，将 **rbx/rbp/r12/r13/r14/r15** 这六个寄存器全部布置好，再**ret**到**0x400740**，继续布置**rdx/rsi/rdi**，最后通过**call qword ptr[r12+rbx\*8]**执行目标函数。
+
+这个通用**Gadget**好用的地方在于，不仅可以通过函数地址的指针（通常会用记录库函数真实地址的**got**表项）来控制目标函数，还可以控制目标函数的最多三个入参（**rdi/rsi/rdx**）的值。此外，只要设置**rbp=rbx+1**而且栈空间足够，这个**Gadget**可以一直循环调用下去。
+
+可以看出，这个**Gadget**需要布置六个寄存器（**rbx/rbp/r12/r13/r14/r15**）加一个 **ret** 返回地址，**x64**下至少需要 **56** 个字节的栈空间。如果再算上将**rip**指令跳转进来（0x40061A）的一个**ret**地址，那就是**64**字节的栈空间。
+
+##### 隐藏Gadget：pop rdi,ret
+
+其实，这个通用**Gadget**里，还隐藏了两个更简单的**Gadget**。
+
+将地址**0x400762**上**pop r15,ret**的三字节指令(**0x41 0x5F 0xC3**)拆散看，会发现后两个字节组成了一组新的指令 **pop rdi,ret**。
+
+足够完成单入参的函数调用了,例如：
+
+```assembly
+payload += p64(pop_rdi)
+payload += p64(bin_sh_addr)
+payload += p64(system_addr)
+```
+
+空间上，只需要 **24** 个字节（一个 **QWORD** 存放 **ret** 进来的地址，两个 **QWORD** 作为入参和被调用函数地址）的溢出空间就足够了。
+
+##### 隐藏Gadget：pop rsi,...,ret
+
+将地址**0x400760**上**pop r14**的两字节指令（**0x41 0x5E**）拆散，会发现后一个字节是单字节指令**pop rsi**，可以用来控制第二个入参。和前述的地址**0x400763**上的指令**pop rdi,ret**组合起来，就可以完成两个入参的函数调用。
+
+------------------------------
+
+### DynELF原理
+
+#### 获取vul_elf内存加载基地址
+
+已知vul_elf加载内存范围内的一个地址ptr，将该地址进行页对齐
+
+```assembly
+page_size = 0x1000
+page_mask = ~(page_size - 1)
+ptr &= page_mask
+```
+
+然后对比内存页起始字符串是否为'\x7fELF'，如果不是，一直向低地址内存页(ptr -= page_size)进行查找，找到符合该条件的页面，该页面起始地址就是vul_elf文件内存加载基地址。
+
+#### 获取libc.so内存加载基地址
+
+vul_elf是动态链接的可执行文件，在该类型文件中有一个link_map双向链表，其中包含了每个动态加载的库的路径和加载基址等信息，其数据结构为：
+
+可以通过两种途径获取link_map链表：一是在所有ELF文件中，通过Dynamic段DT_DEBUG区域得到。二是在non-RELRO ELF文件中，link_map地址存在于.got.plt区节中，该区节的加载地址可以从DYNAMIC段DT_PLTGOT区域得到。
+
+这两种途径都需要知道vul_elf的DYNAMIC段地址：我们在第一步中获取了vul_el内存加载基地址，由此可以得到vul_elf段表，通过解析vul_elf段表可以得到DYNAMIC基地址。
+
+#### 获取libc.so的hash表、动态符号表、字符串表基地址
+
+在所有需要导出函数给其他文件使用的ELF文件（例如: “libc.so”）中，用动态符号表、字符串表、hash表等一系列表用于指示导出符号（例如:”system”）的名称、地址、hash值等信息。通过libc.so的Dynamic段DT_GNU_HASH、DT_SYMTAB、DT_STRTAB可以获取hash表、动态符号表、字符串表在内存中的基地址。
+
+#### 通过hash表获取system函数地址
+
+hash表是用于查找符号的散列表，通过libc.so的hash表可以找到system函数内存加载地址，在ELF文件中有SYSV、GNU两种类型的hash表，其中通过GNU HASH查找system函数地址示意图如下。其寻找过程涉及诸多细节，在此不多叙述，后面会写文章对通过hash表找到符号地址作专门讲解。
+
+```assembly
+hash=gnu_hash(“system”)，gnu_hash是GNU HASH算法函数
+ndx=hash%nbuckets，ndx是符号表中所有 符号HASH%nubuckets 相等的起始索引
+```
+
+最后：内存泄露函数在过程中用作读取程序内存数据，像上面例子中获取link_map、DYNAMIC段、vul_elf段表等内容都是通过内存泄露函数。
+
+---------------------------------
 
 ### 对抗ASLR/PIE保护技术
 

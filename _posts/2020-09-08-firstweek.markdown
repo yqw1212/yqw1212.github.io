@@ -2,7 +2,7 @@
 layout: post
 title:  每周十题
 date:   2020-09-08 00:01:01 +0300
-image:  2020-09-07-landscape.jpg
+image:  2020-09-08-landscape.jpg
 tags:   [ctf,reverse,攻防世界]
 ---
 
