@@ -2,7 +2,7 @@
 layout: post
 title:  cgpwn2
 date:   2020-08-23 00:01:01 +0300
-image:  2020-08-21-summerfield.jpg
+image:  2020-08-23-silhouette.jpg
 tags:   [ctf,pwn,CGCTF,攻防世界]
 ---
 

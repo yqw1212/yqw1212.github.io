@@ -22,6 +22,13 @@ tags:   [MachineLearning]
 * 协方差
 
   用于度量两个变量之间的线性相关性程度，若两个变量的协方差为0，则可认为二者线性无关。
+  $$
+  \begin{array}\\
+  Cov(X,Y)& =E[(X-E[X])(Y-E[Y])]\\
+          & =E[XY]-2E[Y]E[X]+E[X]\\
+          & =E[XY]-E[X][Y]
+  \end{array}
+  $$
 
 * 协方差矩阵
 
@@ -120,6 +127,8 @@ https://blog.csdn.net/zhongkelee/article/details/44064401
 
 * 结果展示
 
+  ![]({{site.baseurl}}/img/2020-09-16-figure.jpg)
+  
   可以看出，降维后的数据仍能够清晰地分成三类。这样不仅能削减数据的维度，降低分类任务的工作量，还能保证分类的质量。
 
 ### NMF方法及实例
@@ -149,7 +158,7 @@ $$
 
 * 建立工程，导入 sklearn 相关工具包
 
-  ```python
+  ```assembly
   import matplotlib.pyplot as plt
   #加载 matplotlib 用于数据的可视化
   from sklearn import decomposition
@@ -162,7 +171,7 @@ $$
 
 * 设置基本参数并加载数据
 
-  ```python
+  ```assembly
   n_row, n_col = 2, 3
   #设置图像展示时的排列情况
   n_components = n_row * n_col
@@ -174,9 +183,13 @@ $$
   faces = dataset.data
   ```
 
+  faces
+
+  ![]({{site.baseurl}}/img/2020-09-16-figure1.jpg)
+
 * 设置图像的展示方式
 
-  ```python
+  ```assembly
   def plot_gallery(title, images, n_col=n_col, n_row=n_row):
       plt.figure(figsize=(2. * n_col, 2.26 * n_row))
       #创建图片，并指定图片大小（英寸）
@@ -197,7 +210,7 @@ $$
 
 * 创建特征提取的对象 NMF ，使用PCA作为对比
 
-  ```python
+  ```assembly
   estimators = [('Eigenfaces-PCA using randomized SVD', decomposition.PCA(n_components=6,whiten=True)),
                 ('Non-negative components - NMF', decomposition.NMF(n_components=6, init='nndsvda',tol=5e-3))]
   #将它们存放在一个列表中
@@ -205,13 +218,11 @@ $$
 
 * 降维后数据点的可视化
 
-  ```python
+  ```assembly
   for name, estimator in estimators:#分别调用 PCA 和 NMF
       estimator.fit(faces)#调用 PCA 或 NMF 提取特征
-      components_ = estimator.components_
-      #获取 提取的特征
-      plot_gallery(name, components_[:n_components])
-      #按照固定格式进行排列
+      components_ = estimator.components_#获取提取的特征
+      plot_gallery(name, components_[:n_components])#按照固定格式进行排列
   plt.show()
   ```
 
@@ -219,15 +230,15 @@ $$
 
 * PCA提取的特征
 
-  ![image-20200330230316321](C:\Users\yqw\AppData\Roaming\Typora\typora-user-images\image-20200330230316321.png)
+  ![]({{site.baseurl}}/img/2020-09-16-figure2.jpg)
 
 * NMF提取的特征
 
-  ![image-20200330230328598](C:\Users\yqw\AppData\Roaming\Typora\typora-user-images\image-20200330230328598.png)
+  ![]({{site.baseurl}}/img/2020-09-16-figure3.jpg)
 
 * 去掉random_state=RandomState(0)的结果相同
 
-  ```python
+  ```assembly
   import matplotlib.pyplot as plt
   from sklearn import decomposition
   from sklearn.datasets import fetch_olivetti_faces
@@ -284,11 +295,11 @@ $$
 * 技术路线：sklearn.cluster.KMeans
 * 实例数据：本实例中的数据可以是任意大小的图片，为了使效果更佳直观，可以采用区分度比较明显的图片。
 
-#### “kmeans 实现图片分割 ”实例编写
+#### “kmeans 实现图片分割”实例编写
 
 * 建立工程并导入sklearn包
 
-  ```python
+  ```assembly
   import numpy as np
   import PIL.Image as image
   from sklearn.cluster import KMeans
@@ -296,7 +307,7 @@ $$
 
 * 加载图片并进行预处理
 
-  ```python
+  ```assembly
   def loadData(filePath):
       f = open(filePath, 'rb')
       data = []
@@ -304,26 +315,27 @@ $$
       m, n = img.size
       for i in range(m):
           for j in range(n):
-              x, y, z = img.getpixel((i, j))
+              tup = img.getpixel((i, j))
+              x = tup[0]
+              y = tup[1]
+              z = tup[2]
               data.append([x/256.0, y/256.0, z/256])
       f.close()
+      #mat()创建矩阵
       return np.mat(data), m, n
-  
   
   imgData, row, col = loadData('kmeans/horse.jpg')
   ```
 
 * 加载 Kmeans 聚类算法
 
-  ```python
+  ```assembly
   km = KMeans(n_clusters=3)
   ```
 
 * 对像素点进行聚类并输出
 
-  ```python
-  km = KMeans(n_clusters=3)
-  
+  ```assembly
   label = km.fit_predict(imgData)
   label = label.reshape([row, col])
   
@@ -335,14 +347,12 @@ $$
   
   pic_new.save("result-bull-4.jpg", "JPEG")
   ```
-
+  
   #### 结果展示
 
-  <img src="D:\文档\ps\rest-4933097.jpg" alt="rest-4933097" style="zoom:50%;" />
+  ![]({{site.baseurl}}/img/2020-09-16-bull.jpg)
 
-  
-
-  <img src="D:\文档\新建文件夹 (2)\mach\result-bull-4.jpg" alt="result-bull-4" style="zoom: 25%;" />
+  ![]({{site.baseurl}}/img/2020-09-16-result-bull.jpg)
 
   #### 实验分析
 

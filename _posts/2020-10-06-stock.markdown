@@ -1,3 +1,11 @@
+---
+layout: post
+title:  回归
+date:   2020-10-06 00:01:01 +0300
+image:  2020-09-16-sheet.jpg
+tags:   [MachineLearning]
+---
+
 # 上证指数涨跌预测
 
 ## 数据介绍
