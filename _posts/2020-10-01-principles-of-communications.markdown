@@ -151,7 +151,88 @@ $$
 ## 傅里叶变换
 
 $$
+\begin{equation*}
+f(t)=\sum_{n=-∞}^∞F(nω_1)e^{jnω_1t}\\
+\end{equation*}
+F(n)=\frac{1}{T}\int_{-\frac{T}{2}}^{\frac{T}{2}}f(t)e^{-jnωt}dt\\
 F(w)=\int_{-∞}^{∞}f(t)e^{-jωt}dt\\
 f(t)=\frac{1}{2Π}\int_{-∞}^{∞}F(W)e^{jnωt}dω
 $$
 
+10.13
+$$
+\mathscr{F}[f_0(t)]=F_0(ω)=\int_{-\frac{T}{2}}^{\frac{T}{2}}f(t)e^{-jωt}\\
+F_n=\frac{1}{T_1}F_0(ω)|_{ω=nω}\\
+\mathscr{F}[f(t)]=2Π\sum_{n=-∞}^∞F_nσ(ω-nω_1)
+$$
+
+![]({{site.baseurl}}/img/2020-10-18-1.jpg)
+
+* 注意T和ω之间的关系和化简
+
+![]({{site.baseurl}}/img/2020-10-18-2.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-3.jpg)
+
+* ×1/2
+
+![]({{site.baseurl}}/img/2020-10-18-4.jpg)
+
+* 频率分量
+
+![]({{site.baseurl}}/img/2020-10-18-5.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-6.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-7.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-8.jpg)
+
+* f(t)中的ω和e<sup>-jωt</sup>中的ω不是同一个ω，不要弄混了
+* sin()，cos()利用欧拉公式变指数形式
+
+![]({{site.baseurl}}/img/2020-10-18-9.jpg)
+
+* 傅里叶变换的性质
+
+![]({{site.baseurl}}/img/2020-10-18-10.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-11.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-12.jpg)
+
+##### 傅里叶变换的对称性
+
+![]({{site.baseurl}}/img/2020-10-18-13.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-14.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-15.jpg)
+
+* 傅里叶变换微积分性质
+
+![]({{site.baseurl}}/img/2020-10-18-16.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-17.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-18.jpg)
+
+* 傅里叶逆变换
+
+![]({{site.baseurl}}/img/2020-10-18-19.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-20.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-21.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-22.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-23.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-24.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-25.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-26.jpg)
+
+![]({{site.baseurl}}/img/2020-10-18-27.jpg)

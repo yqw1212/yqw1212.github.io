@@ -6,6 +6,8 @@ image:  2020-09-13-children.jpg
 tags:   [ctf,reverse,羊城杯]
 ---
 
+[TOC]
+
 ## login
 
 看文件icon知道文件为python打包，使用pyinstxtractor解包得到pyc文件，更改文件头，反编译为python源码。
