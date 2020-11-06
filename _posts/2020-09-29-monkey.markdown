@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  pwn1
+title:  monkey
 date:   2020-09-29 00:01:01 +0300
 image:  2020-09-29-mountain.jpg
 tags:   [ctf,pwn,XCTF]
