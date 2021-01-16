@@ -2,7 +2,7 @@
 layout: post
 title:  省赛
 date:   2020-10-26 00:01:01 +0300
-image:  2020-10-11-woman.jpg
+image:  2020-10-26-sunset.jpg
 tags:   [ctf,省赛]
 ---
 
