@@ -1,0 +1,259 @@
+---
+layout: post
+title:  AI and forestry
+date:   2021-01-19 00:01:01 +0300
+image:  2021-01-19-fox.jpg
+tags:   [MachineLearning]
+---
+
+### Context
+
+This [dataset](https://www.kaggle.com/uciml/forest-cover-type-dataset) contains tree observations from four areas of the Roosevelt National Forest in Colorado. All observations are cartographic variables (no remote sensing) from 30 meter x 30 meter sections of forest. There are over half a million measurements total!
+
+### Inspiration
+
+- Can you build a model that predicts what types of trees grow in an area based on the surrounding characteristics? A past Kaggle competition project on this topic can be found [here](https://www.kaggle.com/c/forest-cover-type-prediction).
+- What kinds of trees are most common in the Roosevelt National Forest?
+- Which tree types can grow in more diverse environments? Are there certain tree types that are sensitive to an environmental factor, such as elevation or soil type?
+
+该数据中包含了多大 55 个字段，其中前 54 个字段为**特征**，最后一个字段为我们需要预测的**标签**。数据的字段名称与代表的意义如下所示：
+
+| 字段名称                           | 含义                               |
+| ---------------------------------- | ---------------------------------- |
+| Elevation                          | 海拔                               |
+| Aspec                              | 方位角                             |
+| Slope                              | 坡度                               |
+| Horizontal_Distance_To_Hydrology   | 到最近的水源的水平距离             |
+| Vertical_Distance_To_Hydrology     | 到最近的水源的垂直距离             |
+| Horizontal_Distance_To_Roadways    | 到最近的公路的水平距离             |
+| Hillshade_9am                      | 早上9点时的山阴指数                |
+| Hillshade_Noon                     | 中午12点时的山阴指数               |
+| Hillshade_3pm                      | 下午3点时的山阴指数                |
+| Horizontal_Distance_To_Fire_Points | 到最近的营火地点的水平距离         |
+| Wilderness_Area1                   | 森林区域1                          |
+| Wilderness_Area2                   | 森林区域2                          |
+| Wilderness_Area3                   | 森林区域3                          |
+| Wilderness_Area4                   | 森林区域4                          |
+| Soil_Type1                         | 土壤类型1                          |
+| Soil_Type2                         | 土壤类型2                          |
+| Soil_Type3                         | 土壤类型3                          |
+| Soil_Type4                         | 土壤类型4                          |
+| Soil_Type5                         | 土壤类型5                          |
+| Soil_Type6                         | 土壤类型6                          |
+| Soil_Type7                         | 土壤类型7                          |
+| Soil_Type8                         | 土壤类型8                          |
+| Soil_Type9                         | 土壤类型9                          |
+| Soil_Type10                        | 土壤类型10                         |
+| Soil_Type11                        | 土壤类型11                         |
+| Soil_Type12                        | 土壤类型12                         |
+| Soil_Type13                        | 土壤类型13                         |
+| Soil_Type14                        | 土壤类型14                         |
+| Soil_Type15                        | 土壤类型15                         |
+| Soil_Type16                        | 土壤类型16                         |
+| Soil_Type17                        | 土壤类型17                         |
+| Soil_Type18                        | 土壤类型18                         |
+| Soil_Type19                        | 土壤类型19                         |
+| Soil_Type20                        | 土壤类型20                         |
+| Soil_Type21                        | 土壤类型21                         |
+| Soil_Type22                        | 土壤类型22                         |
+| Soil_Type23                        | 土壤类型23                         |
+| Soil_Type24                        | 土壤类型24                         |
+| Soil_Type25                        | 土壤类型25                         |
+| Soil_Type26                        | 土壤类型26                         |
+| Soil_Type27                        | 土壤类型27                         |
+| Soil_Type28                        | 土壤类型28                         |
+| Soil_Type29                        | 土壤类型29                         |
+| Soil_Type30                        | 土壤类型30                         |
+| Soil_Type31                        | 土壤类型31                         |
+| Soil_Type32                        | 土壤类型32                         |
+| Soil_Type33                        | 土壤类型33                         |
+| Soil_Type34                        | 土壤类型34                         |
+| Soil_Type35                        | 土壤类型35                         |
+| Soil_Type36                        | 土壤类型36                         |
+| Soil_Type37                        | 土壤类型37                         |
+| Soil_Type38                        | 土壤类型38                         |
+| Soil_Type39                        | 土壤类型39                         |
+| Soil_Type40                        | 土壤类型40                         |
+| Cover_Type                         | 树木类型(取值范围为1到7之间的整数) |
+
+##### 查看数据信息
+
+```python
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('./covtype.csv')
+print(df.info())
+```
+
+输出
+
+```
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 581012 entries, 0 to 581011
+Data columns (total 55 columns):
+ #   Column                              Non-Null Count   Dtype
+---  ------                              --------------   -----
+ 0   Elevation                           581012 non-null  int64
+ 1   Aspect                              581012 non-null  int64
+ 2   Slope                               581012 non-null  int64
+ 3   Horizontal_Distance_To_Hydrology    581012 non-null  int64
+ 4   Vertical_Distance_To_Hydrology      581012 non-null  int64
+ 5   Horizontal_Distance_To_Roadways     581012 non-null  int64
+ 6   Hillshade_9am                       581012 non-null  int64
+ 7   Hillshade_Noon                      581012 non-null  int64
+ 8   Hillshade_3pm                       581012 non-null  int64
+ 9   Horizontal_Distance_To_Fire_Points  581012 non-null  int64
+ 10  Wilderness_Area1                    581012 non-null  int64
+ 11  Wilderness_Area2                    581012 non-null  int64
+ 12  Wilderness_Area3                    581012 non-null  int64
+ 13  Wilderness_Area4                    581012 non-null  int64
+ 14  Soil_Type1                          581012 non-null  int64
+ 15  Soil_Type2                          581012 non-null  int64
+ 16  Soil_Type3                          581012 non-null  int64
+ 17  Soil_Type4                          581012 non-null  int64
+ 18  Soil_Type5                          581012 non-null  int64
+ 19  Soil_Type6                          581012 non-null  int64
+ 20  Soil_Type7                          581012 non-null  int64
+ 21  Soil_Type8                          581012 non-null  int64
+ 22  Soil_Type9                          581012 non-null  int64
+ 23  Soil_Type10                         581012 non-null  int64
+ 24  Soil_Type11                         581012 non-null  int64
+ 25  Soil_Type12                         581012 non-null  int64
+ 26  Soil_Type13                         581012 non-null  int64
+ 27  Soil_Type14                         581012 non-null  int64
+ 28  Soil_Type15                         581012 non-null  int64
+ 29  Soil_Type16                         581012 non-null  int64
+ 30  Soil_Type17                         581012 non-null  int64
+ 31  Soil_Type18                         581012 non-null  int64
+ 32  Soil_Type19                         581012 non-null  int64
+ 33  Soil_Type20                         581012 non-null  int64
+ 34  Soil_Type21                         581012 non-null  int64
+ 35  Soil_Type22                         581012 non-null  int64
+ 36  Soil_Type23                         581012 non-null  int64
+ 37  Soil_Type24                         581012 non-null  int64
+ 38  Soil_Type25                         581012 non-null  int64
+ 39  Soil_Type26                         581012 non-null  int64
+ 40  Soil_Type27                         581012 non-null  int64
+ 41  Soil_Type28                         581012 non-null  int64
+ 42  Soil_Type29                         581012 non-null  int64
+ 43  Soil_Type30                         581012 non-null  int64
+ 44  Soil_Type31                         581012 non-null  int64
+ 45  Soil_Type32                         581012 non-null  int64
+ 46  Soil_Type33                         581012 non-null  int64
+ 47  Soil_Type34                         581012 non-null  int64
+ 48  Soil_Type35                         581012 non-null  int64
+ 49  Soil_Type36                         581012 non-null  int64
+ 50  Soil_Type37                         581012 non-null  int64
+ 51  Soil_Type38                         581012 non-null  int64
+ 52  Soil_Type39                         581012 non-null  int64
+ 53  Soil_Type40                         581012 non-null  int64
+ 54  Cover_Type                          581012 non-null  int64
+dtypes: int64(55)
+memory usage: 243.8 MB
+None
+```
+
+从输出结果可以看出，训练数据集总共有大概`58`万条数据，所有特征的值都是整数，数据中没有缺失值。这对我们来说是一个好消息，因为我们不需要去处理缺失值了。
+
+##### 可视化树木类型
+
+```python
+df['Cover_Type'].hist()
+```
+
+![]({{site.baseurl}}/img/2021-01-19-image.jpg)
+
+##### 特征选择
+
+现在数据中总共有 54 个特征，但并不是所有的特征都对树木类型识别模型有帮助，所以我们需要看看哪些特征对我们有用。
+
+```python
+import matplotlib.pyplt as plt
+
+spruce = df[df.Cover_Type == 1]
+lodgepole = df[df.Cover_Type == 2]
+ponderosa = df[df.Cover_Type == 3]
+willow = df[df.Cover_Type == 4]
+aspen = df[df.Cover_Type == 5]
+douglas = df[df.Cover_Type == 6]
+krummholz = df[df.Cover_Type == 7]
+
+plt.figure()
+plt.title('Elevation of Cover Types')
+plt.ylabel('Elevation (in meters)')
+data = [spruce.Elevation, lodgepole.Elevation, ponderosa.Elevation, willow.Elevation, aspen.Elevation, douglas.Elevation, krummholz.Elevation]
+plt.xticks([1, 2, 3, 4, 5, 6, 7])
+plt.boxplot(data)
+plt.show() 
+```
+
+盒式图或叫盒须图、箱形图(boxplot)，也称箱须图(Box-whiskerPlot）须图又称为箱形图，其绘制须使用常用的统计量，能提供有关数据位置和分散情况的关键信息，尤其在比较不同的母体数据时更可表现其差异。
+
+![]({{site.baseurl}}/img/2021-01-19-boxplot.jpg)
+
+可视化结果如下：
+
+![]({{site.baseurl}}/img/2021-01-19-elevation.jpg)
+
+其他特征的可视化结果如下：
+
+![]({{site.baseurl}}/img/2021-01-19-aspect.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-slope.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-horizontal-distance-to-hydrology.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-vertical-distance-to-hydrology.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-horizontal-distance-to-roadways.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-hillshade-9am.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-hillshade-noon.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-hillshade-3pm.jpg)
+
+![]({{site.baseurl}}/img/2021-01-19-horizontal-distance-to-fire-points.jpg)
+
+从boxplot可以看出 Elevation、Slope 和 Horizontal_Distance_To_Roadways 对于识别树木类型有帮助。
+
+接下来我们看看特征与特征之间的相关性如何。一般来说，如果两个特征的相关性比较高，则可以将其中一个特征筛掉。因为如果两个相关性比较高的特征保留了下来，对于模型的训练会是一种负担，而且会称为一种噪声。所以在选择特征时，应该尽量选择相关性比较低的特征。
+
+```python
+import seaborn as sns
+
+corr_df=df.loc[:, 'Elevation':'Horizontal_Distance_To_Fire_Points'].corr()
+corr_df1=abs(corr_df)
+
+fig=plt.gcf()
+fig.set_size_inches(30, 12)
+sns.heatmap(data=corr_df1,square=True,annot=True,cbar=True)
+```
+
+loc [ : ,  ]
+
+逗号左边是用来索引行，逗号的右边用来索引列
+
+逗号的左边都是数字，右边则为“列名”，也可以是bool
+
+corr()求解变量相关系数
+
+![]({{site.baseurl}}/img/2021-01-19-corr.jpg)
+
+Hillshade_9am与Hillshade_3pm还有Aspect与Hillshade_3pm这两对特征的相关性比较高。所以需要从中删掉Hillshade_3pm特征。
+
+使用随机森林算法来进行分类：
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+# 创建随机森林分类器
+clf = RandomForestClassifier(n_estimators=10)
+# 训练模型
+clf.fit(train_feature, label)
+# 进行预测
+predict = clf.predict(test_feature)
+```
