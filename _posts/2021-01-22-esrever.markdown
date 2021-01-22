@@ -1,0 +1,172 @@
+---
+layout: post
+title:  Esrever
+date:   2021-01-22 00:01:01 +0300
+image:  2021-01-22-woman.jpg
+tags:   [ctf,reverse,CSICTF]
+---
+
+I encrypted my flag so that nobody can see it, but now I realize I don't know how to decrypt it. Can you help me?
+
+esrever.txt
+
+`Encrypted Key = ieluvnvfgvfahuxhvfphbppnbgrfcrn`
+`Encrypted Text = »·­ª»£µ±¬¥¼±ºµ±¿·£¦­´¯ª¨¥«¥¦«´¸¦¡¸¢²§¤¦¦¹¨`
+
+esrever.py
+
+```python
+import random
+
+# TODO: Remember to remove real flag before deploying
+flag = 'csictf{fake_flag}'
+
+key = 'fake_key'
+
+def enc1(text):
+    r = random.randint(1,25)
+    return bytes.fromhex(''.join([hex(((ord(i) - ord('a') - r) % 26) + ord('a'))[2:] for i in text])).decode('ascii')
+    
+def enc2(text, key):
+    k = [key[i % len(key)] for i in range(len(text))]
+    return ''.join([chr(ord(text[i]) ^ ord(k[i]) + ord('a')) for i in range(len(text))])
+
+def enc3(text):
+    mapping = [28, 33, 6, 17, 7, 41, 27, 29, 31, 30, 39, 21, 34, 15, 3, 5, 13, 10, 19, 38, 40, 14, 26, 25, 32, 0, 36, 8, 18, 4, 1, 11, 24, 2, 37, 20, 23, 35, 22, 12, 16, 9]
+
+    temp = [None]*len(text)
+    for i in range(len(text)):
+        temp[mapping[i]] = text[i]
+    
+    return ''.join(temp)
+
+def enc4(text):
+    mapping = [23, 9, 5, 6, 22, 28, 25, 30, 15, 8, 16, 19, 24, 11, 10, 7, 2, 14, 18, 1, 29, 21, 12, 4, 20, 0, 26, 13, 17, 3, 27]
+
+    temp = [None]*len(text)
+    for i in range(len(text)):
+        temp[i] = text[mapping[i]]
+    
+    return ''.join(temp)
+
+encryptedText = enc1(flag)
+encryptedKey = enc1(key)
+for i in range(random.randint(1,100)):
+    encryptedText = enc1(encryptedText)
+    encryptedKey = enc1(key)
+
+print('Encrypted Key = ' + enc4(enc4(encryptedKey)))
+print('Encrypted Text = ' + enc3(enc3(enc2(enc1(encryptedText), key))))
+```
+
+先解密enc4(enc4(encryptedKey))和enc3(enc3(enc2(enc1(encryptedText), key)))
+
+关于enc2()中的操作步骤我们可以通过调试得到：
+
+```python
+def enc2(text, key):
+    k = [key[i % len(key)] for i in range(len(text))]
+    print(k)
+    return ''.join([chr(ord(text[i]) ^ ord(k[i]) + ord('a')) for i in range(len(text))])
+
+enc2("123456789","abcdefg")
+```
+
+输出：
+
+['a', 'b', 'c', 'd', 'e', 'f', 'g', 'a', 'b']
+
+而enc1通过调试可以发现就是一个类似于凯撒加密的函数
+
+```python
+def enc1(text):
+    r = random.randint(1,25)
+    print(r)
+    return bytes.fromhex(''.join([ hex(((ord(i) - ord('a') - r) % 26) + ord('a'))[2:] for i in text ])).decode('ascii')
+
+ss = enc1("abcdefg")
+print(ss)
+```
+
+输出：
+
+3
+xyzabcd
+
+脚本
+
+```assembly
+
+def denc4(temp):
+    mapping = [23, 9, 5, 6, 22, 28, 25, 30, 15, 8, 16, 19, 24, 11, 10, 7, 2, 14, 18, 1, 29, 21, 12, 4, 20, 0, 26, 13, 17, 3, 27]
+
+    text = [None]*len(temp)
+    for i in range(len(temp)):
+        # temp[i] = text[mapping[i]]
+        text[mapping[i]] = temp[i]
+    
+    return ''.join(text)
+
+def denc3(temp):
+    mapping = [28, 33, 6, 17, 7, 41, 27, 29, 31, 30, 39, 21, 34, 15, 3, 5, 13, 10, 19, 38, 40, 14, 26, 25, 32, 0, 36, 8, 18, 4, 1, 11, 24, 2, 37, 20, 23, 35, 22, 12, 16, 9]
+
+    text = [None]*len(temp)
+    for i in range(len(temp)):
+        text[i] = temp[mapping[i]]
+    
+    return ''.join(text)
+
+encryptedKey = "ieluvnvfgvfahuxhvfphbppnbgrfcrn"
+encryptedKey = denc4(denc4(encryptedKey))
+print("encryptedKey:" + encryptedKey)
+
+encryptedText = "»·­ª»£µ±¬¥¼±ºµ±¿·£¦­´¯ª¨¥«¥¦«´¸¦¡¸¢²§¤¦¦¹¨"
+enc2enc1encryptedText = denc3(denc3(encryptedText))  # okokokokokokokokokokokokokokokkokokok
+print("enc2enc1encryptedText:" + enc2enc1encryptedText)
+
+keys = []
+for j in range(0,26):
+    s = ""
+    for i in encryptedKey:
+        s += chr((ord(i)- ord('a') + j)%26+ord('a'))
+    keys.append(s)
+
+# print(keys)
+
+def denc2(text, key):
+    k = [key[i % len(key)] for i in range(len(text))]
+    return ''.join([chr( ord(text[i]) ^ ord(k[i]) + ord('a')) for i in range(len(text))])
+
+# print(len(enc2enc1encryptedText))
+
+enc1encryptedTexts = []
+for i in keys:
+    enc1encryptedText = denc2(enc2enc1encryptedText, i)
+    enc1encryptedTexts.append(enc1encryptedText)
+
+# print(enc1encryptedTexts)
+
+encryptedTexts = []
+# print(len(enc1encryptedTexts))
+for enc1encryptedText in enc1encryptedTexts :
+    for j in range(0,26):
+        s = ""
+        for i in enc1encryptedText:
+            s += chr((ord(i)- ord('a') + j)%26+ord('a'))
+
+        if(s.startswith("csictf")):
+            print(s)
+
+        encryptedTexts.append(s)
+
+# print(encryptedTexts)
+
+```
+
+输出
+
+csictfaesreverisjustreverseinreverserightc
+
+将csictf后的a改为{，最后一位c改为}
+
+csictf{esreverisjustreverseinreverseright}
