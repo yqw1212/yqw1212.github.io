@@ -1,0 +1,23 @@
+---
+layout: post
+title:  anniu
+date:   2021-01-25 00:01:01 +0300
+image:  2021-01-25-road.jpg
+tags:   [ctf,reverse,DJBCTF]
+---
+
+![]({{site.baseurl}}/img/2021-01-25-programme.jpg)
+
+看到程序，本以为是常规逆向，于是拖到ida里研究代码加动态调试了半天。
+
+后来才知道用工具秒解。。。。。。
+
+灰色按钮克星
+
+输入要解决灰色按钮的程序的句柄
+
+![]({{site.baseurl}}/img/2021-01-25-pid.jpg)
+
+解决
+
+![]({{site.baseurl}}/img/2021-01-25-flag.jpg)
