@@ -85,7 +85,7 @@ int mprotect(const void *start, size_t len, int prot);
 
 mprotect()函数把自start开始的、长度为len的内存区的保护属性修改为prot指定的值。
 
-prot可以取以下几个值，并且可以用“|”将几个属性合起来使用：
+prot可以取以下几个值，并且可以用''\|''将几个属性合起来使用：
 
 1）PROT_READ：表示内存段内的内容可写；
 
