@@ -3,7 +3,7 @@ layout: post
 title:  string
 date:   2020-08-25 00:01:01 +0300
 image:  2020-08-25-waterscape.jpg
-tags:   [ctf,pwn,攻防世界,NUAACTF]
+tags:   [ctf,Pwn,攻防世界,NUAACTF]
 ---
 
 菜鸡遇到了Dragon，有一位巫师可以帮助他逃离危险，但似乎需要一些要求

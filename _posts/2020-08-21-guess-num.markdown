@@ -3,7 +3,7 @@ layout: post
 title:  guess_num
 date:   2020-08-21 00:01:01 +0300
 image:  2020-08-21-summerfield.jpg
-tags:   [ctf,pwn,攻防世界]
+tags:   [ctf,Pwn,攻防世界]
 ---
 
 菜鸡在玩一个猜数字的游戏，但他无论如何都银不了，你能帮助他么（我~~TM~~更是菜鸟）

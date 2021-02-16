@@ -3,7 +3,7 @@ layout: post
 title:  r2t4
 date:   2021-02-07 00:01:01 +0300
 image:  2021-02-07-pink-dawn.jpg
-tags:   [ctf,PWN,BJDCTF,Fmtstr]
+tags:   [ctf,Pwn,BJDCTF,Fmtstr]
 ---
 
 #### main

@@ -3,7 +3,7 @@ layout: post
 title:  hacknote
 date:   2021-02-10 00:01:01 +0300
 image:  2021-02-10-snail.jpg
-tags:   [ctf,PWN,UAF,HITCON-training,heap,ubuntu16]
+tags:   [ctf,Pwn,UAF,HITCON-training,heap,ubuntu16]
 ---
 
 #### main()

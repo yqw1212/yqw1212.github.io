@@ -3,7 +3,7 @@ layout: post
 title:  simpleHeap
 date:   2021-02-14 00:01:01 +0300
 image:  2021-02-14-boat.jpg
-tags:   [ctf,PWN,V&N2020公开赛,heap,ubuntu16]
+tags:   [ctf,Pwn,V&N2020公开赛,heap,ubuntu16]
 ---
 
 #### main()

@@ -3,7 +3,7 @@ layout: post
 title:  babyrop2
 date:   2021-02-04 00:01:01 +0300
 image:  2021-02-04-squirrel.jpg
-tags:   [ctf,PWN,HarekazeCTF2019]
+tags:   [ctf,Pwn,HarekazeCTF2019]
 ---
 
 main

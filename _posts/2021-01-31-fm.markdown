@@ -3,7 +3,7 @@ layout: post
 title:  fm
 date:   2021-01-31 00:01:01 +0300
 image:  2021-01-31-person.jpg
-tags:   [ctf,PWN,jarvisoj,Fmtstr]
+tags:   [ctf,Pwn,jarvisoj,Fmtstr]
 ---
 
 main

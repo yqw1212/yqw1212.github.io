@@ -3,7 +3,7 @@ layout: post
 title:  pwn2
 date:   2021-02-02 00:01:01 +0300
 image:  2021-02-02-white.jpg
-tags:   [ctf,PWN,sctf2016]
+tags:   [ctf,Pwn,sctf2016]
 ---
 
 main

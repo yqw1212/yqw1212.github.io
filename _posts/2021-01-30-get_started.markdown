@@ -3,7 +3,7 @@ layout: post
 title:  get_started
 date:   2021-01-30 00:01:01 +0300
 image:  2021-01-30-dandelion.jpg
-tags:   [ctf,PWN,3dsctf2016]
+tags:   [ctf,Pwn,3dsctf2016]
 ---
 
 主函数

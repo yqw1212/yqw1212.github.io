@@ -3,7 +3,7 @@ layout: post
 title:  ydsneedgirlfriend2
 date:   2021-02-08 00:01:01 +0300
 image:  2021-02-08-egret.jpg
-tags:   [ctf,PWN,UAF,BJDCTF,heap]
+tags:   [ctf,Pwn,UAF,BJDCTF,heap]
 ---
 
 #### main

@@ -3,7 +3,7 @@ layout: post
 title:  supermarket
 date:   2021-02-16 00:01:01 +0300
 image:  2021-02-16-person.jpg
-tags:   [ctf,PWN,ciscn2018,heap,ubuntu16,UAF]
+tags:   [ctf,Pwn,ciscn2018,heap,ubuntu16,UAF]
 ---
 
 checksec

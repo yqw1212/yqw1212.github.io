@@ -3,7 +3,7 @@ layout: post
 title:  pwn1
 date:   2020-09-28 00:01:01 +0300
 image:  2020-09-28-piano.jpg
-tags:   [ctf,pwn,厦门邀请赛]
+tags:   [ctf,Pwn,厦门邀请赛]
 ---
 
 查看文件信息

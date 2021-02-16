@@ -3,7 +3,7 @@ layout: post
 title:  level0
 date:   2020-08-18 00:01:01 +0300
 image:  2020-08-18-young.jpg
-tags:   [ctf,pwn,攻防世界]
+tags:   [ctf,Pwn,攻防世界]
 ---
 
 先运行文件，看到会让我们输入内容，

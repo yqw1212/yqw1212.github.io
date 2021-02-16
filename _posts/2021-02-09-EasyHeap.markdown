@@ -3,7 +3,7 @@ layout: post
 title:  EasyHeap
 date:   2021-02-09 00:01:01 +0300
 image:  2021-02-09-poppy.jpg
-tags:   [ctf,PWN,ZJCTF2019,heap]
+tags:   [ctf,Pwn,ZJCTF2019,heap]
 ---
 
 #### main()

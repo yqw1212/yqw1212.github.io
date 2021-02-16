@@ -3,7 +3,7 @@ layout: post
 title:  ciscn_2019_c_1
 date:   2021-01-29 00:01:01 +0300
 image:  2021-01-29-robin.jpg
-tags:   [ctf,PWN,BUU]
+tags:   [ctf,Pwn,BUU]
 ---
 
 ida打开，进入main函数查看
