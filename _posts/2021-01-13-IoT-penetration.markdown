@@ -38,7 +38,7 @@ IoT设备信息收集
 * 常规扫描
 * 指定UDP扫描
 
-```
+```assembly
 nmap -sV -sU -Pn --open 192.168.0.1
 ```
 
