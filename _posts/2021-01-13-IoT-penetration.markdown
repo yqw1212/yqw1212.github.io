@@ -42,7 +42,7 @@ IoT设备信息收集
 nmap -sV -sU -Pn --open 192.168.0.1
 ```
 
-![img]({{site.baseurl}}/IoTPenetrating/HNIDRUS81_UJ5`RA6@O4ZNX.png)
+![img]({{site.baseurl}}/img/IoTPenetrating/HNIDRUS81_UJ5`RA6@O4ZNX.png)
 
 物联网设备渗透所需技能
 
@@ -74,17 +74,17 @@ nmap -sV -sU -Pn --open 192.168.0.1
 
   * 其他奇怪的姿势
 
-    ![@U44CSRRRNSF~TD@N5FVU7]({{site.baseurl}}/IoTPenetrating/@U44CSRRRNSF~TD@N5FVU7.png)
+    ![@U44CSRRRNSF~TD@N5FVU7]({{site.baseurl}}/img/IoTPenetrating/@U44CSRRRNSF~TD@N5FVU7.png)
 
-    ![G~7~O23ZYPEEDJRFBT]({{site.baseurl}}/IoTPenetrating/G~7~O23ZYPEEDJRFBT.png)
+    ![G~7~O23ZYPEEDJRFBT]({{site.baseurl}}/img/IoTPenetrating/G~7~O23ZYPEEDJRFBT.png)
 
     字符串提取查找路径
 
-    ![SVQP6YTA42@GN%_Q0ROPC]({{site.baseurl}}/IoTPenetrating/SVQP6YTA42@GN%_Q0ROPC.png)
+    ![SVQP6YTA42@GN%_Q0ROPC]({{site.baseurl}}/img/IoTPenetrating/SVQP6YTA42@GN%_Q0ROPC.png)
 
-    ![53Z``9J@EGY`M92QGV`I8]({{site.baseurl}}/IoTPenetrating/53Z``9J@EGY`M92QGV`I8.png)
+    ![53Z``9J@EGY`M92QGV`I8]({{site.baseurl}}/img/IoTPenetrating/53Z``9J@EGY`M92QGV`I8.png)
 
-    ![JJ%CPU1TB3A4I1O1~SW4]({{site.baseurl}}/IoTPenetrating/JJ%CPU1TB3A4I1O1~SW4.png)
+    ![JJ%CPU1TB3A4I1O1~SW4]({{site.baseurl}}/img/IoTPenetrating/JJ%CPU1TB3A4I1O1~SW4.png)
 
 * 弱密码
   * 任意密码登录
@@ -108,9 +108,9 @@ https://github.com/ihebski/DefaultCreds-cheat-sheet
 
   * 符号链接漏洞
 
-    ![JOLM7IM~3KOWY3XH@`D]({{site.baseurl}}/IoTPenetrating/JOLM7IM~3KOWY3XH@`D.png)
+    ![JOLM7IM~3KOWY3XH@`D]({{site.baseurl}}/img/IoTPenetrating/JOLM7IM~3KOWY3XH@`D.png)
 
-    ![K488_DLEELHPV~`SX2G]({{site.baseurl}}/IoTPenetrating/K488_DLEELHPV~`SX2G.png)
+    ![K488_DLEELHPV~`SX2G]({{site.baseurl}}/img/IoTPenetrating/K488_DLEELHPV~`SX2G.png)
 
 * 任意密码重置
 
@@ -128,17 +128,17 @@ https://github.com/ihebski/DefaultCreds-cheat-sheet
 
   程序对用户的可控输入验证不足，导致攻击者可以输入过长的数据到栈缓冲区上，非法覆盖栈上的内容。
 
-  ![1@Z1FJRQ_@GFNSA~HYJWQ]({{site.baseurl}}/IoTPenetrating/1@Z1FJRQ_@GFNSA~HYJWQ.png)
+  ![1@Z1FJRQ_@GFNSA~HYJWQ]({{site.baseurl}}/img/IoTPenetrating/1@Z1FJRQ_@GFNSA~HYJWQ.png)
 
-  ![7OJRG9`HCLVCFIVQQ]({{site.baseurl}}/IoTPenetrating/7OJRG9`HCLVCFIVQQ.png)
+  ![7OJRG9`HCLVCFIVQQ]({{site.baseurl}}/img/IoTPenetrating/7OJRG9`HCLVCFIVQQ.png)
 
 * 拒绝服务
 
   固件代码逻辑验证不足造成指针异常，进而导致程序非正常崩溃，造成设备服务无法正常访问。
 
-  ![YGF2GKQ$D4RF3GBWVAI1]({{site.baseurl}}/IoTPenetrating/YGF2GKQ$D4RF3GBWVAI1.png)
+  ![YGF2GKQ$D4RF3GBWVAI1]({{site.baseurl}}/img/IoTPenetrating/YGF2GKQ$D4RF3GBWVAI1.png)
 
-  ![MJ9Q`T%TJK``@B875UXC]({{site.baseurl}}/IoTPenetrating/MJ9Q`T%TJK``@B875UXC.png)
+  ![MJ9Q`T%TJK``@B875UXC]({{site.baseurl}}/img/IoTPenetrating/MJ9Q`T%TJK``@B875UXC.png)
 
 * 整数溢出
 
@@ -154,21 +154,21 @@ https://github.com/ihebski/DefaultCreds-cheat-sheet
 
 * 越权访问
 
-  ![JN@BE~T0MJ8UQFZO24]({{site.baseurl}}/IoTPenetrating/JN@BE~T0MJ8UQFZO24.png)
+  ![JN@BE~T0MJ8UQFZO24]({{site.baseurl}}/img/IoTPenetrating/JN@BE~T0MJ8UQFZO24.png)
 
 ### 后门漏洞风险
 
 * 服务访问后门（Web服务/Rtsp服务/……）
 
-  ![01`B6CXAFFX07_@E6C7`X5]({{site.baseurl}}/IoTPenetrating/01`B6CXAFFX07_@E6C7`X5.png)
+  ![01`B6CXAFFX07_@E6C7`X5]({{site.baseurl}}/img/IoTPenetrating/01`B6CXAFFX07_@E6C7`X5.png)
 
-  ![$W~Q639MDGEX0S7WMFTP]({{site.baseurl}}/IoTPenetrating/$W~Q639MDGEX0S7WMFTP.png)
+  ![$W~Q639MDGEX0S7WMFTP]({{site.baseurl}}/img/IoTPenetrating/$W~Q639MDGEX0S7WMFTP.png)
 
-  ![3958G9@9BGY$KP6803]({{site.baseurl}}/IoTPenetrating/3958G9@9BGY$KP6803.png)
+  ![3958G9@9BGY$KP6803]({{site.baseurl}}/img/IoTPenetrating/3958G9@9BGY$KP6803.png)
 
 * 调试后门（软/硬件）
 
-  ![1384R%_5R5_VICS~UC]({{site.baseurl}}/IoTPenetrating/1384R%_5R5_VICS~UC.png)
+  ![1384R%_5R5_VICS~UC]({{site.baseurl}}/img/IoTPenetrating/1384R%_5R5_VICS~UC.png)
 
 ## 物联网设备常见漏洞挖掘方法
 
@@ -190,7 +190,7 @@ websGetvar(wp,"device_id","")
 
 列出引用system的函数地址
 
-```python
+```assembly
 import ida
 import idc
 system_list = set()
@@ -205,7 +205,7 @@ print(system_list)
 
 端口fuzz
 
-```shell
+```assembly
 cat  /dev/urandom | nc 192.168.0.1 9898
 
 cat /dev/random | nc 192.168.0.1 9898
