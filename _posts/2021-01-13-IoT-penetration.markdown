@@ -80,11 +80,11 @@ nmap -sV -sU -Pn --open 192.168.0.1
 
     字符串提取查找路径
 
-    ![]({{site.baseurl}}/img/IoTPenetrating/SVQP6YTA42@GN%_Q0ROPC.png)
+    ![]({{site.baseurl}}/img/IoTPenetrating/SVQP6YTA42GNQ0ROPC.png)
 
     ![]({{site.baseurl}}/img/IoTPenetrating/53Z``9J@EGY`M92QGV`I8.png)
 
-    ![]({{site.baseurl}}/img/IoTPenetrating/JJ%CPU1TB3A4I1O1~SW4.png)
+    ![]({{site.baseurl}}/img/IoTPenetrating/JJCPU1TB3A4I1O1SW4.png)
 
 * 弱密码
   * 任意密码登录
@@ -138,7 +138,7 @@ https://github.com/ihebski/DefaultCreds-cheat-sheet
 
   ![]({{site.baseurl}}/img/IoTPenetrating/YGF2GKQ$D4RF3GBWVAI1.png)
 
-  ![]({{site.baseurl}}/img/IoTPenetrating/MJ9Q`T%TJK``@B875UXC.png)
+  ![]({{site.baseurl}}/img/IoTPenetrating/MJ9QTTJKB875UXC.png)
 
 * 整数溢出
 
@@ -168,7 +168,7 @@ https://github.com/ihebski/DefaultCreds-cheat-sheet
 
 * 调试后门（软/硬件）
 
-  ![]({{site.baseurl}}/img/IoTPenetrating/1384R%_5R5_VICS~UC.png)
+  ![]({{site.baseurl}}/img/IoTPenetrating/1384R5R5VICSUC.png)
 
 ## 物联网设备常见漏洞挖掘方法
 
