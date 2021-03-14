@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  回归
+title:  线性回归
 date:   2020-10-12 00:01:01 +0300
 image:  2020-10-12-typewriter.jpg
 tags:   [MachineLearning]
