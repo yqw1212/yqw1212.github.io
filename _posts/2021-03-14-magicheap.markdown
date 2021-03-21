@@ -2,7 +2,7 @@
 layout: post
 title:  hitcontraining_magicheap
 date:   2021-03-14 00:01:01 +0300
-image:  2021-03-14-winter
+image:  2021-03-14-winter.jpg
 tags:   [ctf,Pwn,ubuntu16,heap,unsorted bin]
 ---
 
