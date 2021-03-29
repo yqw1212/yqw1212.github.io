@@ -1,0 +1,1879 @@
+---
+layout: post
+title:  funnyre
+date:   2021-03-22 00:01:01 +0300
+image:  2021-03-22-dog.jpg
+tags:   [ctf,reverse,WUSTCTF2020]
+---
+
+ida打开文件，发现有很多代码ida无法识别，定位到无法识别的地方。
+
+```assembly
+.text:0000000000400607 loc_400607:                             ; CODE XREF: .text:0000000000400614↓j
+.text:0000000000400607                 xor     byte ptr [rdx+rax+5], 91h
+.text:000000000040060C                 add     rax, 1
+.text:0000000000400610                 cmp     rax, 20h
+.text:0000000000400614                 jnz     short loc_400607
+.text:0000000000400616                 jz      short near ptr loc_40061A+1
+.text:0000000000400618                 jnz     short near ptr loc_40061A+1
+.text:000000000040061A
+.text:000000000040061A loc_40061A:                             ; CODE XREF: .text:0000000000400616↑j
+.text:000000000040061A                                         ; .text:0000000000400618↑j
+.text:000000000040061A                 call    near ptr 0FFFFFFFF810037AFh
+.text:000000000040061F                 jz      short near ptr loc_400621+2
+.text:0000000000400621
+.text:0000000000400621 loc_400621:                             ; CODE XREF: .text:000000000040061F↑j
+.text:0000000000400621                 add     eax, 0C08348CDh
+.text:0000000000400626                 add     [rax-7Dh], ecx
+.text:0000000000400629                 clc
+.text:000000000040062A                 and     [rbp-0Fh], dh
+.text:000000000040062D                 xor     eax, eax
+```
+
+显然存在不合理的地方
+
+```assembly
+.text:0000000000400616                 jz      short near ptr loc_40061A+1
+.text:0000000000400618                 jnz     short near ptr loc_40061A+1
+```
+
+将这两句nop掉，就可以反编译了。
+
+查看main函数
+
+```assembly
+__int64 __usercall main@<rax>(char **a1@<rsi>, char **a2@<rdx>, __int64 a3@<rbp>, __int64 a4@<rdi>)
+{
+  _BYTE *v5; // rdx
+  const void *v6; // rdi
+  __int64 v7; // rax
+  int v8; // eax
+  __int64 v9; // rdx
+  char v10; // zf
+  int v11; // ecx
+  __int64 v12; // rax
+  __int64 v13; // rax
+  __int64 v14; // rax
+  __int64 v15; // rax
+  __int64 v16; // rax
+  __int64 v17; // rax
+  __int64 v18; // rax
+  __int64 v19; // rax
+  __int64 v20; // rax
+  __int64 v21; // rax
+  __int64 v22; // rax
+  __int64 v23; // rax
+  __int64 v24; // rax
+  __int64 v25; // rax
+  __int64 v26; // rax
+  __int64 v27; // rax
+  __int64 v28; // rax
+  __int64 v29; // rax
+  __int64 v30; // rax
+  __int64 v31; // rax
+  __int64 v32; // rax
+  __int64 v33; // rax
+  __int64 v34; // rax
+  __int64 v35; // rax
+  __int64 v36; // rax
+  __int64 v37; // rax
+  __int64 v38; // rax
+  __int64 v39; // rax
+  __int64 v40; // rax
+  __int64 v41; // rax
+  __int64 v42; // rax
+  __int64 v43; // rax
+  __int64 v44; // rax
+  __int64 v45; // rax
+  __int64 v46; // rax
+  __int64 v47; // rax
+  __int64 v48; // rax
+  __int64 v49; // rax
+  __int64 v50; // rax
+  __int64 v51; // rax
+  __int64 v52; // rax
+  __int64 v53; // rax
+  __int64 v54; // rax
+  __int64 v55; // rax
+  __int64 v56; // rax
+  __int64 v57; // rax
+  __int64 v58; // rax
+  __int64 v59; // rax
+  __int64 v60; // rax
+  __int64 v61; // rax
+  __int64 v62; // rax
+  __int64 v63; // rax
+  __int64 v64; // rax
+  __int64 v65; // rax
+  __int64 v66; // rax
+  __int64 v67; // rax
+  __int64 v68; // rax
+  __int64 v69; // rax
+  __int64 v70; // rax
+  __int64 v71; // rax
+  __int64 v72; // rax
+  __int64 v73; // rax
+  __int64 v74; // rax
+  __int64 v75; // rax
+  __int64 v76; // rax
+  __int64 v77; // rax
+  __int64 v78; // rax
+  __int64 v79; // rax
+  __int64 v80; // rax
+  __int64 v81; // rax
+  __int64 v82; // rax
+  __int64 v83; // rax
+  __int64 v84; // rax
+  __int64 v85; // rax
+  __int64 v86; // rax
+  __int64 v87; // rax
+  __int64 v88; // rax
+  __int64 v89; // rax
+  __int64 v90; // rax
+  __int64 v91; // rax
+  int v92; // eax
+  __int64 v93; // rdx
+  int v94; // ecx
+  __int64 v95; // rax
+  __int64 v96; // rax
+  __int64 v97; // rax
+  __int64 v98; // rax
+  __int64 v99; // rax
+  __int64 v100; // rax
+  __int64 v101; // rax
+  __int64 v102; // rax
+  __int64 v103; // rax
+  __int64 v104; // rax
+  __int64 v105; // rax
+  __int64 v106; // rax
+  __int64 v107; // rax
+  __int64 v108; // rax
+  __int64 v109; // rax
+  __int64 v110; // rax
+  __int64 v111; // rax
+  __int64 v112; // rax
+  __int64 v113; // rax
+  __int64 v114; // rax
+  __int64 v115; // rax
+  __int64 v116; // rax
+  __int64 v117; // rax
+  __int64 v118; // rax
+  __int64 v119; // rax
+  __int64 v120; // rax
+  __int64 v121; // rax
+  __int64 v122; // rax
+  __int64 v123; // rax
+  __int64 v124; // rax
+  __int64 v125; // rax
+  __int64 v126; // rax
+  __int64 v127; // rax
+  __int64 v128; // rax
+  __int64 v129; // rax
+  __int64 v130; // rax
+  __int64 v131; // rax
+  __int64 v132; // rax
+  __int64 v133; // rax
+  __int64 v134; // rax
+  __int64 v135; // rax
+  __int64 v136; // rax
+  __int64 v137; // rax
+  __int64 v138; // rax
+  __int64 v139; // rax
+  __int64 v140; // rax
+  __int64 v141; // rax
+  __int64 v142; // rax
+  __int64 v143; // rax
+  __int64 v144; // rax
+  __int64 v145; // rax
+  __int64 v146; // rax
+  __int64 v147; // rax
+  __int64 v148; // rax
+  __int64 v149; // rax
+  __int64 v150; // rax
+  __int64 v151; // rax
+  __int64 v152; // rax
+  __int64 v153; // rax
+  __int64 v154; // rax
+  __int64 v155; // rax
+  __int64 v156; // rax
+  __int64 v157; // rax
+  __int64 v158; // rax
+  __int64 v159; // rax
+  __int64 v160; // rax
+  __int64 v161; // rax
+  int v162; // eax
+  __int64 v163; // rdx
+  int v164; // ecx
+  __int64 v165; // rax
+  __int64 v166; // rax
+  __int64 v167; // rax
+  __int64 v168; // rax
+  __int64 v169; // rax
+  __int64 v170; // rax
+  __int64 v171; // rax
+  __int64 v172; // rax
+  __int64 v173; // rax
+  __int64 v174; // rax
+  __int64 v175; // rax
+  __int64 v176; // rax
+  __int64 v177; // rax
+  __int64 v178; // rax
+  __int64 v179; // rax
+  __int64 v180; // rax
+  __int64 v181; // rax
+  __int64 v182; // rax
+  __int64 v183; // rax
+  __int64 v184; // rax
+  __int64 v185; // rax
+  __int64 v186; // rax
+  __int64 v187; // rax
+  __int64 v188; // rax
+  __int64 v189; // rax
+  __int64 v190; // rax
+  __int64 v191; // rax
+  __int64 v192; // rax
+  __int64 v193; // rax
+  __int64 v194; // rax
+  __int64 v195; // rax
+  __int64 v196; // rax
+  __int64 v197; // rax
+  __int64 v198; // rax
+  __int64 v199; // rax
+  __int64 v200; // rax
+  __int64 v201; // rax
+  __int64 v202; // rax
+  __int64 v203; // rax
+  __int64 v204; // rax
+  __int64 v205; // rax
+  __int64 v206; // rax
+  __int64 v207; // rax
+  __int64 v208; // rax
+  __int64 v209; // rax
+  __int64 v210; // rax
+  __int64 v211; // rax
+  __int64 v212; // rax
+  __int64 v213; // rax
+  __int64 v214; // rax
+  __int64 v215; // rax
+  __int64 v216; // rax
+  __int64 v217; // rax
+  __int64 v218; // rax
+  __int64 v219; // rax
+  __int64 v220; // rax
+  __int64 v221; // rax
+  __int64 v222; // rax
+  __int64 v223; // rax
+  __int64 v224; // rax
+  __int64 v225; // rax
+  __int64 v226; // rax
+  __int64 v227; // rax
+  __int64 v228; // rax
+  __int64 v229; // rax
+  __int64 v230; // rax
+  __int64 v231; // rax
+  __int64 v232; // rax
+  __int64 v233; // rax
+  __int64 v234; // rax
+  __int64 v235; // rax
+  __int64 v236; // rax
+  __int64 v237; // rax
+  __int64 v238; // rax
+  __int64 v239; // rax
+  __int64 v240; // rax
+  __int64 v241; // rax
+  __int64 v242; // rax
+  __int64 v243; // rax
+  __int64 v244; // rax
+  __int64 v245; // rax
+  __int64 v246; // rax
+  __int64 v247; // rax
+  __int64 v248; // rax
+  __int64 v249; // rax
+  __int64 v250; // rax
+  __int64 v251; // rax
+  __int64 v252; // rax
+  __int64 v253; // rax
+  __int64 v254; // rax
+  __int64 v255; // rax
+  __int64 v256; // rax
+  __int64 v257; // rax
+  __int64 v258; // rax
+  __int64 v259; // rax
+  __int64 v260; // rax
+  __int64 v261; // rax
+  __int64 v262; // rax
+  __int64 v263; // rax
+  __int64 v264; // rax
+  __int64 v265; // rax
+  __int64 v266; // rax
+  __int64 v267; // rax
+  __int64 v268; // rax
+  __int64 v269; // rax
+  __int64 v270; // rax
+  __int64 v271; // rax
+  __int64 v272; // rax
+  __int64 v273; // rax
+  __int64 v274; // rax
+  __int64 v275; // rax
+  __int64 v276; // rax
+  __int64 v277; // rax
+  __int64 v278; // rax
+  __int64 v279; // rax
+  __int64 v280; // rax
+  __int64 v281; // rax
+  __int64 v282; // rax
+  __int64 v283; // rax
+  __int64 v284; // rax
+  __int64 v285; // rax
+  __int64 v286; // rax
+  __int64 v287; // rax
+  __int64 v288; // rax
+  __int64 v289; // rax
+  __int64 v290; // rax
+  __int64 v291; // rax
+  __int64 v292; // rax
+  __int64 v293; // rax
+  __int64 v294; // rax
+  __int64 v295; // rax
+  __int64 v296; // rax
+  __int64 v297; // rax
+  __int64 v298; // rax
+  __int64 v299; // rax
+  __int64 v300; // rax
+  __int64 v301; // rax
+  __int64 v302; // rax
+  __int64 v303; // rax
+  __int64 v304; // rax
+  __int64 v305; // rax
+  __int64 v306; // rax
+  __int64 v307; // rax
+  __int64 v308; // rax
+  __int64 v309; // rax
+  __int64 v310; // rax
+  __int64 v311; // rax
+  __int64 v312; // rax
+  __int64 v313; // rax
+  __int64 v314; // rax
+  __int64 v315; // rax
+  __int64 v316; // rax
+  __int64 v317; // rax
+  __int64 v318; // rax
+  __int64 v319; // rax
+  __int64 v320; // rax
+  __int64 v321; // rax
+  __int64 v322; // rax
+  __int64 v323; // rax
+  __int64 v324; // rax
+  __int64 v325; // rax
+  __int64 v326; // rax
+  __int64 v327; // rax
+  __int64 v328; // rax
+  __int64 v329; // rax
+  __int64 v330; // rdx
+  int v331; // ecx
+  __int64 v332; // rax
+  __int64 v333; // rax
+  __int64 v334; // rax
+  __int64 v335; // rax
+  __int64 v336; // rax
+  __int64 v337; // rax
+  __int64 v338; // rax
+  __int64 v339; // rax
+  __int64 v340; // rax
+  __int64 v341; // rax
+  __int64 v342; // rax
+  __int64 v343; // rax
+  __int64 v344; // rax
+  __int64 v345; // rax
+  __int64 v346; // rax
+  __int64 v347; // rax
+  __int64 v348; // rax
+  __int64 v349; // rax
+  __int64 v350; // rax
+  __int64 v351; // rax
+  __int64 v352; // rax
+  __int64 v353; // rax
+  __int64 v354; // rax
+  __int64 v355; // rax
+  __int64 v356; // rax
+  __int64 v357; // rax
+  __int64 v358; // rax
+  __int64 v359; // rax
+  __int64 v360; // rax
+  __int64 v361; // rax
+  __int64 v362; // rax
+  __int64 v363; // rax
+  __int64 v364; // rax
+  __int64 v365; // rax
+  __int64 v366; // rax
+  __int64 v367; // rax
+  __int64 v368; // rax
+
+  if ( (_DWORD)a4 == 2 )
+  {
+    v5 = (_BYTE *)__strdup(a1[1], a1, a2);
+    JUMPOUT(*v5, 102, sub_4005B6);
+    JUMPOUT(v5[1], 108, sub_4005B6);
+    JUMPOUT(v5[2], 97, sub_4005B6);
+    JUMPOUT(v5[3], 103, sub_4005B6);
+    JUMPOUT(v5[4], 123, sub_4005B6);
+    JUMPOUT(v5[37], 125, sub_4005B6);
+    v6 = v5 + 5;
+    v7 = 0LL;
+    do
+      v5[v7++ + 5] ^= 0x91u;
+    while ( v7 != 32 );
+    v8 = MEMORY[0xFFFFFFFF810037AF](v6);
+    JUMPOUT(v10, (char *)&loc_400621 + 2);
+    *(_DWORD *)((unsigned int)(v8 - 1065137971) - 125LL) += v11;
+    *(_BYTE *)(a3 - 15) &= BYTE1(v9);
+    v12 = 0LL;
+    do
+      *(_BYTE *)(v9 + v12++ + 5) ^= 0x6Au;
+    while ( v12 != 32 );
+    v13 = 0LL;
+    do
+      *(_BYTE *)(v9 + v13++ + 5) ^= 0x59u;
+    while ( v13 != 32 );
+    v14 = 0LL;
+    do
+      *(_BYTE *)(v9 + v14++ + 5) ^= 0xAu;
+    while ( v14 != 32 );
+    v15 = 0LL;
+    do
+      *(_BYTE *)(v9 + v15++ + 5) ^= 0xF3u;
+    while ( v15 != 32 );
+    v16 = 0LL;
+    do
+      *(_BYTE *)(v9 + v16++ + 5) ^= 0xCAu;
+    while ( v16 != 32 );
+    v17 = 0LL;
+    do
+      *(_BYTE *)(v9 + v17++ + 5) ^= 0x3Eu;
+    while ( v17 != 32 );
+    v18 = 0LL;
+    do
+      *(_BYTE *)(v9 + v18++ + 5) ^= 0x6Cu;
+    while ( v18 != 32 );
+    v19 = 0LL;
+    do
+      *(_BYTE *)(v9 + v19++ + 5) ^= 0x4Fu;
+    while ( v19 != 32 );
+    v20 = 0LL;
+    do
+      *(_BYTE *)(v9 + v20++ + 5) ^= 0x24u;
+    while ( v20 != 32 );
+    v21 = 0LL;
+    do
+      *(_BYTE *)(v9 + v21++ + 5) ^= 0x83u;
+    while ( v21 != 32 );
+    v22 = 0LL;
+    do
+      *(_BYTE *)(v9 + v22++ + 5) ^= 0xC4u;
+    while ( v22 != 32 );
+    v23 = 0LL;
+    do
+      *(_BYTE *)(v9 + v23++ + 5) ^= 0x53u;
+    while ( v23 != 32 );
+    v24 = 0LL;
+    do
+      *(_BYTE *)(v9 + v24++ + 5) ^= 4u;
+    while ( v24 != 32 );
+    v25 = 0LL;
+    do
+      *(_BYTE *)(v9 + v25++ + 5) ^= 0x9Eu;
+    while ( v25 != 32 );
+    v26 = 0LL;
+    do
+      *(_BYTE *)(v9 + v26++ + 5) ^= 0x42u;
+    while ( v26 != 32 );
+    v27 = 0LL;
+    do
+      *(_BYTE *)(v9 + v27++ + 5) ^= 0xEu;
+    while ( v27 != 32 );
+    v28 = 0LL;
+    do
+      *(_BYTE *)(v9 + v28++ + 5) ^= 0x8Du;
+    while ( v28 != 32 );
+    v29 = 0LL;
+    do
+      *(_BYTE *)(v9 + v29++ + 5) ^= 0x38u;
+    while ( v29 != 32 );
+    v30 = 0LL;
+    do
+      *(_BYTE *)(v9 + v30++ + 5) ^= 0x7Au;
+    while ( v30 != 32 );
+    v31 = 0LL;
+    do
+      *(_BYTE *)(v9 + v31++ + 5) ^= 0xDDu;
+    while ( v31 != 32 );
+    v32 = 0LL;
+    do
+      *(_BYTE *)(v9 + v32++ + 5) ^= 0x52u;
+    while ( v32 != 32 );
+    v33 = 0LL;
+    do
+      *(_BYTE *)(v9 + v33++ + 5) ^= 0x1Bu;
+    while ( v33 != 32 );
+    v34 = 0LL;
+    do
+      *(_BYTE *)(v9 + v34++ + 5) ^= 0xAAu;
+    while ( v34 != 32 );
+    v35 = 0LL;
+    do
+      *(_BYTE *)(v9 + v35++ + 5) ^= 0xAEu;
+    while ( v35 != 32 );
+    v36 = 0LL;
+    do
+      *(_BYTE *)(v9 + v36++ + 5) ^= 0xF8u;
+    while ( v36 != 32 );
+    v37 = 0LL;
+    do
+      *(_BYTE *)(v9 + v37++ + 5) ^= 0x58u;
+    while ( v37 != 32 );
+    v38 = 0LL;
+    do
+      *(_BYTE *)(v9 + v38++ + 5) ^= 0xF2u;
+    while ( v38 != 32 );
+    v39 = 0LL;
+    do
+      *(_BYTE *)(v9 + v39++ + 5) ^= 0x9Fu;
+    while ( v39 != 32 );
+    v40 = 0LL;
+    do
+      *(_BYTE *)(v9 + v40++ + 5) ^= 0x3Cu;
+    while ( v40 != 32 );
+    v41 = 0LL;
+    do
+      *(_BYTE *)(v9 + v41++ + 5) ^= 0xA1u;
+    while ( v41 != 32 );
+    v42 = 0LL;
+    do
+      *(_BYTE *)(v9 + v42++ + 5) ^= 6u;
+    while ( v42 != 32 );
+    v43 = 0LL;
+    do
+      *(_BYTE *)(v9 + v43++ + 5) ^= 0x78u;
+    while ( v43 != 32 );
+    v44 = 0LL;
+    do
+      *(_BYTE *)(v9 + v44++ + 5) ^= 0x70u;
+    while ( v44 != 32 );
+    v45 = 0LL;
+    do
+      *(_BYTE *)(v9 + v45++ + 5) ^= 0x28u;
+    while ( v45 != 32 );
+    v46 = 0LL;
+    do
+      *(_BYTE *)(v9 + v46++ + 5) ^= 0xEAu;
+    while ( v46 != 32 );
+    v47 = 0LL;
+    do
+      *(_BYTE *)(v9 + v47++ + 5) ^= 0x48u;
+    while ( v47 != 32 );
+    v48 = 0LL;
+    do
+      *(_BYTE *)(v9 + v48++ + 5) ^= 0xE4u;
+    while ( v48 != 32 );
+    v49 = 0LL;
+    do
+      *(_BYTE *)(v9 + v49++ + 5) ^= 0x6Eu;
+    while ( v49 != 32 );
+    v50 = 0LL;
+    do
+      *(_BYTE *)(v9 + v50++ + 5) ^= 0x40u;
+    while ( v50 != 32 );
+    v51 = 0LL;
+    do
+      *(_BYTE *)(v9 + v51++ + 5) ^= 0x89u;
+    while ( v51 != 32 );
+    v52 = 0LL;
+    do
+      *(_BYTE *)(v9 + v52++ + 5) ^= 0x16u;
+    while ( v52 != 32 );
+    v53 = 0LL;
+    do
+      *(_BYTE *)(v9 + v53++ + 5) ^= 0xD7u;
+    while ( v53 != 32 );
+    v54 = 0LL;
+    do
+      *(_BYTE *)(v9 + v54++ + 5) ^= 0xB5u;
+    while ( v54 != 32 );
+    v55 = 0LL;
+    do
+      *(_BYTE *)(v9 + v55++ + 5) ^= 0xDu;
+    while ( v55 != 32 );
+    v56 = 0LL;
+    do
+      *(_BYTE *)(v9 + v56++ + 5) ^= 0x17u;
+    while ( v56 != 32 );
+    v57 = 0LL;
+    do
+      *(_BYTE *)(v9 + v57++ + 5) ^= 0x5Au;
+    while ( v57 != 32 );
+    v58 = 0LL;
+    do
+      *(_BYTE *)(v9 + v58++ + 5) ^= 0xB1u;
+    while ( v58 != 32 );
+    v59 = 0LL;
+    do
+      *(_BYTE *)(v9 + v59++ + 5) ^= 0x69u;
+    while ( v59 != 32 );
+    v60 = 0LL;
+    do
+      *(_BYTE *)(v9 + v60++ + 5) ^= 0x5Cu;
+    while ( v60 != 32 );
+    v61 = 0LL;
+    do
+      *(_BYTE *)(v9 + v61++ + 5) ^= 0x21u;
+    while ( v61 != 32 );
+    v62 = 0LL;
+    do
+      *(_BYTE *)(v9 + v62++ + 5) ^= 0xE5u;
+    while ( v62 != 32 );
+    v63 = 0LL;
+    do
+      *(_BYTE *)(v9 + v63++ + 5) ^= 0x7Eu;
+    while ( v63 != 32 );
+    v64 = 0LL;
+    do
+      *(_BYTE *)(v9 + v64++ + 5) ^= 0x2Au;
+    while ( v64 != 32 );
+    v65 = 0LL;
+    do
+      *(_BYTE *)(v9 + v65++ + 5) ^= 0x94u;
+    while ( v65 != 32 );
+    v66 = 0LL;
+    do
+      *(_BYTE *)(v9 + v66++ + 5) ^= 0xBCu;
+    while ( v66 != 32 );
+    v67 = 0LL;
+    do
+      *(_BYTE *)(v9 + v67++ + 5) ^= 1u;
+    while ( v67 != 32 );
+    v68 = 0LL;
+    do
+      *(_BYTE *)(v9 + v68++ + 5) ^= 0x74u;
+    while ( v68 != 32 );
+    v69 = 0LL;
+    do
+      *(_BYTE *)(v9 + v69++ + 5) ^= 0x57u;
+    while ( v69 != 32 );
+    v70 = 0LL;
+    do
+      *(_BYTE *)(v9 + v70++ + 5) ^= 0x6Du;
+    while ( v70 != 32 );
+    v71 = 0LL;
+    do
+      *(_BYTE *)(v9 + v71++ + 5) ^= 0x1Eu;
+    while ( v71 != 32 );
+    v72 = 0LL;
+    do
+      *(_BYTE *)(v9 + v72++ + 5) ^= 0xA2u;
+    while ( v72 != 32 );
+    v73 = 0LL;
+    do
+      *(_BYTE *)(v9 + v73++ + 5) ^= 0x6Bu;
+    while ( v73 != 32 );
+    v74 = 0LL;
+    do
+      *(_BYTE *)(v9 + v74++ + 5) ^= 0x22u;
+    while ( v74 != 32 );
+    v75 = 0LL;
+    do
+      *(_BYTE *)(v9 + v75++ + 5) ^= 0xC2u;
+    while ( v75 != 32 );
+    v76 = 0LL;
+    do
+      *(_BYTE *)(v9 + v76++ + 5) ^= 0x3Du;
+    while ( v76 != 32 );
+    v77 = 0LL;
+    do
+      *(_BYTE *)(v9 + v77++ + 5) ^= 0x44u;
+    while ( v77 != 32 );
+    v78 = 0LL;
+    do
+      *(_BYTE *)(v9 + v78++ + 5) ^= 0x90u;
+    while ( v78 != 32 );
+    v79 = 0LL;
+    do
+      *(_BYTE *)(v9 + v79++ + 5) ^= 0x8Cu;
+    while ( v79 != 32 );
+    v80 = 0LL;
+    do
+      *(_BYTE *)(v9 + v80++ + 5) ^= 0xB3u;
+    while ( v80 != 32 );
+    v81 = 0LL;
+    do
+      *(_BYTE *)(v9 + v81++ + 5) ^= 0xA6u;
+    while ( v81 != 32 );
+    v82 = 0LL;
+    do
+      *(_BYTE *)(v9 + v82++ + 5) ^= 0x79u;
+    while ( v82 != 32 );
+    v83 = 0LL;
+    do
+      *(_BYTE *)(v9 + v83++ + 5) ^= 0x61u;
+    while ( v83 != 32 );
+    v84 = 0LL;
+    do
+      *(_BYTE *)(v9 + v84++ + 5) ^= 0xD9u;
+    while ( v84 != 32 );
+    v85 = 0LL;
+    do
+      *(_BYTE *)(v9 + v85++ + 5) ^= 0x5Bu;
+    while ( v85 != 32 );
+    v86 = 0LL;
+    do
+      *(_BYTE *)(v9 + v86++ + 5) ^= 0x1Au;
+    while ( v86 != 32 );
+    v87 = 0LL;
+    do
+      *(_BYTE *)(v9 + v87++ + 5) ^= 0x43u;
+    while ( v87 != 32 );
+    v88 = 0LL;
+    do
+      *(_BYTE *)(v9 + v88++ + 5) ^= 0x8Fu;
+    while ( v88 != 32 );
+    v89 = 0LL;
+    do
+      *(_BYTE *)(v9 + v89++ + 5) ^= 0xA5u;
+    while ( v89 != 32 );
+    v90 = 0LL;
+    do
+      *(_BYTE *)(v9 + v90++ + 5) ^= 0xEEu;
+    while ( v90 != 32 );
+    v91 = 0LL;
+    do
+      *(_BYTE *)(v9 + v91++ + 5) ^= 0x25u;
+    while ( v91 != 32 );
+    JUMPOUT(1, (char *)&loc_400B81 + 1);
+    JUMPOUT(0, (char *)&loc_400B81 + 1);
+    v92 = MEMORY[0xFFFFFFFF81003D16]();
+    JUMPOUT(v10, (char *)&loc_400B88 + 2);
+    *(_DWORD *)((unsigned int)(v92 - 1065138106) - 125LL) += v94;
+    *(_BYTE *)(a3 - 15) &= BYTE1(v93);
+    v95 = 0LL;
+    do
+      *(_BYTE *)(v93 + v95++ + 5) ^= 0xE6u;
+    while ( v95 != 32 );
+    v96 = 0LL;
+    do
+      *(_BYTE *)(v93 + v96++ + 5) ^= 0x88u;
+    while ( v96 != 32 );
+    v97 = 0LL;
+    do
+      *(_BYTE *)(v93 + v97++ + 5) ^= 0x20u;
+    while ( v97 != 32 );
+    v98 = 0LL;
+    do
+      *(_BYTE *)(v93 + v98++ + 5) ^= 0x71u;
+    while ( v98 != 32 );
+    v99 = 0LL;
+    do
+      *(_BYTE *)(v93 + v99++ + 5) ^= 0xE8u;
+    while ( v99 != 32 );
+    v100 = 0LL;
+    do
+      *(_BYTE *)(v93 + v100++ + 5) ^= 9u;
+    while ( v100 != 32 );
+    v101 = 0LL;
+    do
+      *(_BYTE *)(v93 + v101++ + 5) ^= 0x8Au;
+    while ( v101 != 32 );
+    v102 = 0LL;
+    do
+      *(_BYTE *)(v93 + v102++ + 5) ^= 0x7Bu;
+    while ( v102 != 32 );
+    v103 = 0LL;
+    do
+      *(_BYTE *)(v93 + v103++ + 5) ^= 0xB4u;
+    while ( v103 != 32 );
+    v104 = 0LL;
+    do
+      *(_BYTE *)(v93 + v104++ + 5) ^= 0x19u;
+    while ( v104 != 32 );
+    v105 = 0LL;
+    do
+      *(_BYTE *)(v93 + v105++ + 5) ^= 0x15u;
+    while ( v105 != 32 );
+    v106 = 0LL;
+    do
+      *(_BYTE *)(v93 + v106++ + 5) ^= 0x4Au;
+    while ( v106 != 32 );
+    v107 = 0LL;
+    do
+      *(_BYTE *)(v93 + v107++ + 5) ^= 0x47u;
+    while ( v107 != 32 );
+    v108 = 0LL;
+    do
+      *(_BYTE *)(v93 + v108++ + 5) ^= 0xDBu;
+    while ( v108 != 32 );
+    v109 = 0LL;
+    do
+      *(_BYTE *)(v93 + v109++ + 5) ^= 0x72u;
+    while ( v109 != 32 );
+    v110 = 0LL;
+    do
+      *(_BYTE *)(v93 + v110++ + 5) ^= 0x5Fu;
+    while ( v110 != 32 );
+    v111 = 0LL;
+    do
+      *(_BYTE *)(v93 + v111++ + 5) ^= 0x26u;
+    while ( v111 != 32 );
+    v112 = 0LL;
+    do
+      *(_BYTE *)(v93 + v112++ + 5) ^= 0xA7u;
+    while ( v112 != 32 );
+    v113 = 0LL;
+    do
+      *(_BYTE *)(v93 + v113++ + 5) ^= 0x8Bu;
+    while ( v113 != 32 );
+    v114 = 0LL;
+    do
+      *(_BYTE *)(v93 + v114++ + 5) ^= 0xBAu;
+    while ( v114 != 32 );
+    v115 = 0LL;
+    do
+      *(_BYTE *)(v93 + v115++ + 5) ^= 0xBFu;
+    while ( v115 != 32 );
+    v116 = 0LL;
+    do
+      *(_BYTE *)(v93 + v116++ + 5) ^= 0x87u;
+    while ( v116 != 32 );
+    v117 = 0LL;
+    do
+      *(_BYTE *)(v93 + v117++ + 5) ^= 0x36u;
+    while ( v117 != 32 );
+    v118 = 0LL;
+    do
+      *(_BYTE *)(v93 + v118++ + 5) ^= 0x3Fu;
+    while ( v118 != 32 );
+    v119 = 0LL;
+    do
+      *(_BYTE *)(v93 + v119++ + 5) ^= 0xFEu;
+    while ( v119 != 32 );
+    v120 = 0LL;
+    do
+      *(_BYTE *)(v93 + v120++ + 5) ^= 0x77u;
+    while ( v120 != 32 );
+    v121 = 0LL;
+    do
+      *(_BYTE *)(v93 + v121++ + 5) ^= 0x1Cu;
+    while ( v121 != 32 );
+    v122 = 0LL;
+    do
+      *(_BYTE *)(v93 + v122++ + 5) ^= 0x81u;
+    while ( v122 != 32 );
+    v123 = 0LL;
+    do
+      *(_BYTE *)(v93 + v123++ + 5) ^= 0x11u;
+    while ( v123 != 32 );
+    v124 = 0LL;
+    do
+      *(_BYTE *)(v93 + v124++ + 5) ^= 0x2Eu;
+    while ( v124 != 32 );
+    v125 = 0LL;
+    do
+      *(_BYTE *)(v93 + v125++ + 5) ^= 0x7Cu;
+    while ( v125 != 32 );
+    v126 = 0LL;
+    do
+      *(_BYTE *)(v93 + v126++ + 5) ^= 0x63u;
+    while ( v126 != 32 );
+    v127 = 0LL;
+    do
+      *(_BYTE *)(v93 + v127++ + 5) ^= 0x45u;
+    while ( v127 != 32 );
+    v128 = 0LL;
+    do
+      *(_BYTE *)(v93 + v128++ + 5) ^= 0xF4u;
+    while ( v128 != 32 );
+    v129 = 0LL;
+    do
+      *(_BYTE *)(v93 + v129++ + 5) ^= 0x56u;
+    while ( v129 != 32 );
+    v130 = 0LL;
+    do
+      *(_BYTE *)(v93 + v130++ + 5) ^= 0xF1u;
+    while ( v130 != 32 );
+    v131 = 0LL;
+    do
+      *(_BYTE *)(v93 + v131++ + 5) ^= 0xB0u;
+    while ( v131 != 32 );
+    v132 = 0LL;
+    do
+      *(_BYTE *)(v93 + v132++ + 5) ^= 0xD1u;
+    while ( v132 != 32 );
+    v133 = 0LL;
+    do
+      *(_BYTE *)(v93 + v133++ + 5) ^= 0xE0u;
+    while ( v133 != 32 );
+    v134 = 0LL;
+    do
+      *(_BYTE *)(v93 + v134++ + 5) ^= 0xFu;
+    while ( v134 != 32 );
+    v135 = 0LL;
+    do
+      *(_BYTE *)(v93 + v135++ + 5) ^= 0x93u;
+    while ( v135 != 32 );
+    v136 = 0LL;
+    do
+      *(_BYTE *)(v93 + v136++ + 5) ^= 0xD6u;
+    while ( v136 != 32 );
+    v137 = 0LL;
+    do
+      *(_BYTE *)(v93 + v137++ + 5) ^= 0x1Fu;
+    while ( v137 != 32 );
+    v138 = 0LL;
+    do
+      *(_BYTE *)(v93 + v138++ + 5) ^= 0xCCu;
+    while ( v138 != 32 );
+    v139 = 0LL;
+    do
+      *(_BYTE *)(v93 + v139++ + 5) ^= 0x4Bu;
+    while ( v139 != 32 );
+    v140 = 0LL;
+    do
+      *(_BYTE *)(v93 + v140++ + 5) ^= 0xCFu;
+    while ( v140 != 32 );
+    v141 = 0LL;
+    do
+      *(_BYTE *)(v93 + v141++ + 5) ^= 0xDFu;
+    while ( v141 != 32 );
+    v142 = 0LL;
+    do
+      *(_BYTE *)(v93 + v142++ + 5) ^= 0x55u;
+    while ( v142 != 32 );
+    v143 = 0LL;
+    do
+      *(_BYTE *)(v93 + v143++ + 5) ^= 0xB9u;
+    while ( v143 != 32 );
+    v144 = 0LL;
+    do
+      *(_BYTE *)(v93 + v144++ + 5) ^= 0x2Bu;
+    while ( v144 != 32 );
+    v145 = 0LL;
+    do
+      *(_BYTE *)(v93 + v145++ + 5) ^= 0x85u;
+    while ( v145 != 32 );
+    v146 = 0LL;
+    do
+      *(_BYTE *)(v93 + v146++ + 5) ^= 0x31u;
+    while ( v146 != 32 );
+    v147 = 0LL;
+    do
+      *(_BYTE *)(v93 + v147++ + 5) ^= 0x29u;
+    while ( v147 != 32 );
+    v148 = 0LL;
+    do
+      *(_BYTE *)(v93 + v148++ + 5) ^= 0xFDu;
+    while ( v148 != 32 );
+    v149 = 0LL;
+    do
+      *(_BYTE *)(v93 + v149++ + 5) ^= 0x3Au;
+    while ( v149 != 32 );
+    v150 = 0LL;
+    do
+      *(_BYTE *)(v93 + v150++ + 5) ^= 0x5Eu;
+    while ( v150 != 32 );
+    v151 = 0LL;
+    do
+      *(_BYTE *)(v93 + v151++ + 5) ^= 0xDEu;
+    while ( v151 != 32 );
+    v152 = 0LL;
+    do
+      *(_BYTE *)(v93 + v152++ + 5) ^= 3u;
+    while ( v152 != 32 );
+    v153 = 0LL;
+    do
+      *(_BYTE *)(v93 + v153++ + 5) ^= 0xC6u;
+    while ( v153 != 32 );
+    v154 = 0LL;
+    do
+      *(_BYTE *)(v93 + v154++ + 5) ^= 0xC1u;
+    while ( v154 != 32 );
+    v155 = 0LL;
+    do
+      *(_BYTE *)(v93 + v155++ + 5) ^= 0xC5u;
+    while ( v155 != 32 );
+    v156 = 0LL;
+    do
+      *(_BYTE *)(v93 + v156++ + 5) ^= 0x54u;
+    while ( v156 != 32 );
+    v157 = 0LL;
+    do
+      *(_BYTE *)(v93 + v157++ + 5) ^= 0xBBu;
+    while ( v157 != 32 );
+    v158 = 0LL;
+    do
+      *(_BYTE *)(v93 + v158++ + 5) ^= 0xFCu;
+    while ( v158 != 32 );
+    v159 = 0LL;
+    do
+      *(_BYTE *)(v93 + v159++ + 5) ^= 0xBEu;
+    while ( v159 != 32 );
+    v160 = 0LL;
+    do
+      *(_BYTE *)(v93 + v160++ + 5) ^= 0xECu;
+    while ( v160 != 32 );
+    v161 = 0LL;
+    do
+      *(_BYTE *)(v93 + v161++ + 5) ^= 0xC0u;
+    while ( v161 != 32 );
+    JUMPOUT(1, (char *)&loc_40100B + 1);
+    JUMPOUT(0, (char *)&loc_40100B + 1);
+    v162 = MEMORY[0xFFFFFFFF810041A0]();
+    JUMPOUT(v10, (char *)&loc_401012 + 2);
+    *(_DWORD *)((unsigned int)(v162 - 1065138003) - 125LL) += v164;
+    *(_BYTE *)(a3 - 15) &= BYTE1(v163);
+    v165 = 0LL;
+    do
+      *(_BYTE *)(v163 + v165++ + 5) ^= 0xA4u;
+    while ( v165 != 32 );
+    v166 = 0LL;
+    do
+      *(_BYTE *)(v163 + v166++ + 5) ^= 0xD0u;
+    while ( v166 != 32 );
+    v167 = 0LL;
+    do
+      *(_BYTE *)(v163 + v167++ + 5) ^= 0x35u;
+    while ( v167 != 32 );
+    v168 = 0LL;
+    do
+      *(_BYTE *)(v163 + v168++ + 5) ^= 0xB7u;
+    while ( v168 != 32 );
+    v169 = 0LL;
+    do
+      *(_BYTE *)(v163 + v169++ + 5) ^= 0x51u;
+    while ( v169 != 32 );
+    v170 = 0LL;
+    do
+      *(_BYTE *)(v163 + v170++ + 5) ^= 0xABu;
+    while ( v170 != 32 );
+    v171 = 0LL;
+    do
+      *(_BYTE *)(v163 + v171++ + 5) ^= 0x2Du;
+    while ( v171 != 32 );
+    v172 = 0LL;
+    do
+      *(_BYTE *)(v163 + v172++ + 5) ^= 0xAFu;
+    while ( v172 != 32 );
+    v173 = 0LL;
+    do
+      *(_BYTE *)(v163 + v173++ + 5) ^= 0x92u;
+    while ( v173 != 32 );
+    v174 = 0LL;
+    do
+      *(_BYTE *)(v163 + v174++ + 5) ^= 0x60u;
+    while ( v174 != 32 );
+    v175 = 0LL;
+    do
+      *(_BYTE *)(v163 + v175++ + 5) ^= 0xACu;
+    while ( v175 != 32 );
+    v176 = 0LL;
+    do
+      *(_BYTE *)(v163 + v176++ + 5) ^= 0x30u;
+    while ( v176 != 32 );
+    v177 = 0LL;
+    do
+      *(_BYTE *)(v163 + v177++ + 5) ^= 0xD4u;
+    while ( v177 != 32 );
+    v178 = 0LL;
+    do
+      *(_BYTE *)(v163 + v178++ + 5) ^= 0xCBu;
+    while ( v178 != 32 );
+    v179 = 0LL;
+    do
+      *(_BYTE *)(v163 + v179++ + 5) ^= 0x9Bu;
+    while ( v179 != 32 );
+    v180 = 0LL;
+    do
+      *(_BYTE *)(v163 + v180++ + 5) ^= 0x9Au;
+    while ( v180 != 32 );
+    v181 = 0LL;
+    do
+      *(_BYTE *)(v163 + v181++ + 5) ^= 0xFBu;
+    while ( v181 != 32 );
+    v182 = 0LL;
+    do
+      *(_BYTE *)(v163 + v182++ + 5) ^= 0x6Fu;
+    while ( v182 != 32 );
+    v183 = 0LL;
+    do
+      *(_BYTE *)(v163 + v183++ + 5) ^= 0xF7u;
+    while ( v183 != 32 );
+    v184 = 0LL;
+    do
+      *(_BYTE *)(v163 + v184++ + 5) ^= 0x8Eu;
+    while ( v184 != 32 );
+    v185 = 0LL;
+    do
+      *(_BYTE *)(v163 + v185++ + 5) ^= 0xA0u;
+    while ( v185 != 32 );
+    v186 = 0LL;
+    do
+      *(_BYTE *)(v163 + v186++ + 5) ^= 0x27u;
+    while ( v186 != 32 );
+    v187 = 0LL;
+    do
+      *(_BYTE *)(v163 + v187++ + 5) ^= 0xC9u;
+    while ( v187 != 32 );
+    v188 = 0LL;
+    do
+      *(_BYTE *)(v163 + v188++ + 5) += -128;
+    while ( v188 != 32 );
+    v189 = 0LL;
+    do
+      *(_BYTE *)(v163 + v189++ + 5) ^= 0x7Du;
+    while ( v189 != 32 );
+    v190 = 0LL;
+    do
+      *(_BYTE *)(v163 + v190++ + 5) ^= 0x9Du;
+    while ( v190 != 32 );
+    v191 = 0LL;
+    do
+      *(_BYTE *)(v163 + v191++ + 5) ^= 0x1Du;
+    while ( v191 != 32 );
+    v192 = 0LL;
+    do
+      *(_BYTE *)(v163 + v192++ + 5) ^= 0xDAu;
+    while ( v192 != 32 );
+    v193 = 0LL;
+    do
+      *(_BYTE *)(v163 + v193++ + 5) ^= 0xD8u;
+    while ( v193 != 32 );
+    v194 = 0LL;
+    do
+      *(_BYTE *)(v163 + v194++ + 5) ^= 0xEBu;
+    while ( v194 != 32 );
+    v195 = 0LL;
+    do
+      *(_BYTE *)(v163 + v195++ + 5) ^= 0xF6u;
+    while ( v195 != 32 );
+    v196 = 0LL;
+    do
+      *(_BYTE *)(v163 + v196++ + 5) ^= 0xE3u;
+    while ( v196 != 32 );
+    v197 = 0LL;
+    do
+      *(_BYTE *)(v163 + v197++ + 5) ^= 0x98u;
+    while ( v197 != 32 );
+    v198 = 0LL;
+    do
+      *(_BYTE *)(v163 + v198++ + 5) ^= 0xE1u;
+    while ( v198 != 32 );
+    v199 = 0LL;
+    do
+      *(_BYTE *)(v163 + v199++ + 5) ^= 0x34u;
+    while ( v199 != 32 );
+    v200 = 0LL;
+    do
+      *(_BYTE *)(v163 + v200++ + 5) ^= 0x82u;
+    while ( v200 != 32 );
+    v201 = 0LL;
+    do
+      *(_BYTE *)(v163 + v201++ + 5) ^= 0x7Fu;
+    while ( v201 != 32 );
+    v202 = 0LL;
+    do
+      *(_BYTE *)(v163 + v202++ + 5) ^= 0xD5u;
+    while ( v202 != 32 );
+    v203 = 0LL;
+    do
+      *(_BYTE *)(v163 + v203++ + 5) ^= 0xE7u;
+    while ( v203 != 32 );
+    v204 = 0LL;
+    do
+      *(_BYTE *)(v163 + v204++ + 5) ^= 0xB8u;
+    while ( v204 != 32 );
+    v205 = 0LL;
+    do
+      *(_BYTE *)(v163 + v205++ + 5) ^= 0xDCu;
+    while ( v205 != 32 );
+    v206 = 0LL;
+    do
+      *(_BYTE *)(v163 + v206++ + 5) ^= 0x97u;
+    while ( v206 != 32 );
+    v207 = 0LL;
+    do
+      *(_BYTE *)(v163 + v207++ + 5) ^= 0xA3u;
+    while ( v207 != 32 );
+    v208 = 0LL;
+    do
+      *(_BYTE *)(v163 + v208++ + 5) ^= 7u;
+    while ( v208 != 32 );
+    v209 = 0LL;
+    do
+      *(_BYTE *)(v163 + v209++ + 5) ^= 0xB6u;
+    while ( v209 != 32 );
+    v210 = 0LL;
+    do
+      *(_BYTE *)(v163 + v210++ + 5) ^= 0xBu;
+    while ( v210 != 32 );
+    v211 = 0LL;
+    do
+      *(_BYTE *)(v163 + v211++ + 5) ^= 0x14u;
+    while ( v211 != 32 );
+    v212 = 0LL;
+    do
+      *(_BYTE *)(v163 + v212++ + 5) ^= 0xCEu;
+    while ( v212 != 32 );
+    v213 = 0LL;
+    do
+      *(_BYTE *)(v163 + v213++ + 5) ^= 0x66u;
+    while ( v213 != 32 );
+    v214 = 0LL;
+    do
+      *(_BYTE *)(v163 + v214++ + 5) ^= 0x62u;
+    while ( v214 != 32 );
+    v215 = 0LL;
+    do
+      *(_BYTE *)(v163 + v215++ + 5) ^= 0xEFu;
+    while ( v215 != 32 );
+    v216 = 0LL;
+    do
+    {
+      *(_BYTE *)(v163 + v216 + 5) = ~*(_BYTE *)(v163 + v216 + 5);
+      ++v216;
+    }
+    while ( v216 != 32 );
+    v217 = 0LL;
+    do
+      *(_BYTE *)(v163 + v217++ + 5) ^= 0xF9u;
+    while ( v217 != 32 );
+    v218 = 0LL;
+    do
+      *(_BYTE *)(v163 + v218++ + 5) ^= 0xA9u;
+    while ( v218 != 32 );
+    v219 = 0LL;
+    do
+      *(_BYTE *)(v163 + v219++ + 5) ^= 0x4Eu;
+    while ( v219 != 32 );
+    v220 = 0LL;
+    do
+      *(_BYTE *)(v163 + v220++ + 5) ^= 0xD3u;
+    while ( v220 != 32 );
+    v221 = 0LL;
+    do
+      *(_BYTE *)(v163 + v221++ + 5) ^= 0xC7u;
+    while ( v221 != 32 );
+    v222 = 0LL;
+    do
+      *(_BYTE *)(v163 + v222++ + 5) ^= 0xE2u;
+    while ( v222 != 32 );
+    v223 = 0LL;
+    do
+      *(_BYTE *)(v163 + v223++ + 5) ^= 0xD2u;
+    while ( v223 != 32 );
+    v224 = 0LL;
+    do
+      *(_BYTE *)(v163 + v224++ + 5) ^= 0x33u;
+    while ( v224 != 32 );
+    v225 = 0LL;
+    do
+      *(_BYTE *)(v163 + v225++ + 5) ^= 0xA8u;
+    while ( v225 != 32 );
+    v226 = 0LL;
+    do
+      *(_BYTE *)(v163 + v226++ + 5) ^= 0x96u;
+    while ( v226 != 32 );
+    v227 = 0LL;
+    do
+      *(_BYTE *)(v163 + v227++ + 5) ^= 0xBDu;
+    while ( v227 != 32 );
+    v228 = 0LL;
+    do
+      *(_BYTE *)(v163 + v228++ + 5) ^= 0xCu;
+    while ( v228 != 32 );
+    v229 = 0LL;
+    do
+      *(_BYTE *)(v163 + v229++ + 5) ^= 0x13u;
+    while ( v229 != 32 );
+    v230 = 0LL;
+    do
+      *(_BYTE *)(v163 + v230++ + 5) ^= 0x2Fu;
+    while ( v230 != 32 );
+    v231 = 0LL;
+    do
+      *(_BYTE *)(v163 + v231++ + 5) ^= 0x73u;
+    while ( v231 != 32 );
+    v232 = 0LL;
+    do
+      *(_BYTE *)(v163 + v232++ + 5) ^= 0x65u;
+    while ( v232 != 32 );
+    v233 = 0LL;
+    do
+      *(_BYTE *)(v163 + v233++ + 5) ^= 0x9Cu;
+    while ( v233 != 32 );
+    v234 = 0LL;
+    do
+      *(_BYTE *)(v163 + v234++ + 5) ^= 0x12u;
+    while ( v234 != 32 );
+    v235 = 0LL;
+    do
+      *(_BYTE *)(v163 + v235++ + 5) ^= 2u;
+    while ( v235 != 32 );
+    v236 = 0LL;
+    do
+      *(_BYTE *)(v163 + v236++ + 5) ^= 0x32u;
+    while ( v236 != 32 );
+    v237 = 0LL;
+    do
+      *(_BYTE *)(v163 + v237++ + 5) ^= 0x10u;
+    while ( v237 != 32 );
+    v238 = 0LL;
+    do
+      *(_BYTE *)(v163 + v238++ + 5) ^= 0x84u;
+    while ( v238 != 32 );
+    v239 = 0LL;
+    do
+      *(_BYTE *)(v163 + v239++ + 5) ^= 0xEDu;
+    while ( v239 != 32 );
+    v240 = 0LL;
+    do
+      *(_BYTE *)(v163 + v240++ + 5) ^= 0x95u;
+    while ( v240 != 32 );
+    v241 = 0LL;
+    do
+      *(_BYTE *)(v163 + v241++ + 5) ^= 0x4Du;
+    while ( v241 != 32 );
+    v242 = 0LL;
+    do
+      *(_BYTE *)(v163 + v242++ + 5) ^= 0x75u;
+    while ( v242 != 32 );
+    v243 = 0LL;
+    do
+      *(_BYTE *)(v163 + v243++ + 5) ^= 0x2Cu;
+    while ( v243 != 32 );
+    v244 = 0LL;
+    do
+      *(_BYTE *)(v163 + v244++ + 5) ^= 0x5Du;
+    while ( v244 != 32 );
+    v245 = 0LL;
+    do
+      *(_BYTE *)(v163 + v245++ + 5) ^= 0x39u;
+    while ( v245 != 32 );
+    v246 = 0LL;
+    do
+      *(_BYTE *)(v163 + v246++ + 5) ^= 0x18u;
+    while ( v246 != 32 );
+    v247 = 0LL;
+    do
+      *(_BYTE *)(v163 + v247++ + 5) ^= 0x4Cu;
+    while ( v247 != 32 );
+    v248 = 0LL;
+    do
+      *(_BYTE *)(v163 + v248++ + 5) ^= 0x49u;
+    while ( v248 != 32 );
+    v249 = 0LL;
+    do
+      *(_BYTE *)(v163 + v249++ + 5) ^= 0x37u;
+    while ( v249 != 32 );
+    v250 = 0LL;
+    do
+      *(_BYTE *)(v163 + v250++ + 5) ^= 0xF0u;
+    while ( v250 != 32 );
+    v251 = 0LL;
+    do
+      *(_BYTE *)(v163 + v251++ + 5) ^= 0x99u;
+    while ( v251 != 32 );
+    v252 = 0LL;
+    do
+      *(_BYTE *)(v163 + v252++ + 5) ^= 0x41u;
+    while ( v252 != 32 );
+    v253 = 0LL;
+    do
+      *(_BYTE *)(v163 + v253++ + 5) ^= 0x86u;
+    while ( v253 != 32 );
+    v254 = 0LL;
+    do
+      *(_BYTE *)(v163 + v254++ + 5) ^= 0x76u;
+    while ( v254 != 32 );
+    v255 = 0LL;
+    do
+      *(_BYTE *)(v163 + v255++ + 5) ^= 0xF5u;
+    while ( v255 != 32 );
+    v256 = 0LL;
+    do
+      *(_BYTE *)(v163 + v256++ + 5) ^= 5u;
+    while ( v256 != 32 );
+    v257 = 0LL;
+    do
+      *(_BYTE *)(v163 + v257++ + 5) ^= 0xC8u;
+    while ( v257 != 32 );
+    v258 = 0LL;
+    do
+      *(_BYTE *)(v163 + v258++ + 5) ^= 0x64u;
+    while ( v258 != 32 );
+    v259 = 0LL;
+    do
+      *(_BYTE *)(v163 + v259++ + 5) ^= 0xFAu;
+    while ( v259 != 32 );
+    v260 = 0LL;
+    do
+      *(_BYTE *)(v163 + v260++ + 5) ^= 0x50u;
+    while ( v260 != 32 );
+    v261 = 0LL;
+    do
+      *(_BYTE *)(v163 + v261++ + 5) ^= 0x3Bu;
+    while ( v261 != 32 );
+    v262 = 0LL;
+    do
+      *(_BYTE *)(v163 + v262++ + 5) ^= 8u;
+    while ( v262 != 32 );
+    v263 = 0LL;
+    do
+      *(_BYTE *)(v163 + v263++ + 5) ^= 0xE9u;
+    while ( v263 != 32 );
+    v264 = 0LL;
+    do
+      *(_BYTE *)(v163 + v264++ + 5) ^= 0x23u;
+    while ( v264 != 32 );
+    v265 = 0LL;
+    do
+      *(_BYTE *)(v163 + v265++ + 5) ^= 0xC3u;
+    while ( v265 != 32 );
+    v266 = 0LL;
+    do
+      *(_BYTE *)(v163 + v266++ + 5) ^= 0x68u;
+    while ( v266 != 32 );
+    v267 = 0LL;
+    do
+      *(_BYTE *)(v163 + v267++ + 5) ^= 0x67u;
+    while ( v267 != 32 );
+    v268 = 0LL;
+    do
+      *(_BYTE *)(v163 + v268++ + 5) += 80;
+    while ( v268 != 32 );
+    v269 = 0LL;
+    do
+      *(_BYTE *)(v163 + v269++ + 5) += 64;
+    while ( v269 != 32 );
+    v270 = 0LL;
+    do
+      *(_BYTE *)(v163 + v270++ + 5) += 79;
+    while ( v270 != 32 );
+    v271 = 0LL;
+    do
+      *(_BYTE *)(v163 + v271++ + 5) += 30;
+    while ( v271 != 32 );
+    v272 = 0LL;
+    do
+      *(_BYTE *)(v163 + v272++ + 5) += 91;
+    while ( v272 != 32 );
+    v273 = 0LL;
+    do
+      *(_BYTE *)(v163 + v273++ + 5) += 9;
+    while ( v273 != 32 );
+    v274 = 0LL;
+    do
+      *(_BYTE *)(v163 + v274++ + 5) += 5;
+    while ( v274 != 32 );
+    v275 = 0LL;
+    do
+      *(_BYTE *)(v163 + v275++ + 5) += 99;
+    while ( v275 != 32 );
+    v276 = 0LL;
+    do
+      *(_BYTE *)(v163 + v276++ + 5) += 87;
+    while ( v276 != 32 );
+    v277 = 0LL;
+    do
+      *(_BYTE *)(v163 + v277++ + 5) += 83;
+    while ( v277 != 32 );
+    v278 = 0LL;
+    do
+      *(_BYTE *)(v163 + v278++ + 5) += 59;
+    while ( v278 != 32 );
+    v279 = 0LL;
+    do
+      *(_BYTE *)(v163 + v279++ + 5) += 58;
+    while ( v279 != 32 );
+    v280 = 0LL;
+    do
+      ++*(_BYTE *)(v163 + v280++ + 5);
+    while ( v280 != 32 );
+    v281 = 0LL;
+    do
+      *(_BYTE *)(v163 + v281++ + 5) += 90;
+    while ( v281 != 32 );
+    v282 = 0LL;
+    do
+      *(_BYTE *)(v163 + v282++ + 5) += 57;
+    while ( v282 != 32 );
+    v283 = 0LL;
+    do
+      *(_BYTE *)(v163 + v283++ + 5) += 65;
+    while ( v283 != 32 );
+    v284 = 0LL;
+    do
+      *(_BYTE *)(v163 + v284++ + 5) += 53;
+    while ( v284 != 32 );
+    v285 = 0LL;
+    do
+      *(_BYTE *)(v163 + v285++ + 5) += 41;
+    while ( v285 != 32 );
+    v286 = 0LL;
+    do
+      *(_BYTE *)(v163 + v286++ + 5) += 85;
+    while ( v286 != 32 );
+    v287 = 0LL;
+    do
+      *(_BYTE *)(v163 + v287++ + 5) += 89;
+    while ( v287 != 32 );
+    v288 = 0LL;
+    do
+      *(_BYTE *)(v163 + v288++ + 5) += 44;
+    while ( v288 != 32 );
+    v289 = 0LL;
+    do
+      *(_BYTE *)(v163 + v289++ + 5) += 70;
+    while ( v289 != 32 );
+    v290 = 0LL;
+    do
+      *(_BYTE *)(v163 + v290++ + 5) += 12;
+    while ( v290 != 32 );
+    v291 = 0LL;
+    do
+      *(_BYTE *)(v163 + v291++ + 5) += 84;
+    while ( v291 != 32 );
+    v292 = 0LL;
+    do
+      *(_BYTE *)(v163 + v292++ + 5) += 10;
+    while ( v292 != 32 );
+    v293 = 0LL;
+    do
+      *(_BYTE *)(v163 + v293++ + 5) += 74;
+    while ( v293 != 32 );
+    v294 = 0LL;
+    do
+      *(_BYTE *)(v163 + v294++ + 5) += 17;
+    while ( v294 != 32 );
+    v295 = 0LL;
+    do
+      *(_BYTE *)(v163 + v295++ + 5) += 38;
+    while ( v295 != 32 );
+    v296 = 0LL;
+    do
+      *(_BYTE *)(v163 + v296++ + 5) += 43;
+    while ( v296 != 32 );
+    v297 = 0LL;
+    do
+      *(_BYTE *)(v163 + v297++ + 5) += 33;
+    while ( v297 != 32 );
+    v298 = 0LL;
+    do
+      *(_BYTE *)(v163 + v298++ + 5) += 11;
+    while ( v298 != 32 );
+    v299 = 0LL;
+    do
+      *(_BYTE *)(v163 + v299++ + 5) += 94;
+    while ( v299 != 32 );
+    v300 = 0LL;
+    do
+      *(_BYTE *)(v163 + v300++ + 5) += 86;
+    while ( v300 != 32 );
+    v301 = 0LL;
+    do
+      *(_BYTE *)(v163 + v301++ + 5) += 55;
+    while ( v301 != 32 );
+    v302 = 0LL;
+    do
+      *(_BYTE *)(v163 + v302++ + 5) += 32;
+    while ( v302 != 32 );
+    v303 = 0LL;
+    do
+      *(_BYTE *)(v163 + v303++ + 5) += 97;
+    while ( v303 != 32 );
+    v304 = 0LL;
+    do
+      *(_BYTE *)(v163 + v304++ + 5) += 68;
+    while ( v304 != 32 );
+    v305 = 0LL;
+    do
+      *(_BYTE *)(v163 + v305++ + 5) += 50;
+    while ( v305 != 32 );
+    v306 = 0LL;
+    do
+      *(_BYTE *)(v163 + v306++ + 5) += 67;
+    while ( v306 != 32 );
+    v307 = 0LL;
+    do
+      *(_BYTE *)(v163 + v307++ + 5) += 71;
+    while ( v307 != 32 );
+    v308 = 0LL;
+    do
+      *(_BYTE *)(v163 + v308++ + 5) += 96;
+    while ( v308 != 32 );
+    v309 = 0LL;
+    do
+      *(_BYTE *)(v163 + v309++ + 5) += 56;
+    while ( v309 != 32 );
+    v310 = 0LL;
+    do
+      *(_BYTE *)(v163 + v310++ + 5) += 6;
+    while ( v310 != 32 );
+    v311 = 0LL;
+    do
+      *(_BYTE *)(v163 + v311++ + 5) += 73;
+    while ( v311 != 32 );
+    v312 = 0LL;
+    do
+      *(_BYTE *)(v163 + v312++ + 5) += 52;
+    while ( v312 != 32 );
+    v313 = 0LL;
+    do
+      *(_BYTE *)(v163 + v313++ + 5) += 42;
+    while ( v313 != 32 );
+    v314 = 0LL;
+    do
+      *(_BYTE *)(v163 + v314++ + 5) += 61;
+    while ( v314 != 32 );
+    v315 = 0LL;
+    do
+      *(_BYTE *)(v163 + v315++ + 5) += 69;
+    while ( v315 != 32 );
+    v316 = 0LL;
+    do
+      *(_BYTE *)(v163 + v316++ + 5) += 14;
+    while ( v316 != 32 );
+    v317 = 0LL;
+    do
+      *(_BYTE *)(v163 + v317++ + 5) += 75;
+    while ( v317 != 32 );
+    v318 = 0LL;
+    do
+      *(_BYTE *)(v163 + v318++ + 5) += 4;
+    while ( v318 != 32 );
+    v319 = 0LL;
+    do
+      *(_BYTE *)(v163 + v319++ + 5) += 40;
+    while ( v319 != 32 );
+    v320 = 0LL;
+    do
+      *(_BYTE *)(v163 + v320++ + 5) += 37;
+    while ( v320 != 32 );
+    v321 = 0LL;
+    do
+      *(_BYTE *)(v163 + v321++ + 5) += 15;
+    while ( v321 != 32 );
+    v322 = 0LL;
+    do
+      *(_BYTE *)(v163 + v322++ + 5) += 77;
+    while ( v322 != 32 );
+    v323 = 0LL;
+    do
+      *(_BYTE *)(v163 + v323++ + 5) += 2;
+    while ( v323 != 32 );
+    v324 = 0LL;
+    do
+      *(_BYTE *)(v163 + v324++ + 5) += 23;
+    while ( v324 != 32 );
+    v325 = 0LL;
+    do
+      *(_BYTE *)(v163 + v325++ + 5) += 62;
+    while ( v325 != 32 );
+    v326 = 0LL;
+    do
+      *(_BYTE *)(v163 + v326++ + 5) += 29;
+    while ( v326 != 32 );
+    v327 = 0LL;
+    do
+      *(_BYTE *)(v163 + v327++ + 5) += 49;
+    while ( v327 != 32 );
+    v328 = 0LL;
+    do
+      *(_BYTE *)(v163 + v328++ + 5) += 47;
+    while ( v328 != 32 );
+    JUMPOUT(1, (char *)&loc_401B05 + 1);
+    JUMPOUT(0, (char *)&loc_401B05 + 1);
+    v329 = MEMORY[0xFFFFFFFF81004C9A]();
+    *(_DWORD *)(v329 - 125) += v331;
+    *(_BYTE *)(a3 - 15) &= BYTE1(v330);
+    v332 = 0LL;
+    do
+      *(_BYTE *)(v330 + v332++ + 5) += 66;
+    while ( v332 != 32 );
+    v333 = 0LL;
+    do
+      *(_BYTE *)(v330 + v333++ + 5) += 82;
+    while ( v333 != 32 );
+    v334 = 0LL;
+    do
+      *(_BYTE *)(v330 + v334++ + 5) += 46;
+    while ( v334 != 32 );
+    v335 = 0LL;
+    do
+      *(_BYTE *)(v330 + v335++ + 5) += 19;
+    while ( v335 != 32 );
+    v336 = 0LL;
+    do
+      *(_BYTE *)(v330 + v336++ + 5) += 88;
+    while ( v336 != 32 );
+    v337 = 0LL;
+    do
+      *(_BYTE *)(v330 + v337++ + 5) += 63;
+    while ( v337 != 32 );
+    v338 = 0LL;
+    do
+      *(_BYTE *)(v330 + v338++ + 5) += 39;
+    while ( v338 != 32 );
+    v339 = 0LL;
+    do
+      *(_BYTE *)(v330 + v339++ + 5) += 35;
+    while ( v339 != 32 );
+    v340 = 0LL;
+    do
+      *(_BYTE *)(v330 + v340++ + 5) += 25;
+    while ( v340 != 32 );
+    v341 = 0LL;
+    do
+      *(_BYTE *)(v330 + v341++ + 5) += 51;
+    while ( v341 != 32 );
+    v342 = 0LL;
+    do
+      *(_BYTE *)(v330 + v342++ + 5) += 18;
+    while ( v342 != 32 );
+    v343 = 0LL;
+    do
+      *(_BYTE *)(v330 + v343++ + 5) += 92;
+    while ( v343 != 32 );
+    v344 = 0LL;
+    do
+      *(_BYTE *)(v330 + v344++ + 5) += 95;
+    while ( v344 != 32 );
+    v345 = 0LL;
+    do
+      *(_BYTE *)(v330 + v345++ + 5) += 3;
+    while ( v345 != 32 );
+    v346 = 0LL;
+    do
+      *(_BYTE *)(v330 + v346++ + 5) += 72;
+    while ( v346 != 32 );
+    v347 = 0LL;
+    do
+      *(_BYTE *)(v330 + v347++ + 5) += 48;
+    while ( v347 != 32 );
+    v348 = 0LL;
+    do
+      *(_BYTE *)(v330 + v348++ + 5) += 36;
+    while ( v348 != 32 );
+    v349 = 0LL;
+    do
+      *(_BYTE *)(v330 + v349++ + 5) += 93;
+    while ( v349 != 32 );
+    v350 = 0LL;
+    do
+      *(_BYTE *)(v330 + v350++ + 5) += 76;
+    while ( v350 != 32 );
+    v351 = 0LL;
+    do
+      *(_BYTE *)(v330 + v351++ + 5) += 22;
+    while ( v351 != 32 );
+    v352 = 0LL;
+    do
+      *(_BYTE *)(v330 + v352++ + 5) += 98;
+    while ( v352 != 32 );
+    v353 = 0LL;
+    do
+      *(_BYTE *)(v330 + v353++ + 5) += 81;
+    while ( v353 != 32 );
+    v354 = 0LL;
+    do
+      *(_BYTE *)(v330 + v354++ + 5) += 13;
+    while ( v354 != 32 );
+    v355 = 0LL;
+    do
+      *(_BYTE *)(v330 + v355++ + 5) += 45;
+    while ( v355 != 32 );
+    v356 = 0LL;
+    do
+      *(_BYTE *)(v330 + v356++ + 5) += 34;
+    while ( v356 != 32 );
+    v357 = 0LL;
+    do
+      *(_BYTE *)(v330 + v357++ + 5) += 78;
+    while ( v357 != 32 );
+    v358 = 0LL;
+    do
+      *(_BYTE *)(v330 + v358++ + 5) += 26;
+    while ( v358 != 32 );
+    v359 = 0LL;
+    do
+      *(_BYTE *)(v330 + v359++ + 5) += 54;
+    while ( v359 != 32 );
+    v360 = 0LL;
+    do
+      *(_BYTE *)(v330 + v360++ + 5) += 28;
+    while ( v360 != 32 );
+    v361 = 0LL;
+    do
+      *(_BYTE *)(v330 + v361++ + 5) += 31;
+    while ( v361 != 32 );
+    v362 = 0LL;
+    do
+      *(_BYTE *)(v330 + v362++ + 5) += 20;
+    while ( v362 != 32 );
+    v363 = 0LL;
+    do
+      *(_BYTE *)(v330 + v363++ + 5) += 16;
+    while ( v363 != 32 );
+    v364 = 0LL;
+    do
+      *(_BYTE *)(v330 + v364++ + 5) += 7;
+    while ( v364 != 32 );
+    v365 = 0LL;
+    do
+      *(_BYTE *)(v330 + v365++ + 5) += 24;
+    while ( v365 != 32 );
+    v366 = 0LL;
+    do
+      *(_BYTE *)(v330 + v366++ + 5) += 60;
+    while ( v366 != 32 );
+    v367 = 0LL;
+    do
+      *(_BYTE *)(v330 + v367++ + 5) += 21;
+    while ( v367 != 32 );
+    v368 = 0LL;
+    do
+      *(_BYTE *)(v330 + v368++ + 5) += 8;
+    while ( v368 != 32 );
+    if ( memcmp(v6, &unk_4025C0, 0x20uLL) )
+      JUMPOUT(&loc_4005BB);
+    puts(&s);
+    JUMPOUT(&loc_4005BB);
+  }
+  return sub_4005B6();
+}
+```
+
+首先知道开头"flag{"，结尾"}"
+
+但是中间的过程太多了，直接逆要搞很久，所以可以使用符号执行试一试。
+
+```assembly
+import angr
+import claripy
+
+p = angr.Project('./funnyre', load_options={"auto_load_libs": False})
+state = p.factory.entry_state(addr=0x400605)  # 设置state开始运行时的地址
+flag = claripy.BVS('flag', 8*32)  # 要求的内容有32个，用BVS转成二进制给flag变量
+state.memory.store(0x603055+0x300+5, flag)  # 因为程序没有输入，所以直接把字符串设置到内存
+state.regs.rdx = 0x603055+0x300
+state.regs.rdi = 0x603055+0x300+5  # 然后设置两个寄存器
+
+sm = p.factory.simulation_manager(state)  # 准备从state开始遍历路径
+
+print("ready")
+
+sm.explore(find=0x401DAE)  # 遍历到成功的地址
+
+if sm.found:
+    print("sucess")
+    x = sm.found[0].solver.eval(flag, cast_to=bytes)
+    print(x)
+else:
+    print('error')
+```
+

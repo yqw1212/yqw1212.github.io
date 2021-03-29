@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  hitcontraining_magicheap
+title:  linked list
 date:   2021-03-15 00:01:01 +0300
 image:  2021-03-15-woman.jpg
 tags:   [algorithm,leetcode,linked list]
