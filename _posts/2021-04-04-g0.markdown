@@ -1,0 +1,421 @@
+---
+layout: post
+title:  g0
+date:   2021-04-04 00:01:01 +0300
+image:  2021-04-04-bike.jpg
+tags:   [ctf,reverse,hmgctf2021,golang]
+---
+
+载入ida，使用脚本给函数名重命名解除混淆。
+
+main_main
+
+```assembly
+bool *__fastcall main_main(__int64 a1, __int64 a2, __int64 a3, __int64 a4)
+{
+  __int64 v4; // rcx
+  __int64 v5; // ST08_8
+  __int64 v6; // r8
+  __int64 v7; // r9
+  int v8; // edx
+  int v9; // er8
+  int v10; // er9
+  bool *result; // rax
+  __int64 v12; // rcx
+  bool *v13; // rdi
+  __int64 v14; // ST10_8
+  __int64 v15; // rsi
+  __int64 v16; // rbx
+  __int64 v17; // ST00_8
+  __int64 v18; // ST08_8
+  __int64 v19; // r8
+  __int64 v20; // r9
+  __int64 v21; // ST18_8
+  __int64 v22; // rdx
+  __int64 v23; // rcx
+  __int64 v24; // r8
+  __int64 v25; // r8
+  __int64 v26; // r9
+  __int64 v27; // rdx
+  __int64 v28; // rdx
+  __int64 v29; // r8
+  __int64 v30; // r9
+  __int64 v31; // [rsp+20h] [rbp-C0h]
+  __int64 v32; // [rsp+28h] [rbp-B8h]
+  __int64 v33; // [rsp+30h] [rbp-B0h]
+  __int64 v34; // [rsp+48h] [rbp-98h]
+  __int64 v35; // [rsp+50h] [rbp-90h]
+  __int64 v36; // [rsp+60h] [rbp-80h]
+  char v37; // [rsp+80h] [rbp-60h]
+  __int64 v38; // [rsp+98h] [rbp-48h]
+  __int64 v39; // [rsp+A0h] [rbp-40h]
+  bool *v40; // [rsp+A8h] [rbp-38h]
+  __int128 v41; // [rsp+B0h] [rbp-30h]
+  __int128 v42; // [rsp+C0h] [rbp-20h]
+  __int64 v43; // [rsp+D0h] [rbp-10h]
+
+  v4 = *(_QWORD *)__readgsqword(0x28u);
+  if ( (unsigned __int64)&v37 <= *(_QWORD *)(v4 + 16) )
+    runtime_morestack_noctxt(v4, a2, a3, a4);
+  v42 = 0i64;
+  *(__int128 *)((char *)&v42 + 8) = 0i64;
+  runtime_newobject(v4, a2, a3, a4);
+  v40 = (bool *)v5;
+  *(_QWORD *)&v41 = &unk_4DA360;
+  *((_QWORD *)&v41 + 1) = v5;
+  fmt_Fscanf((__int64)&v41, (__int64)&off_524F60, v6, v7, (__int64)&v41, 1i64);
+  result = v40;
+  v12 = *(_QWORD *)v40;
+  if ( *((_QWORD *)v40 + 1) == 20i64 )
+  {
+    runtime_concatstring4(v12, v8, v9, v10, 5, v12 + 10, 5, v12, 5);
+    v13 = v40;
+    *((_QWORD *)v40 + 1) = v35;
+    if ( dword_5FC4D0 )
+      runtime_gcWriteBarrier();
+    else
+      *(_QWORD *)v13 = v34;
+    time_Now();
+    v39 = v14;
+    v15 = *(_QWORD *)v40;
+    v16 = *((_QWORD *)v40 + 1);
+    runtime_stringtoslicebyte(v18, v17);
+    main_Encode(v31, v32, v19, v20);
+    v36 = v31;
+    v38 = v21;
+    time_Now();
+    time_Time_Sub(v23, v22, v24);
+    v27 = ((signed __int64)((unsigned __int128)(v33 * (signed __int128)4951760157141521100i64) >> 64) >> 28)
+        - (v33 >> 63);
+    result = (bool *)(v33 - 1000000000 * v27);
+    if ( (double)(signed int)v27 + (double)(signed int)result / 1000000000.0 <= 2.0 )
+    {
+      fmt_Fprintf((__int64)&off_524F80, v27, v25, v26, 0i64, 0i64);
+      *(_QWORD *)&v42 = off_50B358;
+      *((_QWORD *)&v42 + 1) = v38;
+      v43 = v36;
+      result = main_main_func1(v38, v28, v29, v30);
+    }
+  }
+  return result;
+}
+```
+
+main_encode
+
+```assembly
+signed __int64 __fastcall main_Encode(__int64 a1, __int64 a2, __int64 a3, __int64 a4)
+{
+  __int64 v4; // rcx
+  __int64 v5; // ST18_8
+  __int64 v6; // rax
+  signed __int64 v7; // rcx
+  __int64 v8; // rdx
+  __int64 v9; // rdx
+  __int64 v10; // rcx
+  __int64 v11; // ST10_8
+  __int64 v12; // r8
+  __int64 v13; // r9
+  unsigned __int64 v14; // rax
+  __int64 v15; // rcx
+  signed __int64 v16; // rbx
+  char v17; // al
+  signed __int64 v18; // rdx
+  __int64 v19; // rsi
+  char v20; // ST4F_1
+  __int64 v21; // rdx
+  __int64 v22; // rbx
+  __int64 v23; // rsi
+  unsigned __int64 v24; // rdi
+  unsigned __int64 v25; // r8
+  __int64 v26; // rax
+  __int64 v27; // r9
+  __int64 v28; // ST60_8
+  signed __int64 i; // rax
+  unsigned __int64 v30; // rdx
+  char v31; // bl
+  signed __int64 v33; // [rsp+20h] [rbp-98h]
+  __int64 v34; // [rsp+30h] [rbp-88h]
+  __int128 v35; // [rsp+38h] [rbp-80h]
+  __int64 v36; // [rsp+50h] [rbp-68h]
+  unsigned __int64 v37; // [rsp+58h] [rbp-60h]
+  __int64 v38; // [rsp+68h] [rbp-50h]
+  char v39; // [rsp+70h] [rbp-48h]
+  unsigned __int64 *v40; // [rsp+78h] [rbp-40h]
+  __int128 v41; // [rsp+80h] [rbp-38h]
+  char v42; // [rsp+90h] [rbp-28h]
+  __int64 v43; // [rsp+98h] [rbp-20h]
+  __int128 v44; // [rsp+A0h] [rbp-18h]
+  __int64 v45; // [rsp+C0h] [rbp+8h]
+  __int64 v46; // [rsp+C8h] [rbp+10h]
+  __int64 v47; // [rsp+D0h] [rbp+18h]
+
+  v4 = *(_QWORD *)__readgsqword(0x28u);
+  if ( (unsigned __int64)&v41 <= *(_QWORD *)(v4 + 16) )
+    runtime_morestack_noctxt(v4, a2, a3, a4);
+  v42 = 0;
+  v43 = 0i64;
+  v44 = 0i64;
+  math_big_nat_setBytes(v46, v47, a3, a4, v46);
+  v43 = v34;
+  v44 = v35;
+  v42 = 0;
+  runtime_makeslice();
+  v6 = v5;
+  v7 = ((signed __int64)(136 * v46 + ((unsigned __int128)(136 * v46 * (signed __int128)-6640827866535438581i64) >> 64)) >> 6)
+     - (136 * v46 >> 63);
+  v8 = 0i64;
+  while ( 1 )
+  {
+    v37 = v7;
+    v36 = v8;
+    v38 = v6;
+    math_big__ptr_Int_Cmp();
+    if ( v11 <= 0 )
+      break;
+    v39 = 0;
+    v40 = 0i64;
+    v41 = 0i64;
+    math_big__ptr_Int_DivMod((__int64)&v39, v9);
+    if ( (_QWORD)v41 )
+      v14 = *v40;
+    else
+      v14 = 0i64;
+    if ( v39 )
+      v14 = -(signed __int64)v14;
+    if ( v14 >= qword_5C92C8 )
+      runtime_panicIndex(qword_5C92C8, off_5C92C0, v12);
+    v15 = v36;
+    v16 = v36 + 1;
+    v17 = *((_BYTE *)off_5C92C0 + v14);
+    v18 = v37;
+    if ( v36 + 1 > v37 )
+    {
+      v20 = v17;
+      v33 = v36 + 1;
+      runtime_growslice(v36, v37, v12, v13);
+      v19 = v47;
+      v18 = v35;
+      v16 = v34 + 1;
+      v17 = v20;
+      v15 = v36;
+    }
+    else
+    {
+      v19 = v38;
+    }
+    *(_BYTE *)(v19 + v15) = v17;
+    v7 = v18;
+    v8 = v16;
+    v6 = v19;
+  }
+  v21 = v46;
+  v22 = v45;
+  v23 = v38;
+  v24 = v36;
+  v25 = v37;
+  v26 = 0i64;
+  while ( v26 < v21 && !*(_BYTE *)(v22 + v26) )
+  {
+    v27 = v24 + 1;
+    if ( v24 + 1 > v25 )
+    {
+      v28 = v26;
+      v33 = v24 + 1;
+      runtime_growslice(v10, v21, v25, v27);
+      v23 = v47;
+      v25 = v35;
+      v27 = v34 + 1;
+      v26 = v28;
+      v21 = v46;
+      v22 = v45;
+    }
+    *(_BYTE *)(v23 + v24) = 49;
+    ++v26;
+    v24 = v27;
+  }
+  for ( i = 0i64; i < (signed __int64)(v24 >> 1); ++i )
+  {
+    v30 = v24 - 1 - i;
+    if ( i >= v24 )
+      runtime_panicIndex(v24, v30, v25);
+    v31 = *(_BYTE *)(v23 + i);
+    if ( v30 >= v24 )
+      runtime_panicIndex(v24, v30, v25);
+    *(_BYTE *)(v23 + i) = *(_BYTE *)(v23 + v30);
+    *(_BYTE *)(v23 + v30) = v31;
+  }
+  runtime_slicebytetostring((__int128 *)v24);
+  return v33;
+}
+```
+
+一堆乱七八糟的东西，只能动态调式
+
+由于源代码级调试器已被禁用，所以在汇编代码上下断点，断在调用main_encode之前，运行程序。
+
+单步执行，直到0x4CD02F地址处。查看rdx。
+
+```assembly
+debug034:000000C000010480 db  31h ; 1
+debug034:000000C000010481 db  32h ; 2
+debug034:000000C000010482 db  4Eh ; N
+debug034:000000C000010483 db  72h ; r
+debug034:000000C000010484 db  73h ; s
+debug034:000000C000010485 db  74h ; t
+debug034:000000C000010486 db  36h ; 6
+debug034:000000C000010487 db  43h ; C
+debug034:000000C000010488 db  44h ; D
+debug034:000000C000010489 db  71h ; q
+debug034:000000C00001048A db  75h ; u
+debug034:000000C00001048B db  76h ; v
+debug034:000000C00001048C db  47h ; G
+debug034:000000C00001048D db  37h ; 7
+debug034:000000C00001048E db  42h ; B
+debug034:000000C00001048F db  65h ; e
+debug034:000000C000010490 db  66h ; f
+debug034:000000C000010491 db  67h ; g
+debug034:000000C000010492 db  68h ; h
+debug034:000000C000010493 db  4Ah ; J
+debug034:000000C000010494 db  4Bh ; K
+debug034:000000C000010495 db  4Ch ; L
+debug034:000000C000010496 db  4Dh ; M
+debug034:000000C000010497 db  45h ; E
+debug034:000000C000010498 db  46h ; F
+debug034:000000C000010499 db  48h ; H
+debug034:000000C00001049A db  50h ; P
+debug034:000000C00001049B db  51h ; Q
+debug034:000000C00001049C db  5Ah ; Z
+debug034:000000C00001049D db  61h ; a
+debug034:000000C00001049E db  62h ; b
+debug034:000000C00001049F db  52h ; R
+debug034:000000C0000104A0 db  53h ; S
+debug034:000000C0000104A1 db  54h ; T
+debug034:000000C0000104A2 db  55h ; U
+debug034:000000C0000104A3 db  56h ; V
+debug034:000000C0000104A4 db  6Dh ; m
+debug034:000000C0000104A5 db  79h ; y
+debug034:000000C0000104A6 db  7Ah ; z
+debug034:000000C0000104A7 db  6Eh ; n
+debug034:000000C0000104A8 db  6Fh ; o
+debug034:000000C0000104A9 db  38h ; 8
+debug034:000000C0000104AA db  39h ; 9
+debug034:000000C0000104AB db  41h ; A
+debug034:000000C0000104AC db  70h ; p
+debug034:000000C0000104AD db  77h ; w
+debug034:000000C0000104AE db  78h ; x
+debug034:000000C0000104AF db  57h ; W
+debug034:000000C0000104B0 db  58h ; X
+debug034:000000C0000104B1 db  59h ; Y
+debug034:000000C0000104B2 db  63h ; c
+debug034:000000C0000104B3 db  64h ; d
+debug034:000000C0000104B4 db  6Bh ; k
+debug034:000000C0000104B5 db  69h ; i
+debug034:000000C0000104B6 db  6Ah ; j
+debug034:000000C0000104B7 db  33h ; 3
+debug034:000000C0000104B8 db  34h ; 4
+debug034:000000C0000104B9 db  35h ; 5
+```
+
+一共是58位，所以猜测是base58加密的表。
+
+执行完main_encode()，到达4CD453，是一个if判断，不太清楚怎样绕过，但是不影响解题。一直顺着流程图一步一步检查，进入到main_main_func1()
+
+```assembly
+__int64 main_main_func1()
+{
+  __int64 result; // rax
+  __int64 v1; // rdx
+  __int64 v2; // r8
+  __int64 v3; // r9
+  char v4; // ST18_1
+  __int64 v5; // rdx
+  __int64 v6; // r8
+  __int64 v7; // r9
+  __int64 v8; // rdx
+  __int64 v9; // r8
+  __int64 v10; // r9
+  void *retaddr; // [rsp+58h] [rbp+0h]
+  __int64 v12; // [rsp+68h] [rbp+10h]
+
+  if ( (unsigned __int64)&retaddr <= *(_QWORD *)(*(_QWORD *)__readgsqword(0x28u) + 16i64) )
+    runtime_morestack_noctxt();
+  result = v12;
+  if ( v12 == 28 )
+  {
+    result = runtime_memequal();
+    if ( v4 )
+    {
+      fmt_Fprintf((__int64)&off_524F80, v1, v2, v3, 0i64, 0i64);
+      fmt_Fprintf((__int64)&off_524F80, v5, v6, v7, 0i64, 0i64);
+      result = fmt_Fprintf((__int64)&off_524F80, v8, v9, v10, 0i64, 0i64);
+    }
+  }
+  return result;
+}
+```
+
+runtime_memequal()应该为比较的函数，但是不知道为什么显示不出参数，直接查看汇编。
+
+```assembly
+mov     rcx, [rsp+58h+arg_0]
+mov     [rsp+58h+var_58], rcx
+lea     rcx, unk_506D73
+mov     [rsp+58h+var_50], rcx
+mov     [rsp+58h+var_48], rax
+call    runtime_memequal
+```
+
+查看unk_506D73
+
+```assembly
+.rdata:0000000000506D73 unk_506D73      db  32h ; 2             ; DATA XREF: main_main_func1+46↑o
+.rdata:0000000000506D74                 db  47h ; G
+.rdata:0000000000506D75                 db  56h ; V
+.rdata:0000000000506D76                 db  64h ; d
+.rdata:0000000000506D77                 db  75h ; u
+.rdata:0000000000506D78                 db  64h ; d
+.rdata:0000000000506D79                 db  6Bh ; k
+.rdata:0000000000506D7A                 db  59h ; Y
+.rdata:0000000000506D7B                 db  6Fh ; o
+.rdata:0000000000506D7C                 db  32h ; 2
+.rdata:0000000000506D7D                 db  43h ; C
+.rdata:0000000000506D7E                 db  42h ; B
+.rdata:0000000000506D7F                 db  58h ; X
+.rdata:0000000000506D80                 db  6Fh ; o
+.rdata:0000000000506D81                 db  51h ; Q
+.rdata:0000000000506D82                 db  69h ; i
+.rdata:0000000000506D83                 db  69h ; i
+.rdata:0000000000506D84                 db  37h ; 7
+.rdata:0000000000506D85                 db  67h ; g
+.rdata:0000000000506D86                 db  66h ; f
+.rdata:0000000000506D87                 db  70h ; p
+.rdata:0000000000506D88                 db  6Bh ; k
+.rdata:0000000000506D89                 db  6Ah ; j
+.rdata:0000000000506D8A                 db  54h ; T
+.rdata:0000000000506D8B                 db  63h ; c
+.rdata:0000000000506D8C                 db  34h ; 4
+.rdata:0000000000506D8D                 db  67h ; g
+.rdata:0000000000506D8E                 db  54h ; T
+//2GVdudkYo2CBXoQii7gfpkjTc4gT
+```
+
+直接将这串字符base58解密
+
+```assembly
+import base58
+
+def decrypto(enc):
+    tbl0 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    tbl1 = '12Nrst6CDquvG7BefghJKLMEFHPQZabRSTUVmyzno89ApwxWXYcdkij345'
+    trans = enc.translate(enc.maketrans(tbl1, tbl0))
+    return base58.b58decode(trans)
+
+print(decrypto("2GVdudkYo2CBXoQii7gfpkjTc4gT"))
+# b'We1CT2345}Fc0m_flag{'
+```
+
+flag{We1CTFc0m_2345}
+
+原来main_encode里有一个置换操作runtime_makeslice()，由于运行到这里时直接单步跳过了，没有步入，所以没有发现。
+
