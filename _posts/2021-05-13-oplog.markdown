@@ -1,0 +1,905 @@
+---
+layout: post
+title:  oplog
+date:   2021-05-13 00:01:01 +0300
+image:  2021-05-13-barn.jpg
+tags:   [ctf,reverse,evm,solidity,ciscn2020]
+---
+
+题目给了三个文件
+
+op.abi
+
+op.bytecode
+
+op.log
+
+字节码bytecode
+
+```assembly
+608060405234801561001057600080fd5b506104f5806100206000396000f3fe608060405234801561001057600080fd5b50600436106100cf5760003560e01c80636ca5b5b01161008c5780638bf6e410116100665780638bf6e41014610236578063a3b7887314610254578063a7ba732e14610272578063c4ee5c77146102a0576100cf565b80636ca5b5b0146101cc5780637059c7e0146101ea578063890eba6814610218576100cf565b80630bcbbd21146100d4578063343943bd146100f25780634ff135711461011057806356b15fe31461012e5780635e031f4a146101705780636c3ce6761461019e575b600080fd5b6100dc6102ec565b6040518082815260200191505060405180910390f35b6100fa6102f2565b6040518082815260200191505060405180910390f35b6101186102f8565b6040518082815260200191505060405180910390f35b61016e6004803603606081101561014457600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506102fe565b005b61019c6004803603602081101561018657600080fd5b81019080803590602001909291905050506103f5565b005b6101ca600480360360208110156101b457600080fd5b810190808035906020019092919050505061040a565b005b6101d461041f565b6040518082815260200191505060405180910390f35b6102166004803603602081101561020057600080fd5b8101908080359060200190929190505050610425565b005b61022061043a565b6040518082815260200191505060405180910390f35b61023e610440565b6040518082815260200191505060405180910390f35b61025c610446565b6040518082815260200191505060405180910390f35b61029e6004803603602081101561028857600080fd5b810190808035906020019092919050505061044c565b005b6102ea600480360360808110156102b657600080fd5b8101908080359060200190929190803590602001909291908035906020019092919080359060200190929190505050610456565b005b60025481565b60045481565b60055481565b60007155555555555555555555555555555555555590506000712aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa905060008060008460045416925083600454169150829050819250878183181891508290508192508681831818915082905081925085818318189150818318600481905550846005541692508360055416915082905081925087818318189150829050819250868183181891508290508192508581831818915081831860058190555084600654169250836006541691508290508192508781831818915082905081925086818318189150829050819250858183181891508183186006819055505050505050505050565b806000548161040057fe5b0660028190555050565b806000548161041557fe5b0660038190555050565b60015481565b806000548161043057fe5b0660018190555050565b60005481565b60035481565b60065481565b8060008190555050565b600184141561047b5780600354028260025402846001540201016004819055506104b9565b60028414156104a05780600354028260025402846001540201016005819055506104b8565b80600354028260025402846001540201016006819055505b5b5050505056fea264697066735822122035d843a487b40ebb72b85fe1e1239e8fa66574935048ffc5425538b76ad05ac964736f6c63430006010033
+```
+
+这道题考察的是以太坊虚拟机(EVM)逆向
+
+EVM是一个轻量级的虚拟机，其设计是用于在以太坊网络上运行智能合约。作为虚拟机，EVM的功能与传统的操作系统（如Windows）稍有不同。一般来说，虚拟机(VM）是建立在本机操作系统上模拟物理机的高级抽象。它们允许同一平台，在许多不同的硬件体系结构和操作系统上运行，这使得虚拟机(VM）非常适合像以太坊这样的分布式网络。EVM的构建是为了模拟可由物理CPU执行的操作，其还负责以太坊的许多关键功能。
+
+而EVM除了作为一个虚拟机，它也是一个“堆栈机”和一个“状态机”。状态机只是一台可以读取输入并基于这些输入转换为新状态的机器。而基于堆栈的虚拟机是将内存结构组织为堆栈并作为堆栈访问的虚拟机。这与基于寄存器的虚拟机相反，其内存结构存储在CPU的寄存器中。为了在基于堆栈的虚拟机上执行操作，称为“操作数”（operand）的数据从堆栈中“弹出”，通过接受操作进行处理，然后根据后进先出（LIFO）的原则“推送”回堆栈。
+
+使用堆栈系统的一个主要优点是，EVM不需要显式地知道它正在处理的操作数的地址，因为调用堆栈指针（SP）总是会提供下一个操作数，这有助于EVM提高效率并降低存储需求。
+
+除了堆栈之外，EVM还可以将数据存储到内存（RAM）和磁盘存储。将数据发送到磁盘存储器需要的gas最多，而发送到堆栈需要的gas最少。EVM根据其预期用途和预期的gas成本决定将某些数据发送到何处。在宏观层面上，EVM由世界状态（world state）、机器状态和虚拟ROM组成。世界状态是网络上所有帐户的存储，而机器状态包括程序计数器、可用gas、堆栈和内存。虚拟只读存储器（ROM）是不可变的“EVM字节码”，这是一种只有EVM才能理解的特殊语言。理解字节码及其与诸如solidity等高级语言的关系是非常重要的，以便充分掌握EVM的功能。
+
+使用在线网站反编译字节码
+
+https://ethervm.io/decompile
+
+```assembly
+contract Contract {
+    function main() {
+        memory[0x40:0x60] = 0x80;
+        var var0 = msg.value;
+    
+        if (var0) { revert(memory[0x00:0x00]); }
+    
+        memory[0x00:0x04f5] = code[0x20:0x0515];
+        return memory[0x00:0x04f5];
+    }
+}
+```
+
+https://www.trustlook.com/services/smart.html
+
+```assembly
+contract disassembler {
+
+    function main() public return ()
+    {
+        // mstore()将后值赋值给前面的变量。
+        mstore(0x40,0x80);
+        
+        // 用户发送的eth值msg.value
+        var0 = msg.value;
+        
+        require(!msg.value);
+        callcodecopy(0x0,0x20,0x4F5);
+        
+        // RETURN(0x0,0x4F5)代表的是从位置0x0开始，往下读取0x4F5个字节。
+        RETURN(0x0,0x4F5);
+    }
+
+}
+```
+
+两个网站反编译的结果不太一样，可以结合着看。
+
+The `REVERT` instruction provides a way to stop execution and revert state changes, without consuming all provided gas and with the ability to return a reason.
+
+这是一个SMC代码，返回了从0x20开始的代码。
+
+bytecode是2602个字符，0x0515转换成十进制是1302，说明bytecode两个字符表示一个字节。
+
+更改后的代码：
+
+```assembly
+608060405234801561001057600080fd5b50600436106100cf5760003560e01c80636ca5b5b01161008c5780638bf6e410116100665780638bf6e41014610236578063a3b7887314610254578063a7ba732e14610272578063c4ee5c77146102a0576100cf565b80636ca5b5b0146101cc5780637059c7e0146101ea578063890eba6814610218576100cf565b80630bcbbd21146100d4578063343943bd146100f25780634ff135711461011057806356b15fe31461012e5780635e031f4a146101705780636c3ce6761461019e575b600080fd5b6100dc6102ec565b6040518082815260200191505060405180910390f35b6100fa6102f2565b6040518082815260200191505060405180910390f35b6101186102f8565b6040518082815260200191505060405180910390f35b61016e6004803603606081101561014457600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506102fe565b005b61019c6004803603602081101561018657600080fd5b81019080803590602001909291905050506103f5565b005b6101ca600480360360208110156101b457600080fd5b810190808035906020019092919050505061040a565b005b6101d461041f565b6040518082815260200191505060405180910390f35b6102166004803603602081101561020057600080fd5b8101908080359060200190929190505050610425565b005b61022061043a565b6040518082815260200191505060405180910390f35b61023e610440565b6040518082815260200191505060405180910390f35b61025c610446565b6040518082815260200191505060405180910390f35b61029e6004803603602081101561028857600080fd5b810190808035906020019092919050505061044c565b005b6102ea600480360360808110156102b657600080fd5b8101908080359060200190929190803590602001909291908035906020019092919080359060200190929190505050610456565b005b60025481565b60045481565b60055481565b60007155555555555555555555555555555555555590506000712aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa905060008060008460045416925083600454169150829050819250878183181891508290508192508681831818915082905081925085818318189150818318600481905550846005541692508360055416915082905081925087818318189150829050819250868183181891508290508192508581831818915081831860058190555084600654169250836006541691508290508192508781831818915082905081925086818318189150829050819250858183181891508183186006819055505050505050505050565b806000548161040057fe5b0660028190555050565b806000548161041557fe5b0660038190555050565b60015481565b806000548161043057fe5b0660018190555050565b60005481565b60035481565b60065481565b8060008190555050565b600184141561047b5780600354028260025402846001540201016004819055506104b9565b60028414156104a05780600354028260025402846001540201016005819055506104b8565b80600354028260025402846001540201016006819055505b5b5050505056fea264697066735822122035d843a487b40ebb72b85fe1e1239e8fa66574935048ffc5425538b76ad05ac964736f6c63430006010033
+```
+
+反编译
+
+```assembly
+contract Contract {
+    function main() {
+        memory[0x40:0x60] = 0x80;
+        var var0 = msg.value;
+    
+        if (var0) { revert(memory[0x00:0x00]); }
+    
+        if (msg.data.length < 0x04) { revert(memory[0x00:0x00]); }
+    
+        var0 = msg.data[0x00:0x20] >> 0xe0;
+    
+        if (0x6ca5b5b0 > var0) {
+            if (var0 == 0x0bcbbd21) {
+                // Dispatch table entry for r2()
+                var var1 = 0x00dc;
+                var var2 = r2();
+                var temp0 = memory[0x40:0x60];
+                memory[temp0:temp0 + 0x20] = var2;
+                var temp1 = memory[0x40:0x60];
+                return memory[temp1:temp1 + (temp0 + 0x20) - temp1];
+            } else if (var0 == 0x343943bd) {
+                // Dispatch table entry for 0x343943bd (unknown)
+                var1 = 0x00fa;
+                var2 = func_02F2();
+                var temp2 = memory[0x40:0x60];
+                memory[temp2:temp2 + 0x20] = var2;
+                var temp3 = memory[0x40:0x60];
+                return memory[temp3:temp3 + (temp2 + 0x20) - temp3];
+            } else if (var0 == 0x4ff13571) {
+                // Dispatch table entry for x2()
+                var1 = 0x0118;
+                var2 = x2();
+                var temp4 = memory[0x40:0x60];
+                memory[temp4:temp4 + 0x20] = var2;
+                var temp5 = memory[0x40:0x60];
+                return memory[temp5:temp5 + (temp4 + 0x20) - temp5];
+            } else if (var0 == 0x56b15fe3) {
+                // Dispatch table entry for feistel(uint256,uint256,uint256)
+                var1 = 0x016e;
+                var2 = 0x04;
+                var var3 = msg.data.length - var2;
+            
+                if (var3 < 0x60) { revert(memory[0x00:0x00]); }
+            
+                feistel(var2, var3);
+                stop();
+            } else if (var0 == 0x5e031f4a) {
+                // Dispatch table entry for setr2(uint256)
+                var1 = 0x019c;
+                var2 = 0x04;
+                var3 = msg.data.length - var2;
+            
+                if (var3 < 0x20) { revert(memory[0x00:0x00]); }
+            
+                setr2(var2, var3);
+                stop();
+            } else if (var0 == 0x6c3ce676) {
+                // Dispatch table entry for setr3(uint256)
+                var1 = 0x01ca;
+                var2 = 0x04;
+                var3 = msg.data.length - var2;
+            
+                if (var3 < 0x20) { revert(memory[0x00:0x00]); }
+            
+                setr3(var2, var3);
+                stop();
+            } else { revert(memory[0x00:0x00]); }
+        } else if (0x8bf6e410 > var0) {
+            if (var0 == 0x6ca5b5b0) {
+                // Dispatch table entry for r1()
+                var1 = 0x01d4;
+                var2 = r1();
+                var temp6 = memory[0x40:0x60];
+                memory[temp6:temp6 + 0x20] = var2;
+                var temp7 = memory[0x40:0x60];
+                return memory[temp7:temp7 + (temp6 + 0x20) - temp7];
+            } else if (var0 == 0x7059c7e0) {
+                // Dispatch table entry for setr1(uint256)
+                var1 = 0x0216;
+                var2 = 0x04;
+                var3 = msg.data.length - var2;
+            
+                if (var3 < 0x20) { revert(memory[0x00:0x00]); }
+            
+                setr1(var2, var3);
+                stop();
+            } else if (var0 == 0x890eba68) {
+                // Dispatch table entry for flag()
+                var1 = 0x0220;
+                var2 = flag();
+                var temp8 = memory[0x40:0x60];
+                memory[temp8:temp8 + 0x20] = var2;
+                var temp9 = memory[0x40:0x60];
+                return memory[temp9:temp9 + (temp8 + 0x20) - temp9];
+            } else { revert(memory[0x00:0x00]); }
+        } else if (var0 == 0x8bf6e410) {
+            // Dispatch table entry for 0x8bf6e410 (unknown)
+            var1 = 0x023e;
+            var2 = func_0440();
+            var temp10 = memory[0x40:0x60];
+            memory[temp10:temp10 + 0x20] = var2;
+            var temp11 = memory[0x40:0x60];
+            return memory[temp11:temp11 + (temp10 + 0x20) - temp11];
+        } else if (var0 == 0xa3b78873) {
+            // Dispatch table entry for 0xa3b78873 (unknown)
+            var1 = 0x025c;
+            var2 = func_0446();
+            var temp12 = memory[0x40:0x60];
+            memory[temp12:temp12 + 0x20] = var2;
+            var temp13 = memory[0x40:0x60];
+            return memory[temp13:temp13 + (temp12 + 0x20) - temp13];
+        } else if (var0 == 0xa7ba732e) {
+            // Dispatch table entry for setflag(uint256)
+            var1 = 0x029e;
+            var2 = 0x04;
+            var3 = msg.data.length - var2;
+        
+            if (var3 < 0x20) { revert(memory[0x00:0x00]); }
+        
+            setflag(var2, var3);
+            stop();
+        } else if (var0 == 0xc4ee5c77) {
+            // Dispatch table entry for calcx(uint256,uint256,uint256,uint256)
+            var1 = 0x02ea;
+            var2 = 0x04;
+            var3 = msg.data.length - var2;
+        
+            if (var3 < 0x80) { revert(memory[0x00:0x00]); }
+        
+            calcx(var2, var3);
+            stop();
+        } else { revert(memory[0x00:0x00]); }
+    }
+    
+    function feistel(var arg0, var arg1) {
+        var temp0 = arg0;
+        var temp1 = temp0 + 0x20;
+        arg0 = msg.data[temp0:temp0 + 0x20];
+        arg1 = msg.data[temp1:temp1 + 0x20];
+        var var0 = msg.data[temp1 + 0x20:temp1 + 0x20 + 0x20];
+        var temp2 = storage[0x04] & 0x2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+        var temp3 = arg0;
+        var temp4 = temp2 ~ (storage[0x04] & 0x555555555555555555555555555555555555) ~ temp3;
+        var temp5 = arg1;
+        var temp6 = temp4 ~ temp2 ~ temp5;
+        var temp7 = var0;
+        storage[0x04] = temp6 ~ temp6 ~ temp4 ~ temp7;
+        var temp8 = storage[0x05] & 0x2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+        var temp9 = temp8 ~ (storage[0x05] & 0x555555555555555555555555555555555555) ~ temp3;
+        var temp10 = temp9 ~ temp8 ~ temp5;
+        storage[0x05] = temp10 ~ temp10 ~ temp9 ~ temp7;
+        var temp11 = storage[0x06] & 0x2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+        var temp12 = temp11 ~ (storage[0x06] & 0x555555555555555555555555555555555555) ~ temp3;
+        var temp13 = temp12 ~ temp11 ~ temp5;
+        storage[0x06] = temp13 ~ temp13 ~ temp12 ~ temp7;
+    }
+    
+    function setr2(var arg0, var arg1) {
+        arg0 = msg.data[arg0:arg0 + 0x20];
+        arg1 = arg0;
+        var var0 = storage[0x00];
+    
+        if (!arg1) { assert(); }
+    
+        storage[0x02] = var0 % arg1;
+    }
+    
+    function setr3(var arg0, var arg1) {
+        arg0 = msg.data[arg0:arg0 + 0x20];
+        arg1 = arg0;
+        var var0 = storage[0x00];
+    
+        if (!arg1) { assert(); }
+    
+        storage[0x03] = var0 % arg1;
+    }
+    
+    function setr1(var arg0, var arg1) {
+        arg0 = msg.data[arg0:arg0 + 0x20];
+        arg1 = arg0;
+        var var0 = storage[0x00];
+    
+        if (!arg1) { assert(); }
+    
+        storage[0x01] = var0 % arg1;
+    }
+    
+    function setflag(var arg0, var arg1) {
+        arg0 = msg.data[arg0:arg0 + 0x20];
+        storage[0x00] = arg0;
+    }
+    
+    function calcx(var arg0, var arg1) {
+        var temp0 = arg0;
+        var temp1 = temp0 + 0x20;
+        arg0 = msg.data[temp0:temp0 + 0x20];
+        var temp2 = temp1 + 0x20;
+        arg1 = msg.data[temp1:temp1 + 0x20];
+        var var0 = msg.data[temp2:temp2 + 0x20];
+        var var1 = msg.data[temp2 + 0x20:temp2 + 0x20 + 0x20];
+    
+        if (arg0 == 0x01) {
+            storage[0x04] = storage[0x01] * arg1 + storage[0x02] * var0 + storage[0x03] * var1;
+            return;
+        } else if (arg0 != 0x02) {
+            storage[0x06] = storage[0x01] * arg1 + storage[0x02] * var0 + storage[0x03] * var1;
+            return;
+        } else {
+            storage[0x05] = storage[0x01] * arg1 + storage[0x02] * var0 + storage[0x03] * var1;
+            return;
+        }
+    }
+    
+    function r2() returns (var r0) { return storage[0x02]; }
+    
+    function func_02F2() returns (var r0) { return storage[0x04]; }
+    
+    function x2() returns (var r0) { return storage[0x05]; }
+    
+    function r1() returns (var r0) { return storage[0x01]; }
+    
+    function flag() returns (var r0) { return storage[0x00]; }
+    
+    function func_0440() returns (var r0) { return storage[0x03]; }
+    
+    function func_0446() returns (var r0) { return storage[0x06]; }
+}
+```
+
+另一个
+
+```assembly
+contract disassembler {
+
+    uint256 public r2;
+
+    uint256 public VAR_343943BD;
+
+    uint256 public x2;
+
+    function FUNC_56B15FE3( uint256 arg0,uint256 arg1,uint256 arg2) public return ()
+    {
+        VAR_343943BD = XOR(XOR(XOR(XOR(XOR((VAR_343943BD & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_343943BD & 0x555555555555555555555555555555555555)),arg0),(VAR_343943BD & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR(XOR(XOR(XOR(XOR((VAR_343943BD & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_343943BD & 0x555555555555555555555555555555555555)),arg0),(VAR_343943BD & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR((VAR_343943BD & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_343943BD & 0x555555555555555555555555555555555555)),arg0)),arg2));
+        x2 = XOR(XOR(XOR(XOR(XOR((x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(x2 & 0x555555555555555555555555555555555555)),arg0),(x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR(XOR(XOR(XOR(XOR((x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(x2 & 0x555555555555555555555555555555555555)),arg0),(x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR((x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(x2 & 0x555555555555555555555555555555555555)),arg0)),arg2));
+        VAR_A3B78873 = XOR(XOR(XOR(XOR(XOR((VAR_A3B78873 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_A3B78873 & 0x555555555555555555555555555555555555)),arg0),(VAR_A3B78873 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR(XOR(XOR(XOR(XOR((VAR_A3B78873 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_A3B78873 & 0x555555555555555555555555555555555555)),arg0),(VAR_A3B78873 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)),arg1),XOR(XOR((VAR_A3B78873 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA),(VAR_A3B78873 & 0x555555555555555555555555555555555555)),arg0)),arg2));
+        return();
+    }
+
+    function FUNC_5E031F4A( uint256 arg0) public return ()
+    {
+        var4 = VAR_890EBA68;
+        assert(arg0);
+        temp2 = MOD(var4,arg0);
+        r2 = temp2;
+        return();
+    }
+
+    function FUNC_6C3CE676( uint256 arg0) public return ()
+    {
+        var4 = VAR_890EBA68;
+        assert(arg0);
+        temp4 = MOD(var4,arg0);
+        VAR_8BF6E410 = temp4;
+        return();
+    }
+
+    uint256 public r1;
+
+    function FUNC_7059C7E0( uint256 arg0) public return ()
+    {
+        var4 = VAR_890EBA68;
+        assert(arg0);
+        temp6 = MOD(var4,arg0);
+        r1 = temp6;
+        return();
+    }
+
+    uint256 public VAR_890EBA68;
+
+    uint256 public VAR_8BF6E410;
+
+    uint256 public VAR_A3B78873;
+
+    function FUNC_A7BA732E( uint256 arg0) public return ()
+    {
+        VAR_890EBA68 = arg0;
+        return();
+    }
+
+    function FUNC_C4EE5C77( uint256 arg0,uint256 arg1,uint256 arg2,uint256 arg3) public return ()
+    {
+        if ((arg0 == 0x1)) 
+        {
+            VAR_343943BD = (((r1 * arg1) + (r2 * arg2)) + (VAR_8BF6E410 * arg3));
+            goto label_000004B9;
+        }
+        else if ((arg0 == 0x2)) 
+        {
+            x2 = (((r1 * arg1) + (r2 * arg2)) + (VAR_8BF6E410 * arg3));
+            goto label_000004B8;
+        }
+        else
+        {
+            VAR_A3B78873 = (((r1 * arg1) + (r2 * arg2)) + (VAR_8BF6E410 * arg3));
+label_000004B8:
+label_000004B9:
+            return();
+        }
+    }
+
+    function main() public return ()
+    {
+        mstore(0x40,0x80);
+        var0 = msg.value;
+        require(!msg.value);
+        if ((msg.data.length < 0x4)) 
+        {
+label_000000CF:
+            revert(0x0,0x0);
+        }
+        else
+        {
+            var0 = SHR(0xE0,msg.data(0x0));
+            if ((0x6CA5B5B0 > SHR(0xE0,msg.data(0x0)))) 
+            {
+
+                //ISSUE:COMMENT: Function r2()
+                if ((0xBCBBD21 == var0)) 
+                {
+                    var2 = r2();
+                    mstore(0x80,var2);
+                    RETURN(0x80,0x20);
+                }
+
+                //ISSUE:COMMENT: Function FUNC_343943BD()
+                else if ((0x343943BD == var0)) 
+                {
+                    var2 = FUNC_343943BD();
+                    mstore(0x80,var2);
+                    RETURN(0x80,0x20);
+                }
+
+                //ISSUE:COMMENT: Function x2()
+                else if ((0x4FF13571 == var0)) 
+                {
+                    var2 = x2();
+                    mstore(0x80,var2);
+                    RETURN(0x80,0x20);
+                }
+
+                //ISSUE:COMMENT: Function FUNC_56B15FE3()
+                else if ((0x56B15FE3 == var0)) 
+                {
+                    var3 = (msg.data.length - 0x4);
+                    require((0x60 < (msg.data.length - 0x4)));
+                    FUNC_56B15FE3(msg.data(0x4),msg.data(0x24),msg.data(0x44));
+                    stop();
+                }
+
+                //ISSUE:COMMENT: Function FUNC_5E031F4A()
+                else if ((0x5E031F4A == var0)) 
+                {
+                    var3 = (msg.data.length - 0x4);
+                    require((0x20 < (msg.data.length - 0x4)));
+                    FUNC_5E031F4A(msg.data(0x4));
+                    stop();
+                }
+
+                //ISSUE:COMMENT: Function FUNC_6C3CE676()
+                else if ((0x6C3CE676 == var0)) 
+                {
+                    var3 = (msg.data.length - 0x4);
+                    require((0x20 < (msg.data.length - 0x4)));
+                    FUNC_6C3CE676(msg.data(0x4));
+                    stop();
+                }
+                else
+                {
+                    goto label_000000CF;
+                }
+            }
+            else if ((0x8BF6E410 > var0)) 
+            {
+
+                //ISSUE:COMMENT: Function r1()
+                if ((0x6CA5B5B0 == var0)) 
+                {
+                    var2 = r1();
+                    mstore(0x80,var2);
+                    RETURN(0x80,0x20);
+                }
+
+                //ISSUE:COMMENT: Function FUNC_7059C7E0()
+                else if ((0x7059C7E0 == var0)) 
+                {
+                    var3 = (msg.data.length - 0x4);
+                    require((0x20 < (msg.data.length - 0x4)));
+                    FUNC_7059C7E0(msg.data(0x4));
+                    stop();
+                }
+
+                //ISSUE:COMMENT: Function FUNC_890EBA68()
+                else if ((0x890EBA68 == var0)) 
+                {
+                    var2 = FUNC_890EBA68();
+                    mstore(0x80,var2);
+                    RETURN(0x80,0x20);
+                }
+                else
+                {
+                    goto label_000000CF;
+                }
+            }
+
+            //ISSUE:COMMENT: Function FUNC_8BF6E410()
+            else if ((0x8BF6E410 == var0)) 
+            {
+                var2 = FUNC_8BF6E410();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function FUNC_A3B78873()
+            else if ((0xA3B78873 == var0)) 
+            {
+                var2 = FUNC_A3B78873();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function FUNC_A7BA732E()
+            else if ((0xA7BA732E == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                require((0x20 < (msg.data.length - 0x4)));
+                FUNC_A7BA732E(msg.data(0x4));
+                stop();
+            }
+
+            //ISSUE:COMMENT: Function FUNC_C4EE5C77()
+            else if ((0xC4EE5C77 == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                require((0x80 < (msg.data.length - 0x4)));
+                FUNC_C4EE5C77(msg.data(0x4),msg.data(0x24),msg.data(0x44),msg.data(0x64));
+                stop();
+            }
+            else
+            {
+                goto label_000000CF;
+            }
+        }
+    }
+
+}
+```
+
+根据op.log文件提取关键代码
+
+```assembly
+contract disassembler {
+
+    uint256 public r2;
+
+    uint256 public x1;
+
+    uint256 public x2;
+
+    function feistel( uint256 arg0,uint256 arg1,uint256 arg2) public return ()
+    {
+        x1 = (x1 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x1 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2;
+        x2 = (x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x2 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2;
+        x3 = (x3 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x3 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2;
+        return();
+    }
+
+    function setr2( uint256 arg0) public return ()
+    {
+        r2 = MOD(flag,arg0);
+        return();
+    }
+
+    function setr3( uint256 arg0) public return ()
+    {
+        r3 = MOD(flag,arg0);
+        return();
+    }
+
+    uint256 public r1;
+
+    function setr1( uint256 arg0) public return ()
+    {
+        r1 = MOD(flag,arg0);
+        return();
+    }
+
+    uint256 public flag;
+
+    uint256 public r3;
+
+    uint256 public x3;
+
+    function setflag( uint256 arg0) public return ()
+    {
+        flag = arg0;
+        return();
+    }
+
+    function calcx( uint256 arg0,uint256 arg1,uint256 arg2,uint256 arg3) public return ()
+    {
+        if ((arg0 == 0x1)) 
+        {
+            x1 = (((r1 * arg1) + (r2 * arg2)) + (r3 * arg3));
+        }
+        else if ((arg0 == 0x2)) 
+        {
+            x2 = (((r1 * arg1) + (r2 * arg2)) + (r3 * arg3));
+        }
+        else
+        {
+            x3 = (((r1 * arg1) + (r2 * arg2)) + (r3 * arg3));
+        }
+        return();
+    }
+
+    function main() public return ()
+    {
+        var0 = msg.value;
+        
+        var0 = SHR(0xE0,msg.data(0x0));
+        if ((0x6CA5B5B0 > SHR(0xE0,msg.data(0x0)))) 
+        {
+
+            //ISSUE:COMMENT: Function r2()
+            if ((0xBCBBD21 == var0)) 
+            {
+                var2 = r2();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function FUNC_343943BD()
+            else if ((0x343943BD == var0)) 
+            {
+                var2 = FUNC_343943BD();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function x2()
+            else if ((0x4FF13571 == var0)) 
+            {
+                var2 = x2();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function feistel()
+            else if ((0x56B15FE3 == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                feistel(msg.data(0x4),msg.data(0x24),msg.data(0x44));
+                stop();
+            }
+
+            //ISSUE:COMMENT: Function setr2()
+            else if ((0x5E031F4A == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                setr2(msg.data(0x4));
+                stop();
+            }
+
+            //ISSUE:COMMENT: Function setr3()
+            else if ((0x6C3CE676 == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                setr3(msg.data(0x4));
+                stop();
+            }
+            else
+            {
+                goto label_000000CF;
+            }
+        }
+        else if ((0x8BF6E410 > var0)) 
+        {
+
+            //ISSUE:COMMENT: Function r1()
+            if ((0x6CA5B5B0 == var0)) 
+            {
+                var2 = r1();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+
+            //ISSUE:COMMENT: Function setr1()
+            else if ((0x7059C7E0 == var0)) 
+            {
+                var3 = (msg.data.length - 0x4);
+                setr1(msg.data(0x4));
+                stop();
+            }
+
+            //ISSUE:COMMENT: Function FUNC_890EBA68()
+            else if ((0x890EBA68 == var0)) 
+            {
+                var2 = FUNC_890EBA68();
+                mstore(0x80,var2);
+                RETURN(0x80,0x20);
+            }
+            else
+            {
+                goto label_000000CF;
+            }
+        }
+
+        //ISSUE:COMMENT: Function FUNC_8BF6E410()
+        else if ((0x8BF6E410 == var0)) 
+        {
+            var2 = FUNC_8BF6E410();
+            mstore(0x80,var2);
+            RETURN(0x80,0x20);
+        }
+
+        //ISSUE:COMMENT: Function FUNC_A3B78873()
+        else if ((0xA3B78873 == var0)) 
+        {
+            var2 = FUNC_A3B78873();
+            mstore(0x80,var2);
+            RETURN(0x80,0x20);
+        }
+
+        //ISSUE:COMMENT: Function setflag()
+        else if ((0xA7BA732E == var0)) 
+        {
+            var3 = (msg.data.length - 0x4);
+            require((0x20 < (msg.data.length - 0x4)));
+            setflag(msg.data(0x4));
+            stop();
+        }
+
+        //ISSUE:COMMENT: Function calcx()
+        else if ((0xC4EE5C77 == var0)) 
+        {
+            var3 = (msg.data.length - 0x4);
+            calcx(msg.data(0x4),msg.data(0x24),msg.data(0x44),msg.data(0x64));
+            stop();
+        }
+        else
+        {
+            goto label_000000CF;
+        }
+    }
+
+}
+```
+
+input
+
+```assembly
+input:0x7059c7e00000000000000000000000000000000088c218df8c5c25674af5808d963bfee9
+
+input:0x5e031f4a00000000000000000000000000000000fa8cca1bced017e0ab064d4844c3020b
+
+input:0x6c3ce67600000000000000000000000000000000e0ac283049469716cebd61a5b97b8bef
+
+input:0xc4ee5c770000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000d06200000000000000000000000000000000000000000000000000000000000037b9000000000000000000000000000000000000000000000000000000000000cc13
+result:x1 14678491206170330851881690558556870568208252
+
+input:0xc4ee5c770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000a4fb000000000000000000000000000000000000000000000000000000000000a0a50000000000000000000000000000000000000000000000000000000000002fca
+
+input:0xc4ee5c7700000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000008f9b0000000000000000000000000000000000000000000000000000000000009805000000000000000000000000000000000000000000000000000000000000a6a0
+
+input:0x56b15fe30000000000000000000000000000xxxxx...xxxxxxxx
+result: x1 2357997788534811140333166336809177915724020 x2 94024083436562980853861433269689272115769 x3 7686765725723381031146546660250331403246417
+```
+
+input输入的很多，必须弄清出他的格式，为了将调用请求代理到给另一个合约中，我们必须将代理合约收到的msg.data传递给目标合约。由于msg.data的类型为bytes，大小是不固定的，数据大小存储在msg.data的第一个字长（32个字节）中。如果我们只想提取实际数据，则需要跳过前32字节，从msg.data的`0x20`（32个字节）位置开始。
+
+所以以
+
+```assembly
+input:0xc4ee5c770000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000d06200000000000000000000000000000000000000000000000000000000000037b9000000000000000000000000000000000000000000000000000000000000cc13
+```
+
+来举例，参数分别是
+
+```assembly
+0xc4ee5c77
+0000000000000000000000000000000000000000000000000000000000000001
+000000000000000000000000000000000000000000000000000000000000d062
+00000000000000000000000000000000000000000000000000000000000037b9
+000000000000000000000000000000000000000000000000000000000000cc13
+```
+
+根据input，可以知道函数的调用顺序是
+
+setr1(0x88c218df8c5c25674af5808d963bfee9)
+
+setr2(0xfa8cca1bced017e0ab064d4844c3020b)
+
+setr3(0xe0ac283049469716cebd61a5b97b8bef)
+
+calcx(0x1, 0xd062, 0x37b9, 0xcc13)
+
+calcx(0x2, 0xa4fb, 0xa0a5, 0x2fca)
+
+calcx(0x3, 0x8f9b, 0x9805, 0xa6a0)
+
+feistel(arg0, arg1, arg2)
+
+也就是
+
+```assembly
+r1 = flag % 0x88c218df8c5c25674af5808d963bfee9
+r2 = flag % 0xfa8cca1bced017e0ab064d4844c3020b
+r3 = flag % 0xe0ac283049469716cebd61a5b97b8bef
+
+x1 = (r1 * 0xd062) + (r2 * 0x37b9) + (r3 * 0xcc13) = 14678491206170330851881690558556870568208252
+x2 = (r1 * 0xa4fb) + (r2 * 0xa0a5) + (r3 * 0x2fca)
+x3 = (r1 * 0x8f9b) + (r2 * 0x9805) + (r3 * 0xa6a0)
+
+(x1 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x1 & 0x555555555555555555555555555555555555) ^ n = 2357997788534811140333166336809177915724020
+(x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x2 & 0x555555555555555555555555555555555555) ^ n = 94024083436562980853861433269689272115769
+(x3 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x3 & 0x555555555555555555555555555555555555) ^ n = 7686765725723381031146546660250331403246417
+
+'''
+(x1 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x1 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2 = 2357997788534811140333166336809177915724020
+(x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x2 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2 = 94024083436562980853861433269689272115769
+(x3 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x3 & 0x555555555555555555555555555555555555) ^ arg0 ^ arg2 = 7686765725723381031146546660250331403246417
+'''
+```
+
+可以看到最后的三个式子都用到了arg0 ^ arg2，所以可以把arg0和arg2看作一个整体。直接求得x2，x3.
+
+解方程求得r1，r2，r3，最后用中国剩余定理求解flag
+
+```assembly
+from z3 import *
+import gmpy2
+from Crypto.Util.number import long_to_bytes
+from functools import reduce
+
+def  merge(a1,n1,a2,n2):
+    d = math.gcd(n1,n2)
+    c = a2-a1
+    if c%d!=0:
+        return 0
+    c = (c%n2+n2)%n2
+    c = c//d
+    n1 = n1//d
+    n2 = n2//d
+    c *= gmpy2.invert(n1,n2)
+    c %= n2
+    c *= n1*d
+    c += a1
+    global n3
+    global a3
+    n3 = n1*n2*d
+    a3 = (c%n3+n3)%n3
+    return 1
+def exCRT(a,n):
+    a1=a[0]
+    n1=n[0]
+    le= len(a)
+    for i in range(1,le):
+        a2 = a[i]
+        n2=n[i]
+        if not merge(a1,n1,a2,n2):
+            return -1
+        a1 = a3
+        n1 = n3
+    global mod
+    mod=n1
+    return (a1%n1+n1)%n1
+
+s = z3.Solver()
+
+r1 = BitVec('r1',256)
+r2 = BitVec('r2',256)
+r3 = BitVec('r3',256)
+
+x1 = (r1 * 0xd062) + (r2 * 0x37b9) + (r3 * 0xcc13)
+x2 = (r1 * 0xa4fb) + (r2 * 0xa0a5) + (r3 * 0x2fca)
+x3 = (r1 * 0x8f9b) + (r2 * 0x9805) + (r3 * 0xa6a0)
+
+n = 2357997788534811140333166336809177915724020 ^ (x1 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x1 & 0x555555555555555555555555555555555555)
+
+s.add(x1 == 2357997788534811140333166336809177915724020)
+s.add((x2 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x2 & 0x555555555555555555555555555555555555) ^ n == 94024083436562980853861433269689272115769)
+s.add((x3 & 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) ^ (x3 & 0x555555555555555555555555555555555555) ^ n == 7686765725723381031146546660250331403246417)
+
+while s.check() == sat:
+    c = []
+    c.append(s.model()[r1].as_long())
+    c.append(s.model()[r2].as_long())
+    c.append(s.model()[r3].as_long())
+    print(c)
+
+    n = [0x88c218df8c5c25674af5808d963bfee9,0xfa8cca1bced017e0ab064d4844c3020b,0xe0ac283049469716cebd61a5b97b8bef]
+
+    p_3 = exCRT(c,n)
+    p = gmpy2.iroot(p_3,3)[0]
+    print(long_to_bytes(p))
+    if p[:4] == (b'flag'):
+        break
+```
+
+这里因为x2和x3参与的是与运算，所以解不唯一，而且有很多，所以只能遍历。
+
+最后求得flag
+
+flag{wuhan_v3r9_g009_s4y_w3jj_8}
+

@@ -1,0 +1,286 @@
+---
+layout: post
+title:  Ph0en1x-100
+date:   2021-06-04 00:01:01 +0300
+image:  2021-06-04-dog.jpg
+tags:   [ctf,reverse,mobile,adworld,android]
+---
+
+jeb打开，查看MainActivity
+
+```assembly
+package com.ph0en1x.android_crackme;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+public class MainActivity extends AppCompatActivity {
+    EditText etFlag;
+
+    static {
+        System.loadLibrary("phcm");
+    }
+
+    public MainActivity() {
+        super();
+    }
+
+    public native String encrypt(String arg1) {
+    }
+
+    public native String getFlag() {
+    }
+
+    public String getSecret(String arg12) {
+        String v7 = "KE3TLNE6M43EK4GM34LKMLETG";
+        try {
+            byte[] v3 = MessageDigest.getInstance(this.encrypt(v7).substring(5, 8)).digest(arg12.getBytes("UTF-8"));
+            if(v3 == null) {
+                return null;
+            }
+
+            StringBuilder v4 = new StringBuilder(v3.length * 2);
+            byte[] v0 = v3;
+            int v6 = v0.length;
+            int v5;
+            for(v5 = 0; v5 < v6; ++v5) {
+                int v1 = v0[v5];
+                if((v1 & 0xFF) < 16) {
+                    v4.append("0");
+                }
+
+                v4.append(Integer.toHexString(v1 & 0xFF));
+            }
+
+            String v8 = v4.toString();
+            return v8;
+        }
+        catch(UnsupportedEncodingException v2) {
+            v2.printStackTrace();
+        }
+        catch(NoSuchAlgorithmException v2_1) {
+            v2_1.printStackTrace();
+        }
+
+        return null;
+    }
+
+    protected void onCreate(Bundle arg2) {
+        super.onCreate(arg2);
+        this.setContentView(0x7F040019);
+        this.etFlag = this.findViewById(0x7F0C004F);
+    }
+
+    public void onGoClick(View arg5) {
+        if(this.getSecret(this.getFlag()).equals(this.getSecret(this.encrypt(this.etFlag.getText().toString())))) {
+            Toast.makeText(((Context)this), "Success", 1).show();
+        }
+        else {
+            Toast.makeText(((Context)this), "Failed", 1).show();
+        }
+    }
+}
+```
+
+可以看到要求getSecret(this.getFlag())和getSecret(this.encrypt(this.etFlag.getText().toString()))相等，感觉getSecret()没用，因为只要传入的参数一样，则函数返回的结果也相同，所以转换为：
+
+this.getFlag()和this.encrypt(this.etFlag.getText().toString())相等。
+
+this.getFlag()和this.encrypt()都在native层，ida打开so文件。
+
+getFlag
+
+```assembly
+int __cdecl Java_com_ph0en1x_android_1crackme_MainActivity_getFlag(int a1)
+{
+  signed int v1; // esi
+  char *v2; // edi
+  char v3; // al
+  int result; // eax
+  int v5; // [esp+26h] [ebp-46h]
+  int v6; // [esp+2Ah] [ebp-42h]
+  int v7; // [esp+2Eh] [ebp-3Eh]
+  __int16 v8; // [esp+32h] [ebp-3Ah]
+  int v9; // [esp+34h] [ebp-38h]
+  int v10; // [esp+38h] [ebp-34h]
+  int v11; // [esp+3Ch] [ebp-30h]
+  int v12; // [esp+40h] [ebp-2Ch]
+  int v13; // [esp+44h] [ebp-28h]
+  int v14; // [esp+48h] [ebp-24h]
+  int v15; // [esp+4Ch] [ebp-20h]
+  int v16; // [esp+50h] [ebp-1Ch]
+  int v17; // [esp+54h] [ebp-18h]
+  int v18; // [esp+58h] [ebp-14h]
+  unsigned int v19; // [esp+5Ch] [ebp-10h]
+
+  v1 = 38;
+  v2 = (char *)&v18 + 2;
+  v9 = 1279407662;
+  v10 = 987807583;
+  v19 = __readgsdword(0x14u);
+  v11 = 1663091624;
+  v12 = 482391945;
+  v13 = 683820061;
+  v14 = 235072895;
+  v15 = -1735432611;
+  v16 = 382777269;
+  v17 = -67599539;
+  v18 = 4670209;
+  v5 = 1819043144;
+  v6 = 1750081647;
+  v7 = 829318448;
+  v8 = 120;
+  do
+  {
+    v3 = *v2--;
+    v2[1] = (*((_BYTE *)&v5 + v1-- % 13) ^ (v3 + 1 - *v2)) - 1;
+  }
+  while ( v1 );
+  LOBYTE(v9) = (v9 ^ 0x48) - 1;
+  result = (*(int (__cdecl **)(int, int *))(*(_DWORD *)a1 + 668))(a1, &v9);
+  if ( __readgsdword(0x14u) != v19 )
+    sub_4B0();
+  return result;
+}
+```
+
+看上去有点麻烦。
+
+encrypt
+
+```assembly
+int __cdecl Java_com_ph0en1x_android_1crackme_MainActivity_encrypt(int a1, int a2, int a3)
+{
+  size_t v3; // esi
+  const char *s; // edi
+
+  v3 = 0;
+  for ( s = (const char *)(*(int (__cdecl **)(int, int, _DWORD))(*(_DWORD *)a1 + 676))(a1, a3, 0); v3 < strlen(s); --s[v3++] )
+    ;
+  return (*(int (__cdecl **)(int, const char *))(*(_DWORD *)a1 + 668))(a1, s);
+}
+```
+
+就是简单地将字符串中的每个字符的值减1.
+
+由于getFlag()有点麻烦，思索怎样能够直接得到getFlag()返回的字符串。
+
+修改smali源码，让app显示getFlag方法的执行结果。
+
+使用AndroidKiller打开，在字节码中定位那段代码
+
+```assembly
+.method public onGoClick(Landroid/view/View;)V
+    .locals 4
+    .param p1, "v"    # Landroid/view/View;
+
+    .prologue
+    const/4 v3, 0x1
+
+    .line 33
+    iget-object v1, p0, Lcom/ph0en1x/android_crackme/MainActivity;->etFlag:Landroid/widget/EditText;
+
+    invoke-virtual {v1}, Landroid/widget/EditText;->getText()Landroid/text/Editable;
+
+    move-result-object v1
+
+    invoke-virtual {v1}, Ljava/lang/Object;->toString()Ljava/lang/String;
+
+    move-result-object v0
+
+    .line 34
+    .local v0, "sInput":Ljava/lang/String;
+    invoke-virtual {p0}, Lcom/ph0en1x/android_crackme/MainActivity;->getFlag()Ljava/lang/String;
+
+    move-result-object v1
+
+    invoke-virtual {p0, v1}, Lcom/ph0en1x/android_crackme/MainActivity;->getSecret(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v1
+
+    invoke-virtual {p0, v0}, Lcom/ph0en1x/android_crackme/MainActivity;->encrypt(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v2
+
+    invoke-virtual {p0, v2}, Lcom/ph0en1x/android_crackme/MainActivity;->getSecret(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v2
+
+    invoke-virtual {v1, v2}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+
+    move-result v1
+
+    if-eqz v1, :cond_0
+
+    .line 35
+    const-string v1, "Success"
+
+    invoke-static {p0, v1, v3}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+
+    move-result-object v1
+
+    invoke-virtual {v1}, Landroid/widget/Toast;->show()V
+
+    .line 39
+    :goto_0
+    return-void
+
+    .line 37
+    :cond_0
+    const-string v1, "Failed"
+
+    invoke-static {p0, v1, v3}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+
+    move-result-object v1
+
+    invoke-virtual {v1}, Landroid/widget/Toast;->show()V
+
+    goto :goto_0
+.end method
+```
+
+将保存"fail"的v1变量改为getFlag()的返回值。
+
+```assembly
+.line 37
+:cond_0
+#const-string v1, "Failed"
+invoke-virtual {p0}, Lcom/ph0en1x/android_crackme/MainActivity;->getFlag()Ljava/lang/String;
+
+move-result-object v1
+
+invoke-static {p0, v1, v3}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+
+move-result-object v1
+
+invoke-virtual {v1}, Landroid/widget/Toast;->show()V
+
+goto :goto_0
+```
+
+其实就是直接将上面第一次调用getFlag()的那两行代码直接复制过来。
+
+妈的这里的反编译需要用到apktools.jar，而2.x版本的需要jdk1.7，搞java环境搞了一晚上，终于得到getflag()的结果。
+
+ek\`fz@q2^x/t^fn0mF^6/^rb\`qanqntfg^E`hq\|
+
+然后每个字符减1
+
+```assembly
+>>> s = "ek`fz@q2^x/t^fn0mF^6/^rb`qanqntfg^E`hq|"
+>>> s = list(s)
+>>> flag = ""
+>>> for i in s:
+...     flag += chr(ord(i)+1)
+...
+>>> flag
+'flag{Ar3_y0u_go1nG_70_scarborough_Fair}'
+```
+

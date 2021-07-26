@@ -1,0 +1,129 @@
+---
+layout: post
+title:  backdoor
+date:   2021-06-02 00:01:01 +0300
+image:  2021-06-02-easter.jpg
+tags:   [ctf,reverse,chunqiubei2021,golang]
+---
+
+ida7.6yyds
+
+直接出符号表
+
+main
+
+```assembly
+void __cdecl main_main()
+{
+  __int64 v0; // [rsp+10h] [rbp-78h]
+  __int64 v1; // [rsp+18h] [rbp-70h]
+  __int64 v2; // [rsp+20h] [rbp-68h]
+  __int64 v3; // [rsp+30h] [rbp-58h]
+  __int64 v4; // [rsp+38h] [rbp-50h]
+  __int64 v5; // [rsp+48h] [rbp-40h]
+  void *v6; // [rsp+60h] [rbp-28h] BYREF
+  void **v7; // [rsp+68h] [rbp-20h]
+  __int128 v8; // [rsp+70h] [rbp-18h]
+  __int64 v9; // [rsp+80h] [rbp-8h] BYREF
+
+  while ( (unsigned __int64)&v9 <= *(_QWORD *)(*(_QWORD *)NtCurrentTeb()->NtTib.ArbitraryUserPointer + 16LL) )
+    runtime_morestack_noctxt();
+  net_Listen((__int64)"tcp", 3LL, (__int64)"127.0.0.1:8721", 14LL);
+  if ( v3 )
+  {
+    v8 = 0LL;
+    v6 = &unk_4E7260;
+    v7 = &off_52FE80;
+    *(_QWORD *)&v8 = *(_QWORD *)(v3 + 8);
+    *((_QWORD *)&v8 + 1) = v4;
+    v0 = 2LL;
+    log_Fatal(&v6);
+  }
+  while ( 1 )
+  {
+    (*(void (__golang **)())(v2 + 24))();
+    v5 = v0;
+    if ( v1 )
+    {
+      v8 = 0LL;
+      v6 = &unk_4E7260;
+      v7 = &off_52FE90;
+      *(_QWORD *)&v8 = *(_QWORD *)(v1 + 8);
+      *((_QWORD *)&v8 + 1) = v2;
+      log_Println(&v6, 2LL, 2LL);
+    }
+    v1 = v5;
+    v0 = runtime_newproc(16, off_512A90);
+  }
+}
+```
+
+tcp监听本地8721端口。
+
+然后在左侧函数栏发现了main_decrypt()函数
+
+交叉引用找到main_Decrypt()函数，再查看交叉引用找到main_handleConnection()函数
+
+这个函数好像没有交叉引用，在main_main()里面没有看到它。
+
+```assembly
+void __golang __noreturn main_handleConnection(__int64 a1, __int64 a2)
+{
+  __int64 v2; // rax
+  __int64 v3; // [rsp+8h] [rbp-78h]
+  char v4; // [rsp+18h] [rbp-68h]
+  char v5; // [rsp+18h] [rbp-68h]
+  __int64 v6; // [rsp+20h] [rbp-60h]
+  __int64 v7; // [rsp+28h] [rbp-58h]
+  __int64 v8; // [rsp+30h] [rbp-50h]
+  unsigned __int64 v9; // [rsp+50h] [rbp-30h]
+  __int64 i; // [rsp+58h] [rbp-28h]
+  _QWORD *v11; // [rsp+60h] [rbp-20h]
+  void *retaddr; // [rsp+80h] [rbp+0h] BYREF
+
+  while ( (unsigned __int64)&retaddr <= *(_QWORD *)(*(_QWORD *)NtCurrentTeb()->NtTib.ArbitraryUserPointer + 16LL) )
+    runtime_morestack_noctxt();
+  v11 = (_QWORD *)runtime_newobject((__int64)&unk_4E8920);
+  *v11 = 0xCF6E7633149F46F5LL;
+  v11[1] = 0xD33674C27C6FE28ALL;
+  v11[2] = 0xF592D63BE79440D9LL;
+  v11[3] = 0xD33CF4C0B83E001BLL;
+  v11[4] = 0x8B615DC202F30A50LL;
+  v11[5] = 0x181C7380D6FF6BBLL;
+  v2 = runtime_makeslice((__int64)&unk_4E73E0, 1024LL, 1024LL);
+  for ( i = v2; ; v2 = i )
+  {
+    v3 = v2;
+    (*(void (**)(void))(a1 + 40))();
+    if ( !v7 )
+    {
+      if ( (unsigned __int64)(v6 - 1) > 0x400 )
+        runtime_panicSliceAcap(a2, v3);
+      v9 = v6 - 1;
+      v8 = encoding_base32___ptr_Encoding__EncodeToString(encoding_base32_StdEncoding, i, v6 - 1, 1024LL, v6, 0LL);
+      if ( v7 == 24 )
+      {
+        v6 = runtime_memequal(v6, (__int64)"M4YDCYLOM5BGCY3LMQYDA4Q=", 24LL, v4);
+        if ( v5 )
+        {
+          v7 = 1024LL;
+          main_Decrypt((__int64)v11, 0x30uLL, 48LL, i, v9);
+          if ( v8 )
+            v6 = (*(__int64 (__golang **)(__int64, __int64))(a1 + 80))(a2, v8);
+        }
+      }
+    }
+  }
+}
+```
+
+根据加密函数名字，知道"M4YDCYLOM5BGCY3LMQYDA4Q="应该是base32加密。解密得到g01angBackd00r
+
+函数的逻辑应该是我们输入一个字符串，程序调用encoding_base32\_\_\_ptr_Encoding\__EncodeToString函数将其加密，然后使用runtime_memequal()函数与"M4YDCYLOM5BGCY3LMQYDA4Q="比较。如果相同，则执行解密函数。
+
+```assembly
+>nc 127.0.0.1 8721
+g01angBackd00r
+flag{93b867f2-62b6-760a-7acb-355c80281e12}
+```
+

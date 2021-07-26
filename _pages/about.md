@@ -5,8 +5,6 @@ image: my-space.jpg
 permalink: /about/
 ---
 
-YQW
-
 NEU，CHINA
 
 <small>2020</small>
@@ -15,3 +13,4 @@ NEU，CHINA
 
 第四届河北师范大学信息安全挑战赛(2020 HECTF)
 
+<small>2021</small>

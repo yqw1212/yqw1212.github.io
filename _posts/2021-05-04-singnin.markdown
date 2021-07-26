@@ -1,0 +1,317 @@
+---
+layout: post
+title:  easy
+date:   2021-05-04 00:01:01 +0300
+image:  2021-05-04-heart.jpg
+tags:   [ctf,reverse,大牛杯2021,SSE2,ctfshow]
+---
+
+ida打开，查看main函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  char v3; // ST0C_1
+  char v5; // [esp+0h] [ebp-1Ch]
+  char v6; // [esp+14h] [ebp-8h]
+
+  sub_401020("Your input should be a-z|A-Z|0-9|_|!\n", v5);
+  sub_401020("Give me your flag:", v3);
+  sub_401050("%s", &v5);
+  if ( strlen(&v5) != 20 )
+  {
+    sub_401020("wrong length\n", v5);
+    exit(0);
+  }
+  v6 = 0;
+  sub_401080(&v5);
+  sub_401020("success!! flag is flag{input}\n", v5);
+  system("pause");
+  return 0;
+}
+```
+
+输入长度为20个字符。
+
+查看加密函数sub_401080()
+
+```assembly
+int __thiscall sub_401080(char *this)
+{
+  char *v1; // edi
+  char v2; // al
+  int v3; // edi
+  __int8 *v4; // ebx
+  int v5; // edx
+  char v6; // si
+  int v7; // ecx
+  int v8; // eax
+  int v9; // edx
+  int v10; // eax
+  int v11; // esi
+  int v12; // eax
+  int result; // eax
+  __m128i Dst; // [esp+4h] [ebp-44h]
+  __m128i v15; // [esp+14h] [ebp-34h]
+  __m128i v16; // [esp+24h] [ebp-24h]
+  __m128i v17; // [esp+34h] [ebp-14h]
+
+  v1 = this;
+  memset(&Dst, 0, 0x40u);
+  v2 = *v1;
+  if ( *v1 )
+  {
+    v3 = (int)(v1 + 2);
+    v4 = &Dst.m128i_i8[4];
+    do
+    {
+      v5 = *(char *)(v3 - 1);
+      v3 += 5;
+      v6 = *(_BYTE *)(v3 - 5);
+      v4 += 16;
+      v7 = (v5 >> 6) | 4 * v2;
+      v8 = *(char *)(v3 - 5);
+      *((_DWORD *)v4 - 5) = v7;
+      LOBYTE(v7) = *(_BYTE *)(v3 - 4);
+      v9 = (v8 >> 4) | 16 * (v5 & 0x3F);
+      v10 = *(char *)(v3 - 4);
+      *((_DWORD *)v4 - 4) = v9;
+      v11 = (v10 >> 2) | ((v6 & 0xF) << 6);
+      v12 = ((v7 & 3) << 8) | *(char *)(v3 - 3);
+      *((_DWORD *)v4 - 3) = v11;
+      *((_DWORD *)v4 - 2) = v12;
+      v2 = *(_BYTE *)(v3 - 2);
+    }
+    while ( v2 );
+  }
+  result = 0;
+  Dst = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, Dst), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, Dst));
+  v15 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v15), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v15));
+  v16 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v16), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v16));
+  v17 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v17), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v17));
+  do
+  {
+    if ( Dst.m128i_i32[result] != dword_402188[result] )
+    {
+      sub_401020("wrong\n", Dst.m128i_i8[0]);
+      exit(0);
+    }
+    ++result;
+  }
+  while ( result < 16 );
+  return result * 4;
+}
+```
+
+在这个函数中可以看到很多不一样的指令，搜索学习一波。
+
+SSE2指令
+
+SSE2(Streaming SIMD Extensions 2，Intel官方称为单指令多数据流技术扩展 2或单指令多数据流扩展指令集2)指令集是Intel公司在SSE指令集的基础上发展起来的。相比于SSE，SSE2使用了144个新增指令，扩展了MMX技术和SSE技术，这些指令提高了广大应用程序的运行性能。
+
+\__m128i被称为128bits的整数，对其进行赋值时，可以调用\_\_m128i_mm_set1_epi8或者__m128i_mm_set1_epi816等，前者就是把128bits设置为16个8bits的整数值，后一个例子就是把128bits设置成8个16bits的整数值。
+
+_mm_loadu_si128表示：Loads 128-bit value；即加载128位值。
+_mm_max_epu8 (a,b)表示：比较a和b中对应的无符号的8bits的整数，取其较大值，重复这个过程16次。即：r0=max(a0,b0),...,r15=max(a15,b15)
+_mm_min_epi8(a,b)表示：大体意思同上，不同的是这次比较的是有符号的8bits的整数。
+_mm_setzero_si128表示：将128bits的值都赋值为0.
+_mm_subs_epu8(a,b)表示：a和b中对应的8bits数相减，r0= UnsignedSaturate(a0-b0)，...，r15= UnsignedSaturate(a15 - b15)
+_mm_adds_epi8(a,b)表示：a和b中对应的8bits数相加，r0=SingedSaturate(a0+b0),...,r15=SingedSaturate(a15+b15).
+
+_mm_unpackhi_epi64(a,b)表示：a和b的高64位交错，低64位舍去。
+_mm_srli_si128(a,imm)表示：将a进行逻辑右移imm位，高位填充0。
+_mm_cvtsi128_si32(a)表示：将a的低32位赋值给一个32bits的整数，返回值为r=a0;
+
+_mm_xor_si128(a,b)表示：将a和b进行按位异或，即r=a^b。
+_mm_or_si128(a,b)表示：将a和b进行或运算，即r=a|b。
+_mm_and_si128(a,b)表示：将a和b进行与运算，即r=a&b。
+
+_mm_andnot_si128 (\_\_m128i a, __m128i b)将a中128bits数值先做"非(NOT)"操作，然后与b中的128bits数值对应位按位做"与(AND)"运算；相当于：
+
+```assembly
+r := (~a) & b
+```
+
+_mm_cmpgt_epi8(a,b)表示：分别比较a的每个8bits整数是否大于b的对应位置的8bits整数，若大于，则返回0xffff，否则返回0x0。
+即r0=(a0>b0)?0xff:0x0  r1=(a1>b1)?0xff:0x0...r15=(a15>b15)?0xff:0x0
+
+所以可以根据指令的含义将这部分代码优化。
+
+```assembly
+  Dst = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, Dst), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, Dst));
+  v15 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v15), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v15));
+  v16 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v16), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v16));
+  v17 = _mm_and_si128(
+          _mm_andnot_si128(_mm_and_si128((__m128i)xmmword_4021D0, v17), (__m128i)xmmword_4021E0),
+          _mm_xor_si128((__m128i)xmmword_4021D0, v17));
+```
+
+优化过程
+
+```assembly
+Dst = ~((__m128i)xmmword_4021D0 & Dst) & (__m128i)xmmword_4021E0 & ((__m128i)xmmword_4021D0 ^ Dst);
+v15 = ~((__m128i)xmmword_4021D0 & v15) & (__m128i)xmmword_4021E0 & ((__m128i)xmmword_4021D0 ^ v15);
+v16 = ~((__m128i)xmmword_4021D0 & v16) & (__m128i)xmmword_4021E0 & ((__m128i)xmmword_4021D0 ^ v16);
+v17 = ~((__m128i)xmmword_4021D0 & v17) & (__m128i)xmmword_4021E0 & ((__m128i)xmmword_4021D0 ^ v17);
+```
+
+由公式，但是似乎用不上
+$$
+\sim(a\space \& \space b)=(\sim a)\hat \space (\sim b)
+$$
+查看全局变量
+
+```assembly
+xmmword_4021D0  xmmword 00000020000000200000002000000020h
+xmmword_4021E0  xmmword FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFh
+```
+
+简化代码
+
+```assembly
+Dst = ~((__m128i)xmmword_4021D0 & Dst) & ((__m128i)xmmword_4021D0 ^ Dst);
+v15 = ~((__m128i)xmmword_4021D0 & v15) & ((__m128i)xmmword_4021D0 ^ v15);
+v16 = ~((__m128i)xmmword_4021D0 & v16) & ((__m128i)xmmword_4021D0 ^ v16);
+v17 = ~((__m128i)xmmword_4021D0 & v17) & ((__m128i)xmmword_4021D0 ^ v17);
+```
+
+仔细分析会发现~((\_\_m128i)xmmword_4021D0 & Dst)和((__m128i)xmmword_4021D0 ^ Dst)等价。所以：
+
+```assembly
+Dst = (__m128i)xmmword_4021D0 ^ Dst;
+v15 = (__m128i)xmmword_4021D0 ^ v15;
+v16 = (__m128i)xmmword_4021D0 ^ v16;
+v17 = (__m128i)xmmword_4021D0 ^ v17;
+```
+
+接下来看另一部分加密操作
+
+```assembly
+v1 = this;
+  memset(&Dst, 0, 0x40u);
+  v2 = *v1;
+  if ( *v1 )
+  {
+    v3 = (int)(v1 + 2);
+    v4 = &Dst.m128i_i8[4];
+    do
+    {
+      v5 = *(char *)(v3 - 1);
+      v3 += 5;
+      v6 = *(_BYTE *)(v3 - 5);
+      v4 += 16;
+      v7 = (v5 >> 6) | 4 * v2;
+      v8 = *(char *)(v3 - 5);
+      *((_DWORD *)v4 - 5) = v7;
+      LOBYTE(v7) = *(_BYTE *)(v3 - 4);
+      v9 = (v8 >> 4) | 16 * (v5 & 0x3F);
+      v10 = *(char *)(v3 - 4);
+      *((_DWORD *)v4 - 4) = v9;
+      v11 = (v10 >> 2) | ((v6 & 0xF) << 6);
+      v12 = ((v7 & 3) << 8) | *(char *)(v3 - 3);
+      *((_DWORD *)v4 - 3) = v11;
+      *((_DWORD *)v4 - 2) = v12;
+      v2 = *(_BYTE *)(v3 - 2);
+    }
+    while ( v2 );
+  }
+```
+
+这部分看不太明白，但是貌似是将20位字符串变成16位，由此容易想到Base64编码，试着根据相同的原理将16位还原成20位字符串（4位变成5位）。
+
+5位字符串→10位Hex→40bit
+
+40/4 = 10bit
+
+10 - 8 = 2
+
+所以要在16位字符串的单个字符的8bitASCII前加2个‘0’。
+
+不太会写脚本（只会用笨办法写，贼麻烦），直接手撸。
+
+```assembly
+189  000110001001
+213  001000010011
+159  000101011001
+15f  000101011111
+185  000110000101
+2e6  001011100110
+117  000100010111
+378  001101111000
+c1   000011000001
+325  001100100101
+3cc  001111001100
+173  000101110011
+17d  000101111101
+267  001001100111
+15b  000101011011
+221  001000100001
+
+01100010 01100001 00110101 01100101 01011111
+0x62     0x61     0x35     0x65     0x5f
+01100001 01101110 01100100 01011111 01111000
+0x61     0x6e     0x64     0x5f     0x78
+00110000 01110010 01011111 00110001 01110011
+0x30     0x72     0x5f     0x31     0x73
+01011111 01100110 01110101 01101110 00100001
+0x5f     0x66     0x75     0x6e     0x21
+```
+
+输出
+
+```assembly
+#include <stdio.h>
+
+int main(){
+    char result[16] = {0x1A9,0x233,0x179,0x17F,0x1A5,0x2C6,0x137,0x358,0xE1,0x305,
+                       0x3EC,0x153,0x15D,0x247,0x17B,0x201};
+
+    int re[16] = {0x000001A9,0x00000233,0x00000179,0x0000017F,
+                 0x000001A5,0x000002C6,0x00000137,0x00000358,
+                 0x000000E1,0x00000305,0x000003EC,0x00000153,
+                 0x0000015D,0x00000247,0x0000017B,0x00000201};
+                 
+    int D0 = 0x00000020;
+
+    for(int i=0;i<16;i++){
+        re[i] = re[i] ^ D0;
+        printf("%x\n", re[i]);
+    }
+
+    int flag[20] = {0x62,0x61,0x35,0x65,0x5f,
+                    0x61,0x6e,0x64,0x5f,0x78,
+                    0x30,0x72,0x5f,0x31,0x73,
+                    0x5f,0x66,0x75,0x6e,0x21};
+    for(int i=0;i<20;i++){
+        printf("%c", flag[i]);
+    }
+
+    return 0;
+}
+```
+
+得到flag
+
+ba5e_and_x0r_1s_fun!
+
+**在扒数据的时候犯了一个小错误，**
+
+**dd 1**
+
+**dd 2**
+
+**直接写做了0x21，其实应该是0x201，以后要注意。**

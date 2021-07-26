@@ -1,0 +1,125 @@
+---
+layout: post
+title:  app1
+date:   2021-06-06 00:01:01 +0300
+image:  2021-06-06-woman.jpg
+tags:   [ctf,reverse,mobile,adworld,android]
+---
+
+jeb打开，查看MainActivity
+
+```assembly
+package com.example.yaphetshan.tencentgreat;
+
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager$NameNotFoundException;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+    Button btn;
+    public final String pName;
+    EditText text;
+
+    public MainActivity() {
+        super();
+        this.pName = "com.example.yaphetshan.tencentgreat";
+    }
+
+    protected void onCreate(Bundle arg3) {
+        super.onCreate(arg3);
+        this.setContentView(0x7F04001B);
+        this.btn = this.findViewById(0x7F0B0058);
+        this.text = this.findViewById(0x7F0B0057);
+        this.btn.setOnClickListener(new View$OnClickListener() {
+            public void onClick(View arg10) {
+                try {
+                    String v1 = MainActivity.this.text.getText().toString();
+                    PackageInfo v2 = MainActivity.this.getPackageManager().getPackageInfo("com.example.yaphetshan.tencentgreat", 0x4000);
+                    String v3 = v2.versionName;
+                    int v4 = v2.versionCode;
+                    int v0 = 0;
+                    while(v0 < v1.length()) {
+                        if(v0 >= v3.length()) {
+                            break;
+                        }
+
+                        if(v1.charAt(v0) != (v3.charAt(v0) ^ v4)) {
+                            Toast.makeText(MainActivity.this, "再接再厉，加油~", 1).show();
+                            return;
+                        }
+                        else {
+                            ++v0;
+                            continue;
+                        }
+                    }
+
+                    if(v1.length() != v3.length()) {
+                        goto label_39;
+                    }
+
+                    Toast.makeText(MainActivity.this, "恭喜开启闯关之门！", 1).show();
+                    return;
+                }
+                catch(PackageManager$NameNotFoundException v5) {
+                }
+
+            label_39:
+                Toast.makeText(MainActivity.this, "年轻人不要耍小聪明噢", 1).show();
+            }
+        });
+    }
+}
+```
+
+将我们输入的字符串逐位与versionName异或versionCode做比较，相同则正确。
+
+关键在于怎样获取versionName和versionCode。
+
+#### adb 根据包名查看版本号（versionCode 和 versionName）
+
+1.连接设备
+
+```assembly
+adb shell
+```
+
+2.执行查询命令
+
+```assembly
+dumpsys package com.exmple.myapp | grep "version"
+```
+
+或者
+
+```assembly
+pm dump com.exmple.myapp | grep "version"
+```
+
+得到结果
+
+```assembly
+dumpsys package com.example.yaphetshan.tencentgreat | grep "version"
+versionCode=15 targetSdk=25
+versionName=X<cP[?PHNB<P?aj
+```
+
+使用python脚本解密
+
+```assembly
+s = "X<cP[?PHNB<P?aj"
+s = list(s)
+
+flag = ""
+for i in s:
+     flag += chr(ord(i)^15)
+
+print(flag)
+```
+
+'W3l_T0_GAM3_0ne'

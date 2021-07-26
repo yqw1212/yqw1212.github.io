@@ -1,0 +1,563 @@
+---
+layout: post
+title:  Pwn-Patch
+date:   2021-05-19 00:01:01 +0300
+image:  2021-05-19-sheet.jpg
+tags:   [ctf,Pwn,patch]
+---
+
+## 漏洞修复概述
+
+在具体分析一个漏洞之前，我先将漏洞简单的分一下类，根据漏洞修复的难度，可以把漏洞分为以下四类
+
+* 后门函数、危险的字符串(/bin/sh)、输入函数长度溢出(硬编码)等
+
+* 格式化字符串等
+
+* 指针悬挂、堆栈溢出(动态长度)等
+
+* 逻辑漏洞
+
+这几类漏洞在 CTF、AWD 比赛中很常见，也是二进制漏洞利用的主要考察点，按照不同的漏洞又可以总结出几种修复方式
+
+* 暴力 nop、修改硬编码数据
+
+* 替换 GOT 表条目、符号解析信息
+
+* 第三方工具替换系统函数、添加代码
+
+* 手动添加代码
+
+实际上，无论是何种修复手段，无非是对程序的代码进行添加、删除或者修改，虽然没有源代码，但是开发者们制作出了很多实用工具，灵活实用这些工具，就算没有源代码也可以实现对 binary 的 patch。
+
+**Patch 的核心思想：**在不破坏程序原有功能的情况下，加入或者删除部分代码，修复程序的漏洞。
+
+### 手动添加代码
+
+#### 增加segment
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+int main(int argc, char** argv) {
+  printf("/bin/sh%d",102);
+  puts("let's go\n");
+  printf("/bin/sh%d",102);
+  puts("let's gogo\n");
+  return EXIT_SUCCESS;
+}
+```
+
+编译为可执行文件
+
+```assembly
+gcc -c -o hello.o hello.c
+gcc -o hello hello.o
+```
+
+ida查看
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  printf("/bin/sh%d", 102LL, envp, argv);
+  puts("let's go\n");
+  printf("/bin/sh%d", 102LL);
+  puts("let's gogo\n");
+  return 0;
+}
+```
+
+我们想把原程序第一处printf修改掉，改成我们自己的函数，首先需要编译一个包含实现patch函数的静态库。
+
+```assembly
+void myprintf(char *a,int b){
+	asm(
+		"mov %rdi,%rsi\n"
+		"mov $0,%rdi\n"
+		"mov $0x20,%rdx\n"
+		"mov $0x1,%rax\n"
+		"syscall\n"
+		);
+}
+void myputs(char *a){
+	asm(
+		"push $0x41414141\n"
+		"push $0x42424242\n"
+		"push %rsp\n"
+		"pop  %rsi\n"
+		"mov $0,%rdi\n"
+		"mov $0x20,%rdx\n"
+		"mov $0x1,%rax\n"
+		"syscall\n"
+		"pop %rax\n"
+		"pop %rax\n"
+		);
+}
+//gcc -Os -nostdlib -nodefaultlibs -fPIC -Wl,-shared hook.c -o hook
+```
+
+这里用的语言是A&T汇编，AT&T 汇编中，寄存器前被冠以“%”，立即数前被冠以“$”，十六进制数前被冠以“0x”。
+
+利用注释的gcc命令将其编译.
+
+在自己编写的myprintf函数中，第一个参数a存在rdi中，根据write函数的syscall原理
+
+|  NR  | syscall name | %rax |   arg0 (%rdi)   |   arg1 (%rsi)   | arg2 (%rdx)  | arg3 (%r10) | arg4 (%r8) | arg5 (%r9) |
+| :--: | :----------: | :--: | :-------------: | :-------------: | :----------: | :---------: | :--------: | :--------: |
+|  0   |     read     | 0x00 | unsigned int fd |    char *buf    | size_t count |      -      |     -      |     -      |
+|  1   |    write     | 0x01 | unsigned int fd | const char *buf | size_t count |             |            |            |
+
+将rax，rdi，rsi，rdx寄存器设值。
+
+patch程序的流程是首先将代码段加入到binary程序中，然后修改跳转逻辑，将call printf@plt，改成call myprintf。
+
+lief中提供了add参数可以用于为二进制文件增加段：
+
+```assembly
+import lief
+from pwn import *
+
+
+def patch_jmp(file, op, srcaddr, dstaddr, arch="amd64"):
+    length = (dstaddr-srcaddr-2) # 近掉跳转的patch
+    print(hex(length))
+    order = chr(op)+chr(length)
+    print(disasm(order, arch=arch))
+    file.patch_address(srcaddr, [ord(i) for i in order])  # 对指定地址写入代码
+
+
+def patch_call(file, srcaddr, dstaddr, arch="amd64"):
+    length = p32((dstaddr-srcaddr-5) & 0xffffffff)
+    order = "\xe8"+length.decode("utf-8")
+    # print(disasm(order, arch=arch))
+    file.patch_address(srcaddr, [ord(i) for i in order])
+
+
+binary = lief.parse("./a")
+hook = lief.parse("./hook")
+
+segment_added = binary.add(hook.segments[0])
+hook_fun = hook.get_symbol("myprintf")
+
+# patch print_inputidx
+dstaddr = segment_added.virtual_address + hook_fun.value
+srcaddr = 0x400584
+
+patch_call(binary,srcaddr,dstaddr)
+
+binary.write("patch_add_segment")
+```
+
+srcaddr的值为call的地址
+
+```assembly
+.text:0000000000400566 main            proc near               ; DATA XREF: _start+1D↑o
+.text:0000000000400566
+.text:0000000000400566 var_10          = qword ptr -10h
+.text:0000000000400566 var_4           = dword ptr -4
+.text:0000000000400566
+.text:0000000000400566 ; __unwind {
+.text:0000000000400566                 push    rbp
+.text:0000000000400567                 mov     rbp, rsp
+.text:000000000040056A                 sub     rsp, 10h
+.text:000000000040056E                 mov     [rbp+var_4], edi
+.text:0000000000400571                 mov     [rbp+var_10], rsi
+.text:0000000000400575                 mov     esi, 66h
+.text:000000000040057A                 mov     edi, offset format ; "/bin/sh%d"
+.text:000000000040057F                 mov     eax, 0
+.text:0000000000400584                 call    _printf
+.text:0000000000400589                 mov     edi, offset s   ; "let's go\n"
+.text:000000000040058E                 call    _puts
+.text:0000000000400593                 mov     esi, 66h
+.text:0000000000400598                 mov     edi, offset format ; "/bin/sh%d"
+.text:000000000040059D                 mov     eax, 0
+.text:00000000004005A2                 call    _printf
+.text:00000000004005A7                 mov     edi, offset aLetSGogo ; "let's gogo\n"
+.text:00000000004005AC                 call    _puts
+.text:00000000004005B1                 mov     eax, 0
+.text:00000000004005B6                 leave
+.text:00000000004005B7                 retn
+.text:00000000004005B7 ; } // starts at 400566
+.text:00000000004005B7 main            endp
+.text:00000000004005B7
+```
+
+可以看到patch后的程序，第一个调用printf函数的地方已经换成了我们自己的printf函数。
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  sub_8022F9("/bin/sh%d");
+  puts("let's go\n");
+  printf("/bin/sh%d", 102LL, argv);
+  puts("let's gogo\n");
+  return 0;
+}
+```
+
+sub_8022F9()
+
+```assembly
+__int64 __fastcall sub_8022F9(const char *buf)
+{
+  __int64 result; // rax
+
+  result = 1LL;
+  __asm { syscall; LINUX - sys_write }
+  return result;
+}
+```
+
+```assembly
+LOAD:00000000008022F9 sub_8022F9      proc near               ; CODE XREF: main+1E↑p
+LOAD:00000000008022F9                 mov     rsi, rdi        ; buf
+LOAD:00000000008022FC                 mov     rdi, 0          ; fd
+LOAD:0000000000802303                 mov     rdx, 20h        ; count
+LOAD:000000000080230A                 mov     rax, 1
+LOAD:0000000000802311                 syscall                 ; LINUX - sys_write
+LOAD:0000000000802313                 retn
+LOAD:0000000000802313 sub_8022F9      endp
+```
+
+#### 修改程序.eh_frame段
+
+得到vul程序
+
+看到程序free一个堆后没有将指针置0，因此存在一个Double Free漏洞
+
+```assembly
+void delete_note()
+{
+  int v0; // [rsp+Ch] [rbp-4h]
+
+  printf("index:");
+  v0 = read_int();
+  if ( note[v0] )
+    free(note[v0]);
+  else
+    puts("No such note");
+}
+```
+
+所以接下来要对此做修补工作，即在原binary的delete_note函数增加对note[idx]=0的语句。
+
+原函数的汇编
+
+```assembly
+.text:00000000004009F1                 public delete_note
+.text:00000000004009F1 delete_note     proc near               ; CODE XREF: main+A0↓p
+.text:00000000004009F1
+.text:00000000004009F1 var_4           = dword ptr -4
+.text:00000000004009F1
+.text:00000000004009F1 ; __unwind {
+.text:00000000004009F1                 push    rbp
+.text:00000000004009F2                 mov     rbp, rsp
+.text:00000000004009F5                 sub     rsp, 10h
+.text:00000000004009F9                 mov     edi, offset aIndex ; "index:"
+.text:00000000004009FE                 mov     eax, 0
+.text:0000000000400A03                 call    _printf
+.text:0000000000400A08                 mov     eax, 0
+.text:0000000000400A0D                 call    read_int
+.text:0000000000400A12                 mov     [rbp+var_4], eax
+.text:0000000000400A15                 mov     eax, [rbp+var_4]
+.text:0000000000400A18                 cdqe
+.text:0000000000400A1A                 mov     rax, ds:note[rax*8]
+.text:0000000000400A22                 test    rax, rax
+.text:0000000000400A25                 jz      short loc_400A3E
+.text:0000000000400A27                 mov     eax, [rbp+var_4]
+.text:0000000000400A2A                 cdqe
+.text:0000000000400A2C                 mov     rax, ds:note[rax*8]
+.text:0000000000400A34                 mov     rdi, rax        ; ptr
+.text:0000000000400A37                 call    _free
+.text:0000000000400A3C                 jmp     short locret_400A48
+.text:0000000000400A3E ; ---------------------------------------------------------------------------
+.text:0000000000400A3E
+.text:0000000000400A3E loc_400A3E:                             ; CODE XREF: delete_note+34↑j
+.text:0000000000400A3E                 mov     edi, offset aNoSuchNote ; "No such note"
+.text:0000000000400A43                 call    _puts
+.text:0000000000400A48
+.text:0000000000400A48 locret_400A48:                          ; CODE XREF: delete_note+4B↑j
+.text:0000000000400A48                 leave
+.text:0000000000400A49                 retn
+.text:0000000000400A49 ; } // starts at 4009F1
+.text:0000000000400A49 delete_note     endp
+```
+
+首先要将程序的执行跳转到.eh_frame段，由于长跳转占用5bytes，现在函数中找一下哪几句语句组合起来正好是5bytes。
+
+可以看到0x400A1A-0x400A15 = 0x5，正好5个字节。
+
+所以0x400A15处要写入jmp到.eh_frame段的语句
+
+```assembly
+jmp 0x400d70
+```
+
+自然而然，写入.eh_frame段的代码从0x400A15开始。前面部分(0x400A15~0x400A37)照抄。
+
+```assembly
+mov     eax, [rbp-4];
+cdqe;
+mov     rax, ds:note[rax*8];
+test rax,rax;
+jz 0x400A3E; //keypatch 在跳转（jmp、call）采用十六进制地址进行（否则无法编码）
+mov     eax, [rbp-4];
+cdqe;
+mov     rax, ds:note[rax*8];
+mov rdi,rax;
+call 0x400710;//call _free
+;自己写
+mov     eax, [rbp-4];cdqe;
+mov rcx,0;
+mov ds:note[rax*8],rcx;//关于mov寻址操作约定：段地址不能直接赋予立即数
+jmp 0x400A48
+;多条汇编指令间用;隔开成一行
+```
+
+test命令将两个操作数进行逻辑与运算，并根据运算结果设置相关的标志位。但是，test命令的两个操作数不会被改变。运算结果在设置过相关标记位后会被丢弃。
+
+cdqe使用eax的最高位拓展rax高32位的所有位。
+
+手动将代码patch到.eh_frame段
+
+```assembly
+.eh_frame:0000000000400D70 _eh_frame       segment para public 'CONST' use64
+.eh_frame:0000000000400D70                 assume cs:_eh_frame
+.eh_frame:0000000000400D70                 ;org 400D70h
+.eh_frame:0000000000400D70                 db  8Bh
+.eh_frame:0000000000400D71                 db  45h ; E
+.eh_frame:0000000000400D72                 db 0FCh
+.eh_frame:0000000000400D73                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D73                                         ;   db 0
+.eh_frame:0000000000400D73                                         ;   db 0
+.eh_frame:0000000000400D74                 db  98h
+.eh_frame:0000000000400D75                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 1
+.eh_frame:0000000000400D75                                         ;   db 7Ah
+.eh_frame:0000000000400D75                                         ;   db 52h
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 1
+.eh_frame:0000000000400D76                 db  8Bh
+.eh_frame:0000000000400D77                 db    4
+.eh_frame:0000000000400D78                 db 0C5h
+.eh_frame:0000000000400D79                 db 0E0h
+.eh_frame:0000000000400D7A                 db  20h
+.eh_frame:0000000000400D7B                 db  60h ; `
+.eh_frame:0000000000400D7C                 db    0
+.eh_frame:0000000000400D7D                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D7D                                         ;   db 78h
+.eh_frame:0000000000400D7D                                         ;   db 10h
+.eh_frame:0000000000400D7D                                         ;   db 1
+.eh_frame:0000000000400D7E                 db  85h
+.eh_frame:0000000000400D7F                 db 0C0h
+.eh_frame:0000000000400D80                 db  0Fh                 ; 提示：您修改过这里:
+.eh_frame:0000000000400D80                                         ;   db 1Bh
+.eh_frame:0000000000400D80                                         ;   db 0Ch
+.eh_frame:0000000000400D80                                         ;   db 7
+.eh_frame:0000000000400D80                                         ;   db 8
+.eh_frame:0000000000400D80                                         ;   db 90h
+.eh_frame:0000000000400D80                                         ;   db 1
+.eh_frame:0000000000400D81                 db  84h
+.eh_frame:0000000000400D82                 db 0B8h
+.eh_frame:0000000000400D83                 db 0FCh
+.eh_frame:0000000000400D84                 db 0FFh
+.eh_frame:0000000000400D85                 db 0FFh
+.eh_frame:0000000000400D86                 db  8Bh                 ; 提示：您修改过这里:
+.eh_frame:0000000000400D86                                         ;   db 7
+.eh_frame:0000000000400D86                                         ;   db 10h
+.eh_frame:0000000000400D86                                         ;   db 14h
+.eh_frame:0000000000400D87                 db  45h ; E
+.eh_frame:0000000000400D88                 db 0FCh
+.eh_frame:0000000000400D89                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D89                                         ;   db 0
+.eh_frame:0000000000400D89                                         ;   db 0
+.eh_frame:0000000000400D8A                 db  98h
+.eh_frame:0000000000400D8B                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 1Ch
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 50h
+.eh_frame:0000000000400D8B                                         ;   db 0FAh
+.eh_frame:0000000000400D8B                                         ;   db 0FFh
+.eh_frame:0000000000400D8C                 db  8Bh
+.eh_frame:0000000000400D8D                 db    4
+.eh_frame:0000000000400D8E                 db 0C5h
+.eh_frame:0000000000400D8F                 db 0E0h
+.eh_frame:0000000000400D90                 db  20h
+.eh_frame:0000000000400D91                 db  60h ; `
+.eh_frame:0000000000400D92                 db    0
+.eh_frame:0000000000400D93                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D93                                         ;   db 0FFh
+.eh_frame:0000000000400D93                                         ;   db 2Ah
+.eh_frame:0000000000400D93                                         ;   db 0
+.eh_frame:0000000000400D94                 db  89h
+.eh_frame:0000000000400D95                 db 0C7h
+.eh_frame:0000000000400D96                 db 0E8h                 ; 提示：您修改过这里:
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D97                 db  75h ; u
+.eh_frame:0000000000400D98                 db 0F9h
+.eh_frame:0000000000400D99                 db 0FFh
+.eh_frame:0000000000400D9A                 db 0FFh
+.eh_frame:0000000000400D9B                 db  8Bh                 ; 提示：您修改过这里:
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9C                 db  45h ; E
+.eh_frame:0000000000400D9D                 db 0FCh
+.eh_frame:0000000000400D9E                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 14h
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9F                 db 0C7h
+.eh_frame:0000000000400DA0                 db 0C1h
+.eh_frame:0000000000400DA1                 db    0
+.eh_frame:0000000000400DA2                 db    0
+.eh_frame:0000000000400DA3                 db    0
+.eh_frame:0000000000400DA4                 db    0
+.eh_frame:0000000000400DA5                 db  48h ; H             ; 提示：您修改过这里:
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 1
+.eh_frame:0000000000400DA5                                         ;   db 7Ah
+.eh_frame:0000000000400DA5                                         ;   db 52h
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 1
+.eh_frame:0000000000400DA6                 db  89h
+.eh_frame:0000000000400DA7                 db  0Ch
+.eh_frame:0000000000400DA8                 db 0C5h
+.eh_frame:0000000000400DA9                 db 0E0h
+.eh_frame:0000000000400DAA                 db  20h
+.eh_frame:0000000000400DAB                 db  60h ; `
+.eh_frame:0000000000400DAC                 db    0
+.eh_frame:0000000000400DAD                 db 0E9h                 ; 提示：您修改过这里:
+.eh_frame:0000000000400DAD                                         ;   db 78h
+.eh_frame:0000000000400DAD                                         ;   db 10h
+.eh_frame:0000000000400DAD                                         ;   db 1
+.eh_frame:0000000000400DAD                                         ;   db 1Bh
+.eh_frame:0000000000400DAD                                         ;   db 0Ch
+```
+
+转为代码
+
+```assembly
+.eh_frame:0000000000400D70 _eh_frame       segment para public 'CONST' use64
+.eh_frame:0000000000400D70                 assume cs:_eh_frame
+.eh_frame:0000000000400D70                 ;org 400D70h
+.eh_frame:0000000000400D70                 mov     eax, [rbp-4]    ;
+.eh_frame:0000000000400D70                                         ;
+.eh_frame:0000000000400D73                 cdqe                    ; 提示：您修改过这里:
+.eh_frame:0000000000400D73                                         ;   db 0
+.eh_frame:0000000000400D73                                         ;   db 0
+.eh_frame:0000000000400D75                 mov     rax, ds:note[rax*8] ; 提示：您修改过这里:
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 1
+.eh_frame:0000000000400D75                                         ;   db 7Ah
+.eh_frame:0000000000400D75                                         ;   db 52h
+.eh_frame:0000000000400D75                                         ;   db 0
+.eh_frame:0000000000400D75                                         ;   db 1
+.eh_frame:0000000000400D7D                 test    rax, rax        ; 提示：您修改过这里:
+.eh_frame:0000000000400D7D                                         ;   db 78h
+.eh_frame:0000000000400D7D                                         ;   db 10h
+.eh_frame:0000000000400D7D                                         ;   db 1
+.eh_frame:0000000000400D80                 jz      loc_400A3E      ; 提示：您修改过这里:
+.eh_frame:0000000000400D80                                         ;   db 1Bh
+.eh_frame:0000000000400D80                                         ;   db 0Ch
+.eh_frame:0000000000400D80                                         ;   db 7
+.eh_frame:0000000000400D80                                         ;   db 8
+.eh_frame:0000000000400D80                                         ;   db 90h
+.eh_frame:0000000000400D80                                         ;   db 1
+.eh_frame:0000000000400D86                 mov     eax, [rbp-4]    ; 提示：您修改过这里:
+.eh_frame:0000000000400D86                                         ;   db 7
+.eh_frame:0000000000400D86                                         ;   db 10h
+.eh_frame:0000000000400D86                                         ;   db 14h
+.eh_frame:0000000000400D89                 cdqe                    ; 提示：您修改过这里:
+.eh_frame:0000000000400D89                                         ;   db 0
+.eh_frame:0000000000400D89                                         ;   db 0
+.eh_frame:0000000000400D8B                 mov     rax, ds:note[rax*8] ; 提示：您修改过这里:
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 1Ch
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 0
+.eh_frame:0000000000400D8B                                         ;   db 50h
+.eh_frame:0000000000400D8B                                         ;   db 0FAh
+.eh_frame:0000000000400D8B                                         ;   db 0FFh
+.eh_frame:0000000000400D93                 mov     rdi, rax        ; 提示：您修改过这里:
+.eh_frame:0000000000400D93                                         ;   db 0FFh
+.eh_frame:0000000000400D93                                         ;   db 2Ah
+.eh_frame:0000000000400D93                                         ;   db 0
+.eh_frame:0000000000400D96                 call    _free           ; 提示：您修改过这里:
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D96                                         ;   db 0
+.eh_frame:0000000000400D9B                 mov     eax, [rbp-4]    ; 提示：您修改过这里:
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9B                                         ;   db 0
+.eh_frame:0000000000400D9E                 mov     rcx, 0          ; 提示：您修改过这里:
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 14h
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400D9E                                         ;   db 0
+.eh_frame:0000000000400DA5                 mov     ds:note[rax*8], rcx ; 提示：您修改过这里:
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 1
+.eh_frame:0000000000400DA5                                         ;   db 7Ah
+.eh_frame:0000000000400DA5                                         ;   db 52h
+.eh_frame:0000000000400DA5                                         ;   db 0
+.eh_frame:0000000000400DA5                                         ;   db 1
+.eh_frame:0000000000400DAD                 jmp     locret_400A48   ; 提示：您修改过这里:
+.eh_frame:0000000000400DAD                                         ;   db 78h
+.eh_frame:0000000000400DAD                                         ;   db 10h
+.eh_frame:0000000000400DAD                                         ;   db 1
+.eh_frame:0000000000400DAD                                         ;   db 1Bh
+.eh_frame:0000000000400DAD                                         ;   db 0Ch
+.eh_frame:0000000000400DAD ; ---------------------------------------------------
+```
+
+看伪代码，已经patch成功了
+
+```assembly
+void delete_note()
+{
+  int v0; // [rsp+Ch] [rbp-4h]
+
+  printf("index:");
+  v0 = read_int();
+  if ( note[v0] )
+  {
+    free(note[v0]);
+    note[v0] = 0LL;
+  }
+  else
+  {
+    puts("No such note");
+  }
+}
+```
+
+最后，将patch的程序导出。

@@ -1,0 +1,313 @@
+---
+layout: post
+title:  app3
+date:   2021-06-07 00:01:01 +0300
+image:  2021-06-07-lighthouse.jpg
+tags:   [ctf,reverse,mobile,adworld,android]
+---
+
+题目给了一个.ab文件，以为是后缀名写错了，把它改成apk发现不对。后来百度了解到：
+
+在对安卓手机进行取证时，经常需要备份手机的应用程序数据，备份后得到的数据文件为ab格式。虽然大部分的取证软件都可以对ab文件进行分析，但是，有时候你可能需要解析ab文件的文件系统，然后对应用程序数据进行手动分析。ab文件一般分两种，一种是没有加密，这种文件前面有24字节的文件头，文件头包含none标志，文件头之后就是数据；一种是加密的备份文件，它的文件头就比较复杂了，文件头包含AES-256标志。
+
+Android backup extractor可以将ab格式转换为我们熟悉的tar格式，最重要的是它同时支持没有加密和数据加密的adb备份。
+
+对于没有加密的ab文件，命令格式为：java -jar abe.jar unpack <backup.ab>  <backup.tar>。如果执行成功，则没有任何信息提示；如果出现错误提示，有可能ab文件损坏，需要重新制作备份。
+
+对于加密的ab文件，需要安装Java Cryptography Extension，可以从java官网下载文件local_policy.jar和US_export_policy.jar，复制到当前系统的java相应目录下，具体细节可以参考Android backup extractor的readme.txt文件。对于加密ab备份的转换，具体命令格式为：java -jar abe.jar unpack <backup.ab>  <backup.tar>  [password]。如果执行成功，则没有任何信息提示；如果出现错误信息，有可能ab文件损坏或者密码错误。
+
+Androidbackup extractor除了可以将ab转化为tar，还可以将tar转换为ab。例如，需要修改一些应用程序数据，但是手机又无法root，因此可以先将手机数据备份为ab文件，将ab备份转换为tar后修改数据，然后将修改后的tar转换为ab备份，最后恢复修改后的ab备份到设备。不过，这个功能对取证来说意义不大，可以了解一下。
+
+首先解析.ab文件
+
+```assembly
+java -jar abe.jar unpack app3.ab app3.tar
+```
+
+找到base.apk文件，拖入jeb分析，查看MainActivity
+
+```assembly
+package com.example.yaphetshan.tencentwelcome;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences$Editor;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.Button;
+import net.sqlcipher.database.SQLiteDatabase;
+
+public class MainActivity extends AppCompatActivity implements View$OnClickListener {
+    private SQLiteDatabase a;
+    private a b;
+    private Button c;
+
+    public MainActivity() {
+        super();
+    }
+
+    private void a() {
+        SQLiteDatabase.loadLibs(((Context)this));
+        this.b = new a(((Context)this), "Demo.db", null, 1);
+        ContentValues v0 = new ContentValues();
+        v0.put("name", "Stranger");
+        v0.put("password", Integer.valueOf(0x1E240));
+        com.example.yaphetshan.tencentwelcome.a.a v1 = new com.example.yaphetshan.tencentwelcome.a.a();
+        String v2 = v1.a(v0.getAsString("name"), v0.getAsString("password"));
+        this.a = this.b.getWritableDatabase(v1.a(v2 + v1.b(v2, v0.getAsString("password"))).substring(0, 7));
+        this.a.insert("TencentMicrMsg", null, v0);
+    }
+
+    public void onClick(View arg4) {
+        if(arg4 == this.c) {
+            Intent v0 = new Intent();
+            v0.putExtra("name", "name");
+            v0.putExtra("password", "pass");
+            v0.setClass(((Context)this), AnotherActivity.class);
+            this.startActivity(v0);
+        }
+    }
+
+    protected void onCreate(Bundle arg4) {
+        super.onCreate(arg4);
+        this.setContentView(0x7F04001B);
+        this.c = this.findViewById(0x7F0B0059);
+        this.c.setOnClickListener(((View$OnClickListener)this));
+        SharedPreferences$Editor v0 = this.getSharedPreferences("test", 0).edit();
+        v0.putString("Is_Encroty", "1");
+        v0.putString("Encryto", "SqlCipher");
+        v0.putString("ver_sion", "3_4_0");
+        v0.apply();
+        this.a();
+    }
+}
+```
+
+首先是
+
+```assembly
+String v2 = v1.a(v0.getAsString("name"), v0.getAsString("password"));
+```
+
+查看v1的类
+
+```assembly
+package com.example.yaphetshan.tencentwelcome.a;
+
+public class a {
+    private String a;
+
+    public a() {
+        super();
+        this.a = "yaphetshan";
+    }
+
+    public String a(String arg4, String arg5) {
+        return arg4.substring(0, 4) + arg5.substring(0, 4);
+    }
+
+    public String a(String arg3) {
+        new b();
+        return b.b(arg3 + this.a);
+    }
+
+    public String b(String arg2, String arg3) {
+        new b();
+        return b.a(arg2);
+    }
+}
+```
+
+a()将传入的两个字符串取前4个字符并连接。
+
+这里通过调用这个函数传入的参数是
+
+```assembly
+v0.put("name", "Stranger");
+v0.put("password", Integer.valueOf(0x1E240));
+```
+
+0x1E240 = 123456
+
+得到的结果应该是
+
+v2="Stra1234"
+
+然后是
+
+```assembly
+v1.a(v2 + v1.b(v2, v0.getAsString("password"))).substring(0, 7);
+```
+
+查看v1.b()
+
+```assembly
+public String b(String arg2, String arg3) {
+    new b();
+    return b.a(arg2);
+}
+```
+
+查看b类
+
+```assembly
+package com.example.yaphetshan.tencentwelcome.a;
+
+import java.security.MessageDigest;
+
+public class b {
+    public b() {
+        super();
+    }
+
+    public static final String a(String arg9) {
+        String v0_2;
+        int v0 = 0;
+        char[] v2 = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        try {
+            byte[] v1 = arg9.getBytes();
+            MessageDigest v3 = MessageDigest.getInstance("MD5");
+            v3.update(v1);
+            byte[] v3_1 = v3.digest();
+            int v4 = v3_1.length;
+            char[] v5 = new char[v4 * 2];
+            int v1_1 = 0;
+            while(v0 < v4) {
+                int v6 = v3_1[v0];
+                int v7 = v1_1 + 1;
+                v5[v1_1] = v2[v6 >>> 4 & 15];
+                v1_1 = v7 + 1;
+                v5[v7] = v2[v6 & 15];
+                ++v0;
+            }
+
+            v0_2 = new String(v5);
+        }
+        catch(Exception v0_1) {
+            v0_2 = null;
+        }
+
+        return v0_2;
+    }
+
+    public static final String b(String arg9) {
+        String v0_2;
+        int v0 = 0;
+        char[] v2 = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        try {
+            byte[] v1 = arg9.getBytes();
+            MessageDigest v3 = MessageDigest.getInstance("SHA-1");
+            v3.update(v1);
+            byte[] v3_1 = v3.digest();
+            int v4 = v3_1.length;
+            char[] v5 = new char[v4 * 2];
+            int v1_1 = 0;
+            while(v0 < v4) {
+                int v6 = v3_1[v0];
+                int v7 = v1_1 + 1;
+                v5[v1_1] = v2[v6 >>> 4 & 15];
+                v1_1 = v7 + 1;
+                v5[v7] = v2[v6 & 15];
+                ++v0;
+            }
+
+            v0_2 = new String(v5);
+        }
+        catch(Exception v0_1) {
+            v0_2 = null;
+        }
+
+        return v0_2;
+    }
+}
+```
+
+因为涉及到了md5加密，搜索了一下每个函数的作用
+
+```assembly
+ public static String stringMD5(String input) {
+ 
+      try {
+ 
+         // 拿到一个MD5转换器（如果想要SHA1参数换成”SHA1”）
+         MessageDigest messageDigest =MessageDigest.getInstance("MD5");
+ 
+         // 输入的字符串转换成字节数组
+         byte[] inputByteArray = input.getBytes();
+ 
+         // inputByteArray是输入字符串转换得到的字节数组
+         messageDigest.update(inputByteArray);
+ 
+         // 转换并返回结果，也是字节数组，包含16个元素
+         byte[] resultByteArray = messageDigest.digest();
+ 
+         // 字符数组转换成字符串返回
+         return byteArrayToHex(resultByteArray);
+ 
+      } catch (NoSuchAlgorithmException e) {
+         return null;
+      }
+}
+```
+
+下面这个函数用于将字节数组换成成16进制的字符串
+
+```assembly
+public static String byteArrayToHex(byte[] byteArray) {
+ 
+      // 首先初始化一个字符数组，用来存放每个16进制字符
+      char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9', 'A','B','C','D','E','F' };
+ 
+      // new一个字符数组，这个就是用来组成结果字符串的（解释一下：一个byte是八位二进制，也就是2位十六进制字符（2的8次方等于16的2次方））
+      char[] resultCharArray =new char[byteArray.length * 2];
+ 
+      // 遍历字节数组，通过位运算（位运算效率高），转换成字符放到字符数组中去
+      int index = 0;
+      for (byte b : byteArray) {
+         resultCharArray[index++] = hexDigits[b>>> 4 & 0xf];
+         resultCharArray[index++] = hexDigits[b& 0xf];
+      }
+ 
+      // 字符数组组合成字符串返回
+      return new String(resultCharArray);
+}
+```
+
+所以通过执行v1.b(v2, v0.getAsString("password"))得到的结果是MD5("Stra1234")="44e2e4457d4e252ca5b9fe9d20b3fea5"
+
+连接到字符串v2后再次传入v1.a()，这次是只有一个参数的a()
+
+```assembly
+public String a(String arg3) {
+    new b();
+    return b.b(arg3 + this.a);
+}
+```
+
+将"Stra123444e2e4457d4e252ca5b9fe9d20b3fea5"连接this.a("yaphetshan")，传入b类的b()(SHA-1加密)，得到结果
+
+sha1（Stra123444e2e4457d4e252ca5b9fe9d20b3fea5yaphetshan）= ae56f99638285eb0743d8bf76d2b0c80e5cbb096
+
+最后一步，取前7个字符"ae56f99"
+
+然后传给了this.b.getWritableDatabase()
+
+Android使用getWritableDatabase()和getReadableDatabase()方法都可以获取一个用于操作数据库的SQLiteDatabase实例。(getReadableDatabase()方法中会调用getWritableDatabase()方法)
+其中getWritableDatabase() 方法以读写方式打开数据库，一旦数据库的磁盘空间满了，数据库就只能读而不能写，倘若使用的是getWritableDatabase() 方法就会出错。
+
+getReadableDatabase()方法则是先以读写方式打开数据库，如果数据库的磁盘空间满了，就会打开失败，当打开失败后会继续尝试以只读方式打开数据库。如果该问题成功解决，则只读数据库对象就会关闭，然后返回一个可读写的数据库对象。
+
+正好之前解析的.ab文件中有一个.db文件，应该就是这个app保存数据的数据库，使用DB Browser for SQLite打开需要解密的数据库。这里要注意使用的是DB Browser for SQLCipher.exe而不是DB Browser for SQLite.exe。
+
+输入密码"ae56f99"，成功打开数据库
+
+| name     | password | F_l_a_g                                      |
+| -------- | -------- | -------------------------------------------- |
+| Stranger | 123456   | VGN0ZntIM2xsMF9Eb19ZMHVfTG92M19UZW5jM250IX0= |
+
+base64解密一下
+
+Tctf{H3ll0_Do_Y0u_Lov3_Tenc3nt!}

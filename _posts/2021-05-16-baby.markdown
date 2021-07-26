@@ -1,0 +1,652 @@
+---
+layout: post
+title:  baby_bc
+date:   2021-05-16 00:01:01 +0300
+image:  2021-05-16-hands.jpg
+tags:   [ctf,reverse,ciscn2021]
+---
+
+题目给了baby.bc文件
+
+```assembly
+root@kali1:~/ctf# file baby.bc 
+baby.bc: LLVM IR bitcode
+```
+
+将LLVM bitcode进一步编译为汇编
+
+```assembly
+clang -o baby baby.bc
+```
+
+main函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  unsigned __int64 v4; // [rsp+8h] [rbp-20h]
+  unsigned __int64 v5; // [rsp+10h] [rbp-18h]
+  size_t v6; // [rsp+18h] [rbp-10h]
+
+  __isoc99_scanf(&unk_403004, x, envp);
+  if ( (unsigned int)strlen(x) == 25 )
+  {
+    if ( x[0] )
+    {
+      if ( (unsigned __int8)(x[0] - 48) > 5u )
+        return 0;
+      v6 = strlen(x);
+      v5 = 1LL;
+      while ( 1 )
+      {
+        v4 = v5;
+        if ( v5 >= v6 )
+          break;
+        ++v5;
+        if ( (unsigned __int8)(x[v4] - 48) > 5u )
+          return 0;
+      }
+    }
+    if ( f((__int64)x) & 1 && c() & 1 )
+      printf("CISCN{MD5(%s)}", x);
+  }
+  return 0;
+}
+```
+
+输入的x范围为0~5.
+
+查看f()
+
+```assembly
+__int64 __fastcall f(__int64 a1)
+{
+  char v2; // [rsp+3Fh] [rbp-2Bh]
+  signed __int64 v3; // [rsp+4Ah] [rbp-20h]
+  __int64 v4; // [rsp+52h] [rbp-18h]
+  __int64 v5; // [rsp+5Ah] [rbp-10h]
+
+  v5 = 0LL;
+  do
+  {
+    v4 = v5;
+    v3 = 5 * v5;
+    if ( m[5 * v5] )
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + 5 * v5) != 48 )
+        return v2 & 1;
+    }
+    else
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + 5 * v5) == 48 )
+        return v2 & 1;
+      m[5 * v5] = *(_BYTE *)(a1 + 5 * v5) - 48;
+    }
+    if ( m[5 * v5 + 1] )
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 1) != 48 )
+        return v2 & 1;
+    }
+    else
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 1) == 48 )
+        return v2 & 1;
+      m[5 * v5 + 1] = *(_BYTE *)(a1 + v3 + 1) - 48;
+    }
+    if ( m[5 * v5 + 2] )
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 2) != 48 )
+        return v2 & 1;
+    }
+    else
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 2) == 48 )
+        return v2 & 1;
+      m[5 * v5 + 2] = *(_BYTE *)(a1 + v3 + 2) - 48;
+    }
+    if ( m[5 * v5 + 3] )
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 3) != 48 )
+        return v2 & 1;
+    }
+    else
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 3) == 48 )
+        return v2 & 1;
+      m[5 * v5 + 3] = *(_BYTE *)(a1 + v3 + 3) - 48;
+    }
+    if ( m[5 * v5 + 4] )
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 4) != 48 )
+        return v2 & 1;
+    }
+    else
+    {
+      v2 = 0;
+      if ( *(_BYTE *)(a1 + v3 + 4) == 48 )
+        return v2 & 1;
+      m[5 * v5 + 4] = *(_BYTE *)(a1 + v3 + 4) - 48;
+    }
+    ++v5;
+    v2 = 1;
+  }
+  while ( v4 + 1 < 5 );
+  return v2 & 1;
+}
+```
+
+这个函数是检查我们输入的数，如果m[i]的值不为0，则输入的字符串对应的位置则必须为'0'，如果m[i]的值为0，则输入的字符串对应的位置必须不为'0'。
+
+然后查看m[]的值，双击m，得到这样的结果
+
+```assembly
+.data:0000000000405050 ; char m[5]
+.data:0000000000405050 m               db 0                    ; DATA XREF: c+7C↑o
+.data:0000000000405050                                         ; c+C9↑o ...
+.data:0000000000405051                 db    0
+.data:0000000000405052                 db    0
+.data:0000000000405053                 db    0
+.data:0000000000405054                 db    0
+```
+
+ida说m[]大小为5，似乎不太合理。
+
+继续往下看。
+
+```assembly
+.data:0000000000405050 ; char m[5]
+.data:0000000000405050 m               db 0                    ; DATA XREF: c+7C↑o
+.data:0000000000405050                                         ; c+C9↑o ...
+.data:0000000000405051                 db    0
+.data:0000000000405052                 db    0
+.data:0000000000405053                 db    0
+.data:0000000000405054                 db    0
+.data:0000000000405055 ; char byte_405055[5]
+.data:0000000000405055 byte_405055     db 0                    ; DATA XREF: c+169↑r
+.data:0000000000405056                 db    0
+.data:0000000000405057                 db    0
+.data:0000000000405058                 db    0
+.data:0000000000405059                 db    0
+.data:000000000040505A ; char byte_40505A[]
+.data:000000000040505A byte_40505A     db 0                    ; DATA XREF: c+8DB↑r
+.data:000000000040505B                 align 4
+.data:000000000040505C                 db    4
+.data:000000000040505D                 db    0
+.data:000000000040505E                 db    0
+.data:000000000040505F ; char byte_40505F[5]
+.data:000000000040505F byte_40505F     db 0                    ; DATA XREF: c+910↑r
+.data:0000000000405060                 db    0
+.data:0000000000405061                 db    0
+.data:0000000000405062                 db    3
+.data:0000000000405063                 db    0
+.data:0000000000405064 ; char byte_405064[]
+.data:0000000000405064 byte_405064     db 0                    ; DATA XREF: c+945↑r
+.data:0000000000405065                 align 10h
+```
+
+对于align的地方不太清楚他的数据到底是什么样的，直接查看十六进制。
+
+```assembly
+00 00 00 00 00 00 00 00  00 00 00 00 04 00 00 00
+00 00 03 00 00 00 00 00  00
+```
+
+也就是
+
+```assembly
+0 0 0 0 0
+0 0 4 0 0
+0 0 0 3 0
+0 0 0 0 0
+```
+
+c()
+
+```assembly
+__int64 c()
+{
+  char v1; // [rsp+2Eh] [rbp-9Ah]
+  signed __int64 v2; // [rsp+30h] [rbp-98h]
+  __int64 v3; // [rsp+40h] [rbp-88h]
+  __int64 v4; // [rsp+50h] [rbp-78h]
+  __int64 v5; // [rsp+58h] [rbp-70h]
+  char *v6; // [rsp+68h] [rbp-60h]
+  __int64 v7; // [rsp+70h] [rbp-58h]
+  char v8; // [rsp+7Fh] [rbp-49h]
+  char *v9; // [rsp+88h] [rbp-40h]
+  __int64 v10; // [rsp+90h] [rbp-38h]
+  __int64 v11; // [rsp+98h] [rbp-30h]
+  __int64 v12; // [rsp+A8h] [rbp-20h]
+  char v13[6]; // [rsp+BCh] [rbp-Ch]
+  char v14[6]; // [rsp+C2h] [rbp-6h]
+
+  v12 = 0LL;
+  do
+  {
+    v10 = v12;
+    memset(v14, 0, 6uLL);
+    v9 = &v14[(unsigned __int8)m[5 * v12]];
+    if ( *v9
+      || (*v9 = 1, v14[(unsigned __int8)m[5 * v12 + 1]])
+      || (v14[(unsigned __int8)m[5 * v12 + 1]] = 1, v14[(unsigned __int8)m[5 * v12 + 2]])
+      || (v14[(unsigned __int8)m[5 * v12 + 2]] = 1, v14[(unsigned __int8)m[5 * v12 + 3]])
+      || (v14[(unsigned __int8)m[5 * v12 + 3]] = 1, v14[(unsigned __int8)m[5 * v12 + 4]]) )
+    {
+      v8 = 0;
+      return v8 & 1;
+    }
+    ++v12;
+  }
+  while ( v10 + 1 < 5 );
+  v11 = 0LL;
+  while ( 1 )
+  {
+    v7 = v11;
+    memset(v13, 0, 6uLL);
+    v6 = &v13[(unsigned __int8)m[v11]];
+    if ( *v6 )
+      break;
+    *v6 = 1;
+    if ( v13[(unsigned __int8)byte_405055[v11]] )
+      break;
+    v13[(unsigned __int8)byte_405055[v11]] = 1;
+    if ( v13[(unsigned __int8)byte_40505A[v11]] )
+      break;
+    v13[(unsigned __int8)byte_40505A[v11]] = 1;
+    if ( v13[(unsigned __int8)byte_40505F[v11]] )
+      break;
+    v13[(unsigned __int8)byte_40505F[v11]] = 1;
+    if ( v13[(unsigned __int8)byte_405064[v11]] )
+      break;
+    ++v11;
+    if ( v7 + 1 >= 5 )
+    {
+      v5 = 0LL;
+      while ( 1 )
+      {
+        v4 = v5;
+        if ( n[4 * v5] == 1 )
+        {
+          if ( (unsigned __int8)m[5 * v5] < (unsigned __int8)m[5 * v5 + 1] )
+            goto LABEL_27;
+        }
+        else if ( n[4 * v5] == 2 && (unsigned __int8)m[5 * v5] > (unsigned __int8)m[5 * v5 + 1] )
+        {
+LABEL_27:
+          v8 = 0;
+          return v8 & 1;
+        }
+        if ( byte_405071[4 * v5] == 1 )
+        {
+          if ( (unsigned __int8)m[5 * v5 + 1] < (unsigned __int8)m[5 * v5 + 2] )
+            goto LABEL_27;
+        }
+        else if ( byte_405071[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 1] > (unsigned __int8)m[5 * v5 + 2] )
+        {
+          goto LABEL_27;
+        }
+        if ( byte_405072[4 * v5] == 1 )
+        {
+          if ( (unsigned __int8)m[5 * v5 + 2] < (unsigned __int8)m[5 * v5 + 3] )
+            goto LABEL_27;
+        }
+        else if ( byte_405072[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 2] > (unsigned __int8)m[5 * v5 + 3] )
+        {
+          goto LABEL_27;
+        }
+        if ( byte_405073[4 * v5] == 1 )
+        {
+          if ( (unsigned __int8)m[5 * v5 + 3] < (unsigned __int8)m[5 * v5 + 4] )
+            goto LABEL_27;
+        }
+        else if ( byte_405073[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 3] > (unsigned __int8)m[5 * v5 + 4] )
+        {
+          goto LABEL_27;
+        }
+        ++v5;
+        if ( v4 + 1 >= 5 )
+        {
+          v3 = 0LL;
+          while ( 1 )
+          {
+            v2 = v3 + 1;
+            if ( o[5 * v3] == 1 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3] > (unsigned __int8)m[5 * v2] )
+                goto LABEL_26;
+            }
+            else if ( o[5 * v3] == 2 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3] < (unsigned __int8)m[5 * v2] )
+              {
+LABEL_26:
+                v8 = v1;
+                return v8 & 1;
+              }
+            }
+            if ( byte_405091[5 * v3] == 1 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 1] > (unsigned __int8)m[5 * v2 + 1] )
+                goto LABEL_26;
+            }
+            else if ( byte_405091[5 * v3] == 2 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 1] < (unsigned __int8)m[5 * v2 + 1] )
+                goto LABEL_26;
+            }
+            if ( byte_405092[5 * v3] == 1 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 2] > (unsigned __int8)m[5 * v2 + 2] )
+                goto LABEL_26;
+            }
+            else if ( byte_405092[5 * v3] == 2 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 2] < (unsigned __int8)m[5 * v2 + 2] )
+                goto LABEL_26;
+            }
+            if ( byte_405093[5 * v3] == 1 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 3] > (unsigned __int8)m[5 * v2 + 3] )
+                goto LABEL_26;
+            }
+            else if ( byte_405093[5 * v3] == 2 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 3] < (unsigned __int8)m[5 * v2 + 3] )
+                goto LABEL_26;
+            }
+            if ( byte_405094[5 * v3] == 1 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 4] > (unsigned __int8)m[5 * v2 + 4] )
+                goto LABEL_26;
+            }
+            else if ( byte_405094[5 * v3] == 2 )
+            {
+              v1 = 0;
+              if ( (unsigned __int8)m[5 * v3 + 4] < (unsigned __int8)m[5 * v2 + 4] )
+                goto LABEL_26;
+            }
+            ++v3;
+            v1 = 1;
+            if ( v2 >= 4 )
+              goto LABEL_26;
+          }
+        }
+      }
+    }
+  }
+  v8 = 0;
+  return v8 & 1;
+}
+```
+
+首先检查5×5的矩阵，要求每行和每列不能有相同的数字。
+
+然后的
+
+```assembly
+v4 = v5;
+if ( n[4 * v5] == 1 )
+{
+    if ( (unsigned __int8)m[5 * v5] < (unsigned __int8)m[5 * v5 + 1] )
+    	goto LABEL_27;
+}
+else if ( n[4 * v5] == 2 && (unsigned __int8)m[5 * v5] > (unsigned __int8)m[5 * v5 + 1] )
+{
+LABEL_27:
+      v8 = 0;
+      return v8 & 1;
+}
+```
+
+n
+
+```assembly
+0001
+1000
+2001
+0000
+1010
+```
+
+当n矩阵的第i行第一个元素为1时，m矩阵的第i行的第一个元素应该大于第二个元素，所以得出m\[1][0]>m\[1][1]。
+
+```assembly
+if ( byte_405071[4 * v5] == 1 )
+{
+	if ( (unsigned __int8)m[5 * v5 + 1] < (unsigned __int8)m[5 * v5 + 2] )
+        goto LABEL_27;
+}
+else if ( byte_405071[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 1] > (unsigned __int8)m[5 * v5 + 2] )
+{
+      goto LABEL_27;
+}
+```
+
+byte_405071
+
+```assembly
+0011
+0002
+0010
+0001
+0100
+```
+
+没用上
+
+```
+if ( byte_405072[4 * v5] == 1 )
+{
+    if ( (unsigned __int8)m[5 * v5 + 2] < (unsigned __int8)m[5 * v5 + 3] )
+        goto LABEL_27;
+}
+else if ( byte_405072[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 2] > (unsigned __int8)m[5 * v5 + 3] )
+{
+    goto LABEL_27;
+}
+```
+
+byte_405072
+
+```assembly
+0110
+0020
+0100
+0010
+1000
+```
+
+m\[4][2]>m\[4][3]
+
+```assembly
+if ( byte_405073[4 * v5] == 1 )
+{
+	if ( (unsigned __int8)m[5 * v5 + 3] < (unsigned __int8)m[5 * v5 + 4] )
+        goto LABEL_27;
+}
+else if ( byte_405073[4 * v5] == 2 && (unsigned __int8)m[5 * v5 + 3] > (unsigned __int8)m[5 * v5 + 4] )
+{
+    goto LABEL_27;
+}
+```
+
+byte_405073
+
+```assembly
+1100
+0200
+1000
+0101
+0000
+```
+
+如果byte_405073矩阵的第i行的第一个元素为1，则m矩阵的第i行的第4个元素应该大于第5个元素的值。所以得出m\[0][3]>m\[0][4].
+
+```assembly
+v2 = v3 + 1;
+if ( o[5 * v3] == 1 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3] > (unsigned __int8)m[5 * v2] )
+        goto LABEL_26;
+}
+else if ( o[5 * v3] == 2 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3] < (unsigned __int8)m[5 * v2] )
+    {
+LABEL_26:
+    	v8 = v1;
+        return v8 & 1;
+    }
+}
+```
+
+o
+
+```assembly
+00202
+00000
+00010
+01001
+```
+
+没用
+
+```assembly
+if ( byte_405091[5 * v3] == 1 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 1] > (unsigned __int8)m[5 * v2 + 1] )
+        goto LABEL_26;
+}
+else if ( byte_405091[5 * v3] == 2 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 1] < (unsigned __int8)m[5 * v2 + 1] )
+        goto LABEL_26;
+}
+```
+
+byte_405091
+
+```
+02020
+00000
+00100
+10010
+```
+
+m\[4][1]<m\[5][1]
+
+```assembly
+if ( byte_405092[5 * v3] == 1 )
+{
+	v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 2] > (unsigned __int8)m[5 * v2 + 2] )
+    	goto LABEL_26;
+}
+else if ( byte_405092[5 * v3] == 2 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 2] < (unsigned __int8)m[5 * v2 + 2] )
+    	goto LABEL_26;
+}
+```
+
+byte_405092
+
+```
+20200
+00000
+01001
+00100
+```
+
+m\[0][2]>m\[1][2]
+
+```assembly
+if ( byte_405093[5 * v3] == 1 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 3] > (unsigned __int8)m[5 * v2 + 3] )
+    	goto LABEL_26;
+}
+else if ( byte_405093[5 * v3] == 2 )
+{
+	v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 3] < (unsigned __int8)m[5 * v2 + 3] )
+        goto LABEL_26;
+}
+```
+
+byte_405093
+
+```
+02000
+00000
+10010
+01000
+```
+
+m\[2][4]<m\[3][4]
+
+```
+if ( byte_405094[5 * v3] == 1 )
+{
+	v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 4] > (unsigned __int8)m[5 * v2 + 4] )
+        goto LABEL_26;
+}
+else if ( byte_405094[5 * v3] == 2 )
+{
+    v1 = 0;
+    if ( (unsigned __int8)m[5 * v3 + 4] < (unsigned __int8)m[5 * v2 + 4] )
+        goto LABEL_26;
+}
+```
+
+byte_405094
+
+```assembly
+20000
+00001
+00100
+10000
+```
+
+m\[0][4]>m\[1][4]
+
+m\[3][4]<m\[4][4]
+
+根据约束条件解出矩阵M
+
+|      |      |      |      |      |
+| ---- | ---- | ---- | ---- | ---- |
+| 1    | 4    | 2    | 5    | 3    |
+| 5    | 3    | 1    | 4    | 2    |
+| 3    | 5    | 4    | 2    | 1    |
+| 2    | 1    | 5    | 3    | 4    |
+| 4    | 2    | 3    | 1    | 5    |
+
+flag:
+
+CISCN{MD5(1425353142350212150442315)}

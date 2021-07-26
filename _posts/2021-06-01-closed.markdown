@@ -1,0 +1,84 @@
+---
+layout: post
+title:  closed
+date:   2021-06-01 00:01:01 +0300
+image:  2021-06-01-sunset.jpg
+tags:   [ctf,Pwn,linux,wustctf2020]
+---
+
+main
+
+```assembly
+// local variable allocation has failed, the output may be wrong!
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  init(*(_QWORD *)&argc, argv, envp);
+  vulnerable();
+  return 0;
+}
+```
+
+init()
+
+```assembly
+int init()
+{
+  alarm(0x20u);
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stdin, 0LL, 2, 0LL);
+  return puts(
+           "   __  ___    ______   ___    \n"
+           "  /  |/  /__ /_  __/__<  /_ __\n"
+           " / /|_/ / _ `// / / __/ /\\ \\ /\n"
+           "/_/  /_/\\_,_//_/ /_/ /_//_\\_\\ \n");
+}
+```
+
+漏洞函数vulnerable()
+
+```assembly
+int vulnerable()
+{
+  puts("HaHaHa!\nWhat else can you do???");
+  close(1);
+  close(2);
+  return shell();
+}
+```
+
+shell()
+
+```assembly
+int shell()
+{
+  return system("/bin/sh");
+}
+```
+
+是一个ret2text
+
+close()函数，关闭一个已经打开的文件。
+
+```assembly
+int close(int fd)
+参数说明：
+fd：是需要关闭的文件描述符
+```
+
+成功：返回0；
+
+失败：返回-1，并设置errno
+
+但是我不知道程序这里调用close()传入的参数1和2是什么意思。
+
+百度学到了：
+
+当一个应用程序刚刚启动的时候，0是标准输入，1是标准输出，2是标准错误。如果此时去打开一个新的文件，它的文件描述符会是3。
+
+所以这个程序关闭了标准输出和标准错误。关闭stdout时，它不再连接到终端，而且它是块缓冲的，而不是行缓冲的。
+
+所以我们getshell后输入任何命令都是没有回显的。
+
+因为1和2文件描述符不可用了，但是文件描述符0没有关闭，所以可以对stdout重定向，将文件描述符1 重定向到文件描述符0：exec 1>&0
+
+之后，执行的命令可以回显了。

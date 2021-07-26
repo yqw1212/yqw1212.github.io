@@ -1,0 +1,563 @@
+---
+layout: post
+title:  app2
+date:   2021-06-05 00:01:01 +0300
+image:  2021-06-05-field.jpg
+tags:   [ctf,reverse,mobile,adworld,android]
+---
+
+拖入jeb，首先查看MainActivity
+
+```assembly
+package com.tencent.testvuln;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences$Editor;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import com.tencent.testvuln.c.SignatureTool;
+
+@SuppressLint(value={"ShowToast"}) public class MainActivity extends Activity implements View$OnClickListener {
+    private Button a;
+    private Handler b;
+    private EditText c;
+    private EditText d;
+
+    public MainActivity() {
+        super();
+        this.b = null;
+    }
+
+    public void onClick(View arg6) {
+        switch(arg6.getId()) {
+            case 2131165187: {
+                if(this.c.getText().length() != 0 && this.d.getText().length() != 0) {
+                    String v0 = this.c.getText().toString();
+                    String v1 = this.d.getText().toString();
+                    Log.e("test", v0 + " test2 = " + v1);
+                    Intent v2 = new Intent(((Context)this), SecondActivity.class);
+                    v2.putExtra("ili", v0);
+                    v2.putExtra("lil", v1);
+                    this.startActivity(v2);
+                    return;
+                }
+
+                Toast.makeText(((Context)this), "不能为空", 1).show();
+                break;
+            }
+        }
+    }
+
+    protected void onCreate(Bundle arg5) {
+        super.onCreate(arg5);
+        this.setContentView(0x7F030000);
+        this.a = this.findViewById(0x7F070003);
+        this.a.setOnClickListener(((View$OnClickListener)this));
+        this.c = this.findViewById(0x7F070001);
+        this.d = this.findViewById(0x7F070002);
+        SharedPreferences$Editor v0 = this.getSharedPreferences("test", 0).edit();
+        v0.putLong("ili", System.currentTimeMillis());
+        v0.commit();
+        Log.d("hashcode", SignatureTool.getSignature(((Context)this)) + "");
+    }
+
+    public boolean onCreateOptionsMenu(Menu arg3) {
+        this.getMenuInflater().inflate(0x7F060000, arg3);
+        return 1;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem arg3) {
+        boolean v0 = arg3.getItemId() == 0x7F070004 ? true : super.onOptionsItemSelected(arg3);
+        return v0;
+    }
+}
+```
+
+在当前Activity1使用startActvity(intent)或者startActivityForResult(intent, code)方法跳转到另一个Activity2之前，如果要传递某些String类型数据给Activity2，则会执行intent.putExtra(String str, String Key),将String数据打包到Intent中，并给它一个Key标识。在Activity2当中，getIntent()方法获得这个intent，然后再getStringExtra(Key)，就可以获得之前打包的那个数据了。
+
+可以看到把输入第一个编辑框的字符串做为变量"ili"，输入第二个编辑框的字符串做为变量"lil"，然后传给了其他Activity。查找发现传给了SecondActivity。
+
+```assembly
+package com.tencent.testvuln;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences$Editor;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+import com.tencent.testvuln.c.Encryto;
+
+public class SecondActivity extends a {
+    class com.tencent.testvuln.SecondActivity$1 extends BroadcastReceiver {
+        com.tencent.testvuln.SecondActivity$1(SecondActivity arg1) {
+            this.a = arg1;
+            super();
+        }
+
+        public void onReceive(Context arg3, Intent arg4) {
+            Toast.makeText(arg3, "myReceiver receive", 0).show();
+            arg3.getPackageName().equals(arg4.getAction());
+        }
+    }
+
+    private BroadcastReceiver c;
+
+    public SecondActivity() {
+        super();
+        this.c = new com.tencent.testvuln.SecondActivity$1(this);
+    }
+
+    protected void onCreate(Bundle arg6) {
+        super.onCreate(arg6);
+        this.setContentView(0x7F030001);
+        Intent v0 = this.getIntent();
+        String v1 = v0.getStringExtra("ili");
+        String v2 = v0.getStringExtra("lil");
+        if(Encryto.doRawData(this, v1 + v2).equals("VEIzd/V2UPYNdn/bxH3Xig==")) {
+            v0.setAction("android.test.action.MoniterInstallService");
+            v0.setClass(((Context)this), MoniterInstallService.class);
+            v0.putExtra("company", "tencent");
+            v0.putExtra("name", "hacker");
+            v0.putExtra("age", 18);
+            this.startActivity(v0);
+            this.startService(v0);
+        }
+
+        SharedPreferences$Editor v0_1 = this.getSharedPreferences("test", 0).edit();
+        v0_1.putString("ilil", v1);
+        v0_1.putString("lili", v2);
+        v0_1.commit();
+    }
+
+    public boolean onCreateOptionsMenu(Menu arg3) {
+        this.getMenuInflater().inflate(0x7F060000, arg3);
+        return 1;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem arg3) {
+        boolean v0 = arg3.getItemId() == 0x7F070004 ? true : super.onOptionsItemSelected(arg3);
+        return v0;
+    }
+}
+```
+
+可以看到将变量"ili"和变量"lil"的值连接起来，使用Encryto.doRawData()加密，加密结果应该为
+
+"VEIzd/V2UPYNdn/bxH3Xig=="。查看Encryto类
+
+```assembly
+package com.tencent.testvuln.c;
+
+public class Encryto {
+    static {
+        System.loadLibrary("JNIEncrypt");
+    }
+
+    public Encryto() {
+        super();
+    }
+
+    public native String HelloLoad() {
+    }
+
+    public static native int checkSignature(Object arg0) {
+    }
+
+    public static native String decode(Object arg0, String arg1) {
+    }
+
+    public static native String doRawData(Object arg0, String arg1) {
+    }
+
+    public static native String encode(Object arg0, String arg1) {
+    }
+}
+```
+
+发现加密函数全在native层，解压apk，so文件用ida查看，找到doRawData()函数
+
+```assembly
+int __cdecl doRawData(int a1, int a2, int a3, int a4)
+{
+  char *v4; // esi
+  int v5; // ST10_4
+  int result; // eax
+  char *v7; // esi
+  int (__cdecl *v8)(int, char *, size_t); // ST10_4
+  size_t v9; // eax
+  int v10; // [esp+4h] [ebp-28h]
+  int v11; // [esp+8h] [ebp-24h]
+  int v12; // [esp+Ch] [ebp-20h]
+  int v13; // [esp+10h] [ebp-1Ch]
+  char v14; // [esp+14h] [ebp-18h]
+  unsigned int v15; // [esp+18h] [ebp-14h]
+
+  v15 = __readgsdword(0x14u);
+  if ( checkSignature(a1, a2, a3) == 1 )
+  {
+    v14 = 0;
+    v13 = '==ye';
+    v12 = 'ktse';
+    v11 = 'tasi';
+    v10 = 'siht';
+    v4 = (char *)(*(int (__cdecl **)(int, int, _DWORD))(*(_DWORD *)a1 + 676))(a1, a4, 0);
+    v5 = AES_128_ECB_PKCS5Padding_Encrypt(v4, (int)&v10);
+    (*(void (__cdecl **)(int, int, char *))(*(_DWORD *)a1 + 680))(a1, a4, v4);
+    result = (*(int (__cdecl **)(int, int))(*(_DWORD *)a1 + 668))(a1, v5);
+  }
+  else
+  {
+    v7 = UNSIGNATURE[0];
+    v8 = *(int (__cdecl **)(int, char *, size_t))(*(_DWORD *)a1 + 652);
+    v9 = strlen(UNSIGNATURE[0]);
+    result = v8(a1, v7, v9);
+  }
+  return result;
+}
+```
+
+使用了AES加密，密钥也直接给出了。
+
+使用Java脚本解密得到结果
+
+```assembly
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
+
+/*
+ * @author: yqw
+ * @date: 2020/11/11
+ * @description:md实在是python不知道哪里出了问题不能解密只能试试用java看能不能解一下aes
+ */
+public class Aes {
+
+    public static void main(String[] args) {
+        Aes aes = new Aes();
+        String s = aes.AES_Decrypt("VEIzd/V2UPYNdn/bxH3Xig==", "thisisatestkey==","ECB");
+        System.out.println(s);
+    }
+
+    /**
+     * AES解密
+     *
+     * @param cipertext 密文
+     * @param Key 密钥
+     * @param EncryptMode AES加密模式，CBC或ECB
+     * @return 该密文的明文
+     */
+    public static String AES_Decrypt(Object cipertext, String Key,String EncryptMode) {
+        String CipherText=null;
+        try {
+            CipherText=cipertext.toString();
+            // 判断Key是否正确
+            if (Key == null) {
+                System.out.print("Key为空null");
+                return null;
+            }
+//            Key=getMD5(Key);
+            byte[] raw = Key.getBytes();
+            SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
+            Cipher cipher=Cipher.getInstance("AES/"+EncryptMode+"/PKCS5Padding");
+            if(EncryptMode.equals("ECB")) {
+                cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+            }
+            else
+            {
+//                IvParameterSpec iv = new IvParameterSpec(Key.getBytes("utf-8"));//使用CBC模式，需要一个向量iv，可增加加密算法的强度
+                IvParameterSpec iv = new IvParameterSpec("sctfsctfsctfsctf".getBytes());//使用CBC模式，需要一个向量iv，可增加加密算法的强度
+                cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+            }
+            Base64 b = new Base64();
+            byte[] encrypted1 = b.Base64Decode((String) cipertext);//先用base64解密
+//            byte[] encrypted1 = CipherText.getBytes();
+            try {
+                byte[] original = cipher.doFinal(encrypted1);
+                return new String(original,"utf-8");
+            } catch (Exception e) {
+                System.out.println(e.toString());
+                return null;
+            }
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+            return null;
+        }
+    }
+
+    /**
+     * 进行MD5加密
+     *
+     * @param s 要进行MD5转换的字符串
+     * @return 该字符串的MD5值的8-24位
+     */
+    public static String getMD5(String s){
+        char hexDigits[]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+        try {
+            byte[] btInput = s.getBytes();
+            // 获得MD5摘要算法的 MessageDigest 对象
+            MessageDigest mdInst = MessageDigest.getInstance("MD5");
+            // 使用指定的字节更新摘要
+            mdInst.update(btInput);
+            // 获得密文
+            byte[] md = mdInst.digest();
+            // 把密文转换成十六进制的字符串形式
+            int j = md.length;
+            char str[] = new char[j * 2];
+            int k = 0;
+            for (int i = 0; i < j; i++) {
+                byte byte0 = md[i];
+                str[k++] = hexDigits[byte0 >>> 4 & 0xf];
+                str[k++] = hexDigits[byte0 & 0xf];
+            }
+            return new String(str).substring(8,24);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+}
+```
+
+结果：aimagetencent，根据经验这个字符串应该分为aimage+tencent，分别输入两个编辑框，发现没用。继续查看SecondActivity中的其他操作
+
+```assembly
+if(Encryto.doRawData(this, v1 + v2).equals("VEIzd/V2UPYNdn/bxH3Xig==")) {
+    v0.setAction("android.test.action.MoniterInstallService");
+    v0.setClass(((Context)this), MoniterInstallService.class);
+    v0.putExtra("company", "tencent");
+    v0.putExtra("name", "hacker");
+    v0.putExtra("age", 18);
+    this.startActivity(v0);
+    this.startService(v0);
+}
+```
+
+可以看到如果比较相同，就会与MoniterInstallService进行通信，查看MoniterInstallService
+
+```assembly
+package com.tencent.testvuln;
+
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+
+public class MoniterInstallService extends Service {
+    class com.tencent.testvuln.MoniterInstallService$1 extends BroadcastReceiver {
+        com.tencent.testvuln.MoniterInstallService$1(MoniterInstallService arg1) {
+            this.a = arg1;
+            super();
+        }
+
+        public void onReceive(Context arg4, Intent arg5) {
+            this.a.b("");
+            long v0 = 1000;
+            try {
+                Thread.sleep(v0);
+            }
+            catch(InterruptedException v0_1) {
+                v0_1.printStackTrace();
+            }
+
+            Intent v0_2 = new Intent("android.setting.word");
+            v0_2.putExtra("1", MoniterInstallService.a(this.a));
+            v0_2.putExtra("2", MoniterInstallService.b(this.a));
+            arg4.sendBroadcast(v0_2);
+        }
+    }
+
+    class com.tencent.testvuln.MoniterInstallService$2 extends Handler {
+        com.tencent.testvuln.MoniterInstallService$2(MoniterInstallService arg1) {
+            this.a = arg1;
+            super();
+        }
+
+        public void handleMessage(Message arg3) {
+            switch(arg3.what) {
+                case 0: {
+                    this.a.a("");
+                    break;
+                }
+            }
+        }
+    }
+
+    private long a;
+    private String b;
+    private String c;
+    private c d;
+    private BroadcastReceiver e;
+    private Handler f;
+
+    public MoniterInstallService() {
+        super();
+        this.a = 0;
+        this.b = null;
+        this.c = null;
+        this.d = null;
+        this.e = new com.tencent.testvuln.MoniterInstallService$1(this);
+        this.f = new com.tencent.testvuln.MoniterInstallService$2(this);
+    }
+
+    static String a(MoniterInstallService arg1) {
+        return arg1.b;
+    }
+
+    void a(String arg3) {
+        String v0 = Environment.getExternalStorageDirectory().getPath() + "/crash/";
+        if(this.d == null) {
+            this.d = new c(v0);
+        }
+
+        this.d.startWatching();
+    }
+
+    static String b(MoniterInstallService arg1) {
+        return arg1.c;
+    }
+
+    void b(String arg2) {
+        if(this.d != null) {
+            this.d.stopWatching();
+        }
+    }
+
+    static Handler c(MoniterInstallService arg1) {
+        return arg1.f;
+    }
+
+    public IBinder onBind(Intent arg2) {
+        return null;
+    }
+
+    public void onCreate() {
+        super.onCreate();
+        IntentFilter v0 = new IntentFilter();
+        v0.addAction("com.tencent.testvul.service.MoniterFile");
+        v0.setPriority(0x7FFFFFFF);
+        this.registerReceiver(this.e, v0);
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    public void onStart(Intent arg3, int arg4) {
+        super.onStart(arg3, arg4);
+        this.b = arg3.getStringExtra("ili");
+        this.c = arg3.getStringExtra("lil");
+        new Thread() {
+            public void run() {
+                Message v0 = new Message();
+                v0.what = 0;
+                MoniterInstallService.c(this.a).sendMessage(v0);
+            }
+        }.start();
+    }
+}
+```
+
+到了这里发现看不太懂下一步操作是什么了，只能在其他类找找线索，然后在FileDataActivity有了一点发现
+
+```assembly
+package com.tencent.testvuln;
+
+import android.os.Bundle;
+import android.widget.TextView;
+import com.tencent.testvuln.c.Encryto;
+
+public class FileDataActivity extends a {
+    private TextView c;
+
+    public FileDataActivity() {
+        super();
+    }
+
+    protected void onCreate(Bundle arg3) {
+        super.onCreate(arg3);
+        this.setContentView(0x7F030002);
+        this.c = this.findViewById(0x7F070000);
+        this.c.setText(Encryto.decode(this, "9YuQ2dk8CSaCe7DTAmaqAA=="));
+    }
+}
+```
+
+查看so文件的decode函数。
+
+```assembly
+int __cdecl decode(int a1, int a2, int a3, int a4)
+{
+  char *v4; // esi
+  int v5; // ST10_4
+  int result; // eax
+  char *v7; // esi
+  int (__cdecl *v8)(int, char *, size_t); // ST10_4
+  size_t v9; // eax
+  int v10; // [esp+4h] [ebp-28h]
+  int v11; // [esp+8h] [ebp-24h]
+  int v12; // [esp+Ch] [ebp-20h]
+  int v13; // [esp+10h] [ebp-1Ch]
+  char v14; // [esp+14h] [ebp-18h]
+  unsigned int v15; // [esp+18h] [ebp-14h]
+
+  v15 = __readgsdword(0x14u);
+  if ( checkSignature(a1, a2, a3) == 1 )
+  {
+    v14 = 0;
+    v13 = '==ye';
+    v12 = 'ktse';
+    v11 = 'tasi';
+    v10 = 'siht';
+    v4 = (char *)(*(int (__cdecl **)(int, int, _DWORD))(*(_DWORD *)a1 + 676))(a1, a4, 0);
+    v5 = AES_128_ECB_PKCS5Padding_Decrypt(v4, (int)&v10);
+    (*(void (__cdecl **)(int, int, char *))(*(_DWORD *)a1 + 680))(a1, a4, v4);
+    result = (*(int (__cdecl **)(int, int))(*(_DWORD *)a1 + 668))(a1, v5);
+  }
+  else
+  {
+    v7 = UNSIGNATURE[0];
+    v8 = *(int (__cdecl **)(int, char *, size_t))(*(_DWORD *)a1 + 652);
+    v9 = strlen(UNSIGNATURE[0]);
+    result = v8(a1, v7, v9);
+  }
+  return result;
+}
+```
+
+貌似和之前的doRawData()一样。
+
+使用脚本解密得到结果：Cas3_0f_A_CAK3，提交就是flag。
+
+在网上发现了另一种解法可以学习，记录一下。
+
+```assembly
+#连接虚拟机
+adb connect 127.0.0.1:62001
+#获取shell
+adb shell
+#使用am start调用FileDataActivity页面
+am start com.tencent.testvuln/.FileDataActivity
+```
+

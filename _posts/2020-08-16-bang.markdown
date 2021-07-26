@@ -3,7 +3,7 @@ layout: post
 title:  bang[网鼎杯2020青龙组]
 date:   2020-08-16 00:01:01 +0300
 image:  2020-08-16-sparkler.jpg
-tags:   [ctf,reverse,网鼎杯]
+tags:   [ctf,reverse,网鼎杯,mobile,android,frida]
 ---
 
 下载文件是一个apx文件

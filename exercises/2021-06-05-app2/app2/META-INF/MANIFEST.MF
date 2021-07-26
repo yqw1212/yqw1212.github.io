@@ -1,0 +1,46 @@
+Manifest-Version: 1.0
+Built-By: Generated-by-ADT
+Created-By: Android Gradle 2.3.0
+
+Name: AndroidManifest.xml
+SHA1-Digest: 87KMMCIUGFFkUdqmf5sXgkkphK0=
+
+Name: lib/x86/libJNIEncrypt.so
+SHA1-Digest: 6QZrefzIEYx3lI2epLTn1+xg0Sk=
+
+Name: res/drawable-hdpi-v4/ic_launcher.png
+SHA1-Digest: Nq8q3HeTluE5JNCBpVvNy3BXtJI=
+
+Name: res/layout/activity_main.xml
+SHA1-Digest: cbqGy+87iITaq3yuIFkL63nIEiM=
+
+Name: lib/armeabi/libJNIEncrypt.so
+SHA1-Digest: t5Mn1cgd7UgX+qTqFQsGAy/S8Ng=
+
+Name: res/drawable-mdpi-v4/ic_launcher.png
+SHA1-Digest: RRxOSvpmhVfCwiprVV/wZlaqQpw=
+
+Name: lib/armeabi-v7a/libJNIEncrypt.so
+SHA1-Digest: A9ISAH0lsi+NShzz529Fobibarc=
+
+Name: res/menu/main.xml
+SHA1-Digest: sfje740LzAjwgMRsBANjSXS7zqE=
+
+Name: res/layout/activity_main3.xml
+SHA1-Digest: XESZPS/8DmmoTK5g2WWbIvesyAg=
+
+Name: res/drawable-xhdpi-v4/ic_launcher.png
+SHA1-Digest: AfPh3OJoypH966MludSW6f1RHg4=
+
+Name: resources.arsc
+SHA1-Digest: m07Mwy7Wq4LmD9spyrzUENczWGg=
+
+Name: classes.dex
+SHA1-Digest: 7PT9kyr8ISosqLYSdJFepVmkZnk=
+
+Name: res/drawable-xxhdpi-v4/ic_launcher.png
+SHA1-Digest: GVIfdEOBv4gEny2T1jDhGGsZOBo=
+
+Name: res/layout/activity_main2.xml
+SHA1-Digest: uX174Wwa9Qn1XS3IfjBTBRq79Jw=
+
