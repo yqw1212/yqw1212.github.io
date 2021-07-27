@@ -1,0 +1,210 @@
+---
+layout: post
+title:  app-debug
+date:   2021-07-04 00:01:01 +0300
+image:  2021-07-04-cherries.jpg
+tags:   [ctf,reverse,gkctf2021,tea,mobile,android]
+---
+
+jeb打开，查看MainActivity
+
+```assembly
+package com.example.myapplication;
+
+import android.os.Bundle;
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    private Button mBtnLogin;
+    private EditText mEtflag;
+
+    static {
+        System.loadLibrary("native-lib");
+    }
+
+    public MainActivity() {
+        super();
+    }
+
+    static EditText access$000(MainActivity arg1) {
+        return arg1.mEtflag;
+    }
+
+    public native boolean check(String arg1) {
+    }
+
+    protected void onCreate(Bundle arg3) {
+        super.onCreate(arg3);
+        this.setContentView(0x7F09001C);
+        this.mBtnLogin = this.findViewById(0x7F070023);
+        this.mEtflag = this.findViewById(0x7F07001E);
+        this.mBtnLogin.setOnClickListener(new View$OnClickListener() {
+            public void onClick(View arg4) {
+                if(MainActivity.this.check(MainActivity.this.mEtflag.getText().toString())) {
+                    Toast.makeText(MainActivity.this, "You Are Right!flag is flag{md5(input)}", 0).show();
+                }
+                else {
+                    Toast.makeText(MainActivity.this, "Sorry your flag is wrong!", 0).show();
+                }
+            }
+        });
+    }
+}
+```
+
+check函数在native层
+
+```assembly
+__int64 __fastcall Java_com_example_myapplication_MainActivity_check(__int64 a1, __int64 a2, __int64 a3)
+{
+  __int64 result; // x0
+  signed int i; // [xsp+24h] [xbp-4Ch]
+  bool v5; // [xsp+4Ch] [xbp-24h]
+  char v6; // [xsp+50h] [xbp-20h]
+  __int64 v7; // [xsp+68h] [xbp-8h]
+
+  v7 = *(_QWORD *)(_ReadStatusReg(ARM64_SYSREG(3, 3, 13, 0, 2)) + 40);
+  sub_3FE20(a1, a3);
+  if ( sub_40040((__int64)&v6) == 7 )
+  {
+    for ( i = 0; i <= 6; ++i )
+      byte_C80E0[i] = *(_BYTE *)sub_40064((__int64)&v6, i);
+    v5 = sub_3ED8C((unsigned int *)byte_C80E0);
+  }
+  else
+  {
+    v5 = 0;
+  }
+  result = sub_3FC04(&v6);
+  if ( *(_QWORD *)(_ReadStatusReg(ARM64_SYSREG(3, 3, 13, 0, 2)) + 40) == v7 )
+    result = v5;
+  return result;
+}
+```
+
+sub_3ED8C
+
+```assembly
+bool __fastcall sub_3ED8C(unsigned int *a1)
+{
+  unsigned int i; // [xsp+20h] [xbp-20h]
+  int v3; // [xsp+24h] [xbp-1Ch]
+  unsigned int v4; // [xsp+28h] [xbp-18h]
+  unsigned int v5; // [xsp+2Ch] [xbp-14h]
+
+  v5 = *a1;
+  v4 = a1[1];
+  v3 = 0;
+  for ( i = 0; i < 0x20; ++i )
+  {
+    v3 += dword_C8010;
+    v5 += (16 * v4 + dword_C8000) ^ (v4 + v3) ^ ((v4 >> 5) + dword_C8004);
+    v4 += (16 * v5 + dword_C8008) ^ (v5 + v3) ^ ((v5 >> 5) + dword_C800C);
+  }
+  *a1 = v5;
+  a1[1] = v4;
+  return *a1 == 0xF5A98FF3 && a1[1] == 0xA21873A3;
+}
+```
+
+是一个tea加密
+
+参数
+
+```assembly
+.data:00000000000C8000                 ; ORG 0xC8000
+.data:00000000000C8000 dword_C8000     DCD 9                   ; DATA XREF: sub_3ED8C+4↑o
+.data:00000000000C8000                                         ; sub_3ED8C+8↑o ...
+.data:00000000000C8004 dword_C8004     DCD 3                   ; DATA XREF: sub_3ED8C+3C↑r
+.data:00000000000C8004                                         ; sub_3EF18+14↑w
+.data:00000000000C8008 dword_C8008     DCD 2                   ; DATA XREF: sub_3ED8C+44↑r
+.data:00000000000C8008                                         ; sub_3EF18+18↑w
+.data:00000000000C800C dword_C800C     DCD 1                   ; DATA XREF: sub_3ED8C+4C↑r
+.data:00000000000C800C                                         ; sub_3EF18+1C↑w
+.data:00000000000C8010 dword_C8010     DCD 0x458BCD42          ; DATA XREF: sub_3ED8C+6C↑o
+.data:00000000000C8010                                         ; sub_3ED8C+70↑o ...
+.data:00000000000C8014                 ALIGN 8
+```
+
+编写解密脚本
+
+```assembly
+#include <stdio.h>
+#include <stdint.h>
+
+void decrypt (uint32_t* v, uint32_t* k) {
+    uint32_t v0=v[0], v1=v[1], sum=0x458BCD42*32, i;  /* set up */
+    uint32_t delta=0x458BCD42;                     /* a key schedule constant */
+    uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
+    for (i=0; i<32; i++) {                         /* basic cycle start */
+        v1 -= ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);
+        v0 -= ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
+        sum -= delta;
+    }                                              /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+
+int main() {
+
+    uint32_t v[2]={0xF5A98FF3,0xA21873A3}, k[4]={9, 3, 2, 1};
+
+    decrypt(v, k);
+    printf("%u,%u",v[0],v[1]);
+
+    return 0;
+}
+```
+
+后来知道key是动态改变的，可以通过交叉引用找到改变的值。
+
+```assembly
+void sub_3EF18()
+{
+  dword_C8004 = 7;
+  dword_C8008 = 8;
+  dword_C800C = 6;
+}
+```
+
+解密
+
+```assembly
+#include <stdio.h>
+#include <stdint.h>
+
+void decrypt (uint32_t* v, uint32_t* k) {
+    uint32_t v0=v[0], v1=v[1], sum=0x458BCD42*32, i;  /* set up */
+    uint32_t delta=0x458BCD42;                     /* a key schedule constant */
+    uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
+    for (i=0; i<32; i++) {                         /* basic cycle start */
+        v1 -= ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);
+        v0 -= ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
+        sum -= delta;
+    }                                              /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+
+int main() {
+
+    uint32_t v[2]={0xF5A98FF3,0xA21873A3}, k[4]={9, 7, 8, 6};
+
+    decrypt(v, k);
+    printf("%u,%u\n",v[0],v[1]);
+    puts(v);
+
+    return 0;
+}
+```
+
+得到：
+
+GKcTFg0
+
+做MD5得到flag
+
+flag{77bca47fe645ca1bd1ac93733171c9c4}
