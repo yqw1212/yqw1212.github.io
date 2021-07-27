@@ -1,0 +1,373 @@
+---
+layout: post
+title:  Crash
+date:   2021-07-03 00:01:01 +0300
+image:  2021-07-03-sheet.jpg
+tags:   [ctf,reverse,gkctf2021,golang]
+---
+
+ida7.6打开
+
+main_main
+
+```assembly
+void __cdecl main_main()
+{
+  __int64 v0; // rcx
+  _QWORD *v1; // [rsp+8h] [rbp-98h]
+  _QWORD *v2; // [rsp+40h] [rbp-60h]
+  _QWORD v3[2]; // [rsp+48h] [rbp-58h] BYREF
+  _QWORD v4[2]; // [rsp+58h] [rbp-48h] BYREF
+  _QWORD v5[4]; // [rsp+68h] [rbp-38h] BYREF
+  _QWORD v6[2]; // [rsp+88h] [rbp-18h] BYREF
+
+  runtime_newobject((__int64)&unk_523A20);
+  v2 = v1;
+  v6[0] = &unk_523A20;
+  v6[1] = &off_5724A0;
+  fmt_Fprintln(&off_574420, qword_625B28, v6, 1LL, 1LL);
+  v5[2] = "\b";
+  v5[3] = v2;
+  fmt_Fscanln(&off_574400, qword_625B20);
+  v0 = *v2;
+  if ( v2[1] == 43LL && *(_DWORD *)v0 == 1413696327 && *(_WORD *)(v0 + 4) == 31558 && *(_BYTE *)(v0 + 42) == 125 )
+  {
+    if ( (unsigned __int8)main_check(*v2, 43LL) )
+    {
+      v5[0] = &unk_523A20;
+      v5[1] = &off_5724B0;
+      fmt_Fprintln(&off_574420, qword_625B28, v5, 1LL, 1LL);
+    }
+    else
+    {
+      v4[0] = &unk_523A20;
+      v4[1] = &off_5724C0;
+      fmt_Fprintln(&off_574420, qword_625B28, v4, 1LL, 1LL);
+    }
+  }
+  else
+  {
+    v3[0] = &unk_523A20;
+    v3[1] = &off_5724D0;
+    fmt_Fprintln(&off_574420, qword_625B28, v3, 1LL, 1LL);
+  }
+}
+```
+
+看main_check
+
+```assembly
+void __golang main_check(__int64 a1, unsigned __int64 a2)
+{
+  __int64 v2; // [rsp+10h] [rbp-68h]
+  __int64 v3; // [rsp+10h] [rbp-68h]
+  __int64 v4; // [rsp+10h] [rbp-68h]
+  __int64 v5; // [rsp+18h] [rbp-60h]
+  __int64 v6; // [rsp+18h] [rbp-60h]
+  __int64 v7; // [rsp+18h] [rbp-60h]
+  __int64 v8; // [rsp+18h] [rbp-60h]
+  __int64 v9; // [rsp+18h] [rbp-60h]
+  __int64 v10; // [rsp+18h] [rbp-60h]
+  __int64 v11; // [rsp+20h] [rbp-58h]
+  __int64 v12; // [rsp+20h] [rbp-58h]
+  __int64 v13; // [rsp+20h] [rbp-58h]
+  __int64 v14; // [rsp+20h] [rbp-58h]
+  __int64 v15; // [rsp+20h] [rbp-58h]
+  __int64 v16; // [rsp+20h] [rbp-58h]
+  __int64 v17; // [rsp+28h] [rbp-50h]
+  __int64 v18; // [rsp+28h] [rbp-50h]
+  char v19[32]; // [rsp+30h] [rbp-48h] BYREF
+  char v20[32]; // [rsp+50h] [rbp-28h] BYREF
+
+  if ( a2 < 0x1E )
+    runtime_panicSliceAlen();
+  v2 = main_encrypto(a1 + 6, 24LL);
+  if ( v5 == 44 )
+  {
+    v11 = runtime_memequal(v2, (__int64)"o/aWPjNNxMPZDnJlNp0zK5+NLPC4Tv6kqdJqjkL0XkA=", 44LL, 44);
+    if ( (_BYTE)v5 )
+    {
+      if ( a2 < 0x22 )
+        runtime_panicSliceAlen();
+      v17 = runtime_stringtoslicebyte((__int64)v19, a1 + 30, 4LL, v5, v11);
+      Encrypt_HashHex2(v6, v12, v17, v6, v12);
+      if ( v13 == 64 )
+      {
+        v14 = runtime_memequal(
+                v7,
+                (__int64)"6e2b55c78937d63490b4b26ab3ac3cb54df4c5ca7d60012c13d2d1234a732b74",
+                64LL,
+                v7);
+        if ( (_BYTE)v7 )
+        {
+          if ( a2 < 0x26 )
+            runtime_panicSliceAlen();
+          v18 = runtime_stringtoslicebyte((__int64)v20, a1 + 34, 4LL, v7, v14);
+          Encrypt_HashHex5(v8, v15, v18, v8, v15);
+          if ( v16 == 128 )
+          {
+            runtime_memequal(
+              v9,
+              (__int64)"6500fe72abcab63d87f213d2218b0ee086a1828188439ca485a1a40968fd272865d5ca4d5ef5a651270a52ff952d955c9"
+                       "b757caae1ecce804582ae78f87fa3c9",
+              128LL,
+              v9);
+            if ( (_BYTE)v9 )
+            {
+              if ( a2 < 0x2A )
+                runtime_panicSliceAlen();
+              main_hash(a1 + 38, 4LL, v3, v9);
+              if ( v10 == 32 )
+                runtime_memequal(v4, (__int64)"ff6e2fd78aca4736037258f0ede4ecf0", 32LL, 32);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+将flag分成了4部分，分别加密再比较。
+
+main_encrypto
+
+```assembly
+__int64 __usercall main_encrypto@<rax>(__int64 a1, __int64 a2)
+{
+  __int64 *v3; // [rsp+8h] [rbp-110h]
+  __int64 v4; // [rsp+18h] [rbp-100h]
+  __int64 v5; // [rsp+18h] [rbp-100h]
+  __int64 v6; // [rsp+18h] [rbp-100h]
+  __int64 v7; // [rsp+18h] [rbp-100h]
+  __int64 v8; // [rsp+20h] [rbp-F8h]
+  __int64 v9; // [rsp+20h] [rbp-F8h]
+  __int64 v10; // [rsp+20h] [rbp-F8h]
+  __int64 v11; // [rsp+20h] [rbp-F8h]
+  __int64 v12; // [rsp+20h] [rbp-F8h]
+  __int64 v13; // [rsp+28h] [rbp-F0h]
+  __int64 v14; // [rsp+28h] [rbp-F0h]
+  __int64 v15; // [rsp+28h] [rbp-F0h]
+  __int64 v16; // [rsp+60h] [rbp-B8h]
+  __int64 v17; // [rsp+68h] [rbp-B0h]
+  __int64 v18; // [rsp+70h] [rbp-A8h]
+  __int64 v19; // [rsp+78h] [rbp-A0h]
+  __int64 v20; // [rsp+80h] [rbp-98h]
+  __int64 v21; // [rsp+88h] [rbp-90h]
+  __int64 v22; // [rsp+90h] [rbp-88h]
+  __int64 v23; // [rsp+98h] [rbp-80h]
+  char v24[32]; // [rsp+B0h] [rbp-68h] BYREF
+  __int64 v25; // [rsp+D0h] [rbp-48h]
+  __int64 v26; // [rsp+D8h] [rbp-40h]
+  __int64 v27; // [rsp+E0h] [rbp-38h]
+  __int64 v28; // [rsp+E8h] [rbp-30h]
+  __int64 v29; // [rsp+F0h] [rbp-28h]
+  __int64 *v30; // [rsp+F8h] [rbp-20h]
+  _QWORD v31[2]; // [rsp+100h] [rbp-18h] BYREF
+
+  runtime_newobject((__int64)" ");
+  v30 = v3;
+  v8 = encoding_json_Unmarshal((__int64)off_61E540, qword_61E548, qword_61E550, (__int64)"\b");
+  v25 = *v30;
+  v18 = v30[1];
+  v26 = v30[2];
+  v19 = v30[3];
+  v13 = runtime_stringtoslicebyte(0LL, a1, a2, v4, v8);
+  v27 = v5;
+  v20 = v9;
+  v21 = v13;
+  v14 = runtime_stringtoslicebyte((__int64)v24, v25, v18, v5, v9);
+  v28 = v6;
+  v22 = v10;
+  v23 = v14;
+  v15 = runtime_stringtoslicebyte(0LL, v26, v19, v6, v10);
+  v29 = Encrypt_DesEncrypt(v27, v20, v21, v28, v22, v23, v7, v11, v15);
+  if ( v16 )
+  {
+    v31[0] = *(_QWORD *)(v16 + 8);
+    v31[1] = v17;
+    fmt_Fprintln(&off_574420, qword_625B28, v31, 1LL, 1LL);
+  }
+  encoding_base64___ptr_Encoding__EncodeToString(qword_625AD0, v29);
+  return v12;
+}
+```
+
+看到有des的字样，寻找密钥，点击off_61E540
+
+```assembly
+.data:000000000061E540 off_61E540      dq offset aKeyWelcometoth
+.data:000000000061E540                                         ; DATA XREF: main_encrypto+52↑r
+.data:000000000061E540                                         ; "{\r\n    \"key\": \"WelcomeToTheGKCTF20"...
+.data:000000000061E548 qword_61E548    dq 42h                  ; DATA XREF: main_encrypto+59↑r
+.data:000000000061E550 qword_61E550    dq 42h                  ; DATA XREF: main_encrypto+60↑r
+```
+
+点击aKeyWelcometoth得到key和iv
+
+```assembly
+.noptrdata:0000000000608840 aKeyWelcometoth db '{',0Dh,0Ah          ; DATA XREF: .data:off_61E540↓o
+.noptrdata:0000000000608840                 db '    "key": "WelcomeToTheGKCTF2021XXX",',0Dh,0Ah
+.noptrdata:0000000000608840                 db '    "iv": "1Ssecret"',0Dh,0Ah
+.noptrdata:0000000000608840                 db '}',0
+.noptrdata:0000000000608883                 align 20h
+```
+
+看到密钥为24字节，但是一般的DES加密密钥为64bit（56bit），为8（7）字节，所以有可能不是一般的DES加密。点击Encrypt_DesEncrypt
+
+```assembly
+__int64 __usercall Encrypt_DesEncrypt@<rax>(
+        __int64 a1,
+        __int64 a2,
+        __int64 a3,
+        __int64 a4,
+        __int64 a5,
+        __int64 a6,
+        __int64 a7,
+        __int64 a8)
+{
+  __int64 result; // rax
+  __int64 v9; // [rsp+8h] [rbp-78h]
+  _QWORD *v10; // [rsp+8h] [rbp-78h]
+  __int64 v11; // [rsp+18h] [rbp-68h]
+  __int64 v12; // [rsp+28h] [rbp-58h]
+  __int64 v13; // [rsp+70h] [rbp-10h]
+
+  if ( a5 != 24 )
+    return xmmword_625CF0;
+  v11 = crypto_des_NewTripleDESCipher(a4, 24LL, a6);
+  result = v12;
+  if ( !v12 )
+  {
+    v13 = v11;
+    v9 = (*(__int64 (__golang **)())(v11 + 24))();
+    Encrypt_PKCS5Padding(a1, a2, a3, v9);
+    if ( !a8 )
+    {
+      runtime_newobject((__int64)"\b");
+      *v10 = 0x7967736E616D7577LL;
+      goto LABEL_5;
+    }
+    if ( a8 == 8 )
+    {
+LABEL_5:
+      crypto_cipher_NewCBCEncrypter(v13);
+      runtime_makeslice((__int64)&unk_523B60, 0LL, 0LL, 8LL);
+      return MEMORY[0x20]();
+    }
+    return xmmword_625CC0;
+  }
+  return result;
+}
+```
+
+看到了crypto_des_NewTripleDESCipher函数，所以为TripleDES。
+
+直接在CypherChef上解密
+
+![]({{site.baseurl}}/img/2021-07-03-cypherchef.jpg)
+
+Encrypt_HashHex2为sha256加密
+
+```assembly
+__int64 __usercall Encrypt_HashHex2@<rax>(__int64 a1, __int64 a2, __int64 a3)
+{
+  __int64 v4; // [rsp+18h] [rbp-50h]
+  __int128 v5; // [rsp+18h] [rbp-50h]
+  __int64 v6; // [rsp+18h] [rbp-50h]
+  __int64 v7; // [rsp+20h] [rbp-48h]
+  __int64 v8; // [rsp+48h] [rbp-20h]
+  __int64 v9; // [rsp+50h] [rbp-18h]
+  __int64 v10; // [rsp+58h] [rbp-10h]
+
+  v9 = Encrypt_Sha256(a1, a2, a3);
+  v8 = 2 * v7;
+  runtime_makeslice((__int64)&unk_523B60, 2 * v7, 2 * v7, v9);
+  v10 = v4;
+  *((_QWORD *)&v5 + 1) = encoding_hex_Encode(v4, v8, v8, v9);
+  runtime_slicebytetostring(0LL, v10, v8, v5);
+  return v6;
+}
+```
+
+Encrypt_HashHex5为sha512加密
+
+```assembly
+__int64 __usercall Encrypt_HashHex5@<rax>(__int64 a1, __int64 a2, __int64 a3)
+{
+  __int64 v4; // [rsp+18h] [rbp-50h]
+  __int128 v5; // [rsp+18h] [rbp-50h]
+  __int64 v6; // [rsp+18h] [rbp-50h]
+  __int64 v7; // [rsp+20h] [rbp-48h]
+  __int64 v8; // [rsp+48h] [rbp-20h]
+  __int64 v9; // [rsp+50h] [rbp-18h]
+  __int64 v10; // [rsp+58h] [rbp-10h]
+
+  v9 = Encrypt_Sha512(a1, a2, a3);
+  v8 = 2 * v7;
+  runtime_makeslice((__int64)&unk_523B60, 2 * v7, 2 * v7, v9);
+  v10 = v4;
+  *((_QWORD *)&v5 + 1) = encoding_hex_Encode(v4, v8, v8, v9);
+  runtime_slicebytetostring(0LL, v10, v8, v5);
+  return v6;
+}
+```
+
+main_hash为MD5加密
+
+```assembly
+__int64 __usercall main_hash@<rax>(__int64 a1, __int64 a2)
+{
+  const char *v2; // rdi
+  _BYTE v4[24]; // [rsp+10h] [rbp-80h]
+  __int64 v5; // [rsp+10h] [rbp-80h]
+  __int64 v6; // [rsp+18h] [rbp-78h]
+  __int128 v7; // [rsp+18h] [rbp-78h]
+  __int64 v8; // [rsp+20h] [rbp-70h]
+  __int64 v9; // [rsp+28h] [rbp-68h]
+  __int64 v10; // [rsp+28h] [rbp-68h]
+  __int128 v11; // [rsp+48h] [rbp-48h] BYREF
+  char v12[32]; // [rsp+58h] [rbp-38h] BYREF
+  __int128 v13; // [rsp+78h] [rbp-18h]
+
+  v9 = runtime_stringtoslicebyte((__int64)v12, a1, a2, v6, v8);
+  v10 = crypto_md5_Sum(v7, *((__int64 *)&v7 + 1), v9, v7);
+  v11 = *(_OWORD *)&v4[8];
+  v13 = 0LL;
+  runtime_convT2Enoptr((__int64)&unk_524360, (__int64)&v11, v5, *(__int64 *)&v4[8]);
+  v13 = *(_OWORD *)v4;
+  fmt_Sprintf(v2);
+  return v10;
+}
+```
+
+后面这三部分应该是需要我们爆破，但是不知道输入的字符串的范围，所以只能猜测。
+
+前面调用main_check时第二个参数为43，所以感觉就是flag长度。
+
+后来想到main_main函数中的if判断中的数字，应该将其转为字符串
+
+```assembly
+if ( v2[1] == 43LL && *(_DWORD *)v0 == 'TCKG' && *(_WORD *)(v0 + 4) == '{F' && *(_BYTE *)(v0 + 42) == '}' )
+  {
+    if ( (unsigned __int8)((__int64 (__golang *)(_QWORD, __int64))main_check)(*v2, 43LL) )
+    {
+      v5[0] = &unk_523A20;
+      v5[1] = &off_5724B0;
+      fmt_Fprintln(&off_574420, qword_625B28, v5, 1LL, 1LL);
+    }
+    else
+    {
+      v4[0] = &unk_523A20;
+      v4[1] = &off_5724C0;
+      fmt_Fprintln(&off_574420, qword_625B28, v4, 1LL, 1LL);
+    }
+  }
+```
+
+现在第一部分是“87f645e9-b628-412f-9d7a-”，flag格式为“GKCTF{87f645e9-b628-412f-9d7a-}”。目前长度为31，还剩12个字符，所以猜测三个哈希加密各加密4个字符，爆破。
+
+最后得到flag
+
+GKCTF{87f645e9-b628-412f-9d7a-e402f20af940}
+
