@@ -1,0 +1,408 @@
+---
+layout: post
+title:  APK逆向-2
+date:   2021-06-13 00:01:01 +0300
+image:  2021-06-13-flowers.jpg
+tags:   [ctf,reverse,gctf,mobile,android]
+---
+
+jeb打开查看代码，没有线索
+
+后来发现jeb无法解析AndroidManifest.xml文件
+
+winhex打开AndroidManifest.xml，查看文件头。
+
+```assembly
+03 00 08 00 14 0C 00 00  00 1C 00 01 44 05 00 00 
+21 00 00 00 00 00 00 00  00 00 00 00 A0 00 00 00 
+00 00 01 00 00 00 00 00  1A 00 00 00 34 00 00 00 
+52 00 00 00 76 00 00 00  82 00 00 00 9C 00 00 00
+```
+
+再找几个正确的AndroidManifest.xml文件的文件头，做对比。
+
+```assembly
+03 00 08 00 80 09 00 00  01 00 1C 00 EC 04 00 00 
+26 00 00 00 00 00 00 00  00 00 00 00 B4 00 00 00 
+00 00 00 00 00 00 00 00  1A 00 00 00 34 00 00 00 
+56 00 00 00 74 00 00 00  98 00 00 00 B2 00 00 00
+```
+
+```assembly
+03 00 08 00 70 07 00 00  01 00 1C 00 20 04 00 00 
+1F 00 00 00 00 00 00 00  00 00 00 00 98 00 00 00 
+00 00 00 00 00 00 00 00  1A 00 00 00 34 00 00 00 
+52 00 00 00 76 00 00 00  90 00 00 00 9C 00 00 00
+```
+
+```assembly
+03 00 08 00 7C 0A 00 00  01 00 1C 00 80 05 00 00 
+26 00 00 00 00 00 00 00  00 00 00 00 B4 00 00 00 
+00 00 00 00 00 00 00 00  1A 00 00 00 34 00 00 00 
+52 00 00 00 76 00 00 00  90 00 00 00 9C 00 00 00
+```
+
+### 一、文件头部解析：
+
+| 头部信息                 | 占用空间 | 解释                                                 |
+| ------------------------ | -------- | ---------------------------------------------------- |
+| Magic Number(0x00080003) | 4bytes   | 文件魔数                                             |
+| File Size                | 4bytes   | AndroidManifest文件大小,后面的完整解析会用到FileSize |
+
+### 二、String Chunk解析
+
+```assembly
+1. Chunk Type(0x001c0001)：StringChunk类型，固定4字节
+2. Chunk Size：String Chunk大小，固定4字节
+3. String Count：String Chunk中字符串总数，固定4字节，解析字符串时会用到。
+4. Style Count：String Chunk中样式总数，固定4字节，实际解析过程中一直为0x00000000
+5. Unknown：未知区域，固定4字节，实际解析过程中路过不解析
+6. String Pool Offset：字符池的偏移值，固定4字节，偏移位置是相对于StringChunk头部位置即8+0x000000A0
+7. Style Pool Offset：样式池的偏移值，固定4字节
+8. String Pool：每一个字符串的偏移值，为String Count * 4字节
+9. Style Pool：每一个样式的偏移值，为Style Count * 4字节
+```
+
+![]({{site.baseurl}}/img/AndroidManifest/2021-06-13-string.jpg)
+
+#### 代码解析StringChunk头部信息：
+
+```assembly
+public static void parseStringChunk(byte[] bytes){
+    if (!Utils.checkBytes(bytes)) {
+        return;
+    }
+
+    // 取出StringChunk中所有的内容体
+    byte[] stringChunkTypeBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION,4);
+    byte[] stringSizeBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+4,4);
+    byte[] stringCountBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+8,4);
+    byte[] styleCountBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+12,4);
+    byte[] unKnown = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+16,4);
+    byte[] stringPoolOffsetBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+20,4);
+    byte[] stylePoolOffsetBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+24,4);
+    byte[] stringOffsetsBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+28,4);
+    byte[] styleOffsetsBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+32,4);
+
+    //进行打印值
+    System.out.println("StringChunkType:0x"+Utils.bytes2HexString(stringChunkTypeBytes));
+    System.out.println("StringChunkSize:"+Utils.bytes2Int(stringSizeBytes));
+    System.out.println("StringCount:"+Utils.bytes2Int(stringCountBytes));
+    System.out.println("StyleCount:"+Utils.bytes2Int(styleCountBytes));
+    System.out.println("unKnown:0x"+Utils.bytes2HexString(unKnown));
+    System.out.println("stringPoolOffset:0x"+Utils.bytes2HexString(stringPoolOffsetBytes));
+    System.out.println("stylePoolOffset:0x"+Utils.bytes2HexString(stylePoolOffsetBytes));
+    System.out.println("stringOffsets:"+Utils.bytes2Int(stringOffsetsBytes));
+    System.out.println("styleOffsets:"+Utils.bytes2Int(styleOffsetsBytes));
+}
+```
+
+#### 解析StringChunk内容体信息
+
+```assembly
+1. 08为StringChunk头部位置
+2. 0x000000A0为字符池偏移值，注：字符池偏移值是相对StringChunk头部8来说的，所以8+0x000000A0 = 0x000000A8
+3. 0x0005位置即是0x000000A8的所在位置，0x0005代表字符串长度，一个字符占两个字节，所以需要0x00005*2
+4. 0x0005后面的10个字节为字符串长度
+5. 10个字节后面的00 00为字符串结束，注：UTF-8以00结尾，UTF-16以00 00结尾
+```
+
+![]({{site.baseurl}}/img/AndroidManifest/2021-06-13-string-content.jpg)
+
+```assembly
+public static void parseStringChunkContent(byte[] bytes){
+    if (!Utils.checkBytes(bytes)) {
+        return;
+    }
+
+    // 取出StringChunk中所有的内容体
+    byte[] stringSizeBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+4,4);
+    byte[] stringCountBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+8,4);
+    byte[] stringPoolOffsetBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+20,4);
+
+    ArrayList<String> stringArrayList = new ArrayList<>();
+    //1. 偏移到StringChunk字符池内容开始位置： STRING_CHUNK_BASE_POSITION + stringPoolOffsetBytes字符池的偏移值
+    int start = STRING_CHUNK_BASE_POSITION+Utils.bytes2Int(stringPoolOffsetBytes);
+    //2. StringChunk字符池结束位置：stringSizeBytes
+    int end = Utils.bytes2Int(stringSizeBytes);
+    //3. 读取start开始位置到结束位置，即为字符池的全部内容
+    byte[] stringChunkContentBytes = Utils.copyBytes(bytes,start,end);
+
+    //一个字符占两个字节，所以*2
+    int firstStringSize = Utils.bytes2Short(Utils.copyBytes(stringChunkContentBytes,0,2))*2;
+    //跳过字符长度的两个字节，取出字符串,并过滤无效字符
+    stringArrayList.add(new String(Utils.filterInvalidBytes(Utils.copyBytes(stringChunkContentBytes,2,firstStringSize))));
+    System.out.println(stringArrayList.get(stringArrayList.size()-1));//打印
+
+    //计算字符串池中一共有多少个字符串
+    int stringCount = Utils.bytes2Int(stringCountBytes);
+    //每一个字符串+跳过字符长度的两个字节+跳过字符00 00结尾的字节，等于下一字符串开始的位置
+    firstStringSize+=2+2;
+    
+    while (stringArrayList.size()<stringCount){
+        //计算字符串长度
+        int stringSize = Utils.bytes2Short(Utils.copyBytes(stringChunkContentBytes,firstStringSize,2))*2;
+        //提取字符串
+        stringArrayList.add(new String(Utils.filterInvalidBytes(Utils.copyBytes(stringChunkContentBytes,firstStringSize+2,stringSize))));
+        //计算下一个字符串开始位置
+        firstStringSize+=2+stringSize+2;
+        System.out.println(stringArrayList.get(stringArrayList.size()-1));
+    }
+}
+```
+
+### 三、ResourceId Chunk解析
+
+```assembly
+1. ChunkType:ResourceId Chunk类型,固定4个字节：0x00080180
+2. ChunkSize:ResourceIdChunkSize,固定4个字节
+3. ResourceIds:Resource的资源id所占字节总数(ChunkSize/4-2)*4bytes。
+    (ChunkSize/4-2)*4bytes拆分:
+    a).ChunkSize即:ResourceIdChunkSize(0x00000040转化为10进制是64)
+    b).ChunkSize/4即：有多少个资源段，4为4个字节的意思
+    c).-2即：减去ChunkType和ChunkSize的头部偏移即:(8/4)=2
+    d).乘4字节：即ResourceIds所占用的空间大小
+    以本例计算：
+        (64/4-2)*4 = 56 [54Ch] 如下图：
+```
+
+![]({{site.baseurl}}/img/AndroidManifest/2021-06-13-resource.jpg)
+
+```assembly
+public static void parseResourceChunk(byte[] bytes) {
+    if (!Utils.checkBytes(bytes)) {
+        return;
+    }
+
+    //取出ResourceChunk中所有的内容体
+    int resourceOffsets = STRING_CHUNK_BASE_POSITION + 0x00000504;//StringChunkSize:0x00000504
+    byte[] resourceChunkBytes = Utils.copyBytes(bytes, resourceOffsets, 4);
+    byte[] resourceChunkSizeBytes = Utils.copyBytes(bytes, resourceOffsets + 4, 4);
+    byte[] resourceIdsBytes = Utils.copyBytes(bytes, resourceOffsets + 8, 4);
+
+    System.out.println("ResourceChunkType:0x" + Utils.bytes2HexString(resourceChunkBytes));
+    System.out.println("ResourceChunkSize:0x" + Utils.bytes2HexString(resourceChunkSizeBytes)+" ,int :"+Utils.bytes2Int(resourceChunkSizeBytes));
+    System.out.println("ResourceIds:0x" + Utils.bytes2HexString(resourceIdsBytes));
+
+    //获取资源ID bytes数组
+    byte[] resourceIdsContentBytes = Utils.copyBytes(bytes, resourceOffsets+STRING_CHUNK_BASE_POSITION, Utils.bytes2Int(resourceChunkSizeBytes) - STRING_CHUNK_BASE_POSITION);
+    
+    //计算有多少个资源ID
+    int resouceIdCount = resourceIdsContentBytes.length / 4;
+    System.out.println("Resource id Size : "+resouceIdCount);
+    ArrayList<Integer> resourceIdList = new ArrayList<>(resouceIdCount);
+    int index = 1;
+    for (int i = 0; i < resourceIdsContentBytes.length; i += 4) {
+        int resId = Utils.bytes2Int(Utils.copyBytes(resourceIdsContentBytes, i, 4));
+        System.out.println((index++)+" ,resource id:" + resId + " ,hex: 0x" + Utils.bytes2HexString(Utils.copyBytes(resourceIdsContentBytes, i, 4)));
+        resourceIdList.add(resId);
+    }
+}
+```
+
+### 四、Start Namespace Chunk
+
+```assembly
+1. ChunkType:StartNamespaceChunk类型，固定4字节0x00100100
+2. ChunkSize:StartNamespaceChunkSize大小，固定4字节
+3. LineNumber:Manifestxml的行号，固定4字节
+4. 未知类型
+5. Prefix:命名空间前缀，如：android:xxx
+6. Uri:命名空间Uri，如：http://schemas.android.com/tools
+```
+
+![]({{site.baseurl}}/img/AndroidManifest/2021-06-13-namespace.jpg)
+
+```assembly
+public static ArrayList<String> parseStringChunkContent(byte[] bytes){
+    if (!Utils.checkBytes(bytes)) {
+        return null;
+    }
+
+    // 取出StringChunk中所有的内容体
+    byte[] stringSizeBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+4,4);
+    byte[] stringCountBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+8,4);
+    byte[] stringPoolOffsetBytes = Utils.copyBytes(bytes,STRING_CHUNK_BASE_POSITION+20,4);
+
+
+    ArrayList<String> stringArrayList = new ArrayList<>();
+    //1. 偏移到StringChunk字符池内容开始位置： STRING_CHUNK_BASE_POSITION + stringPoolOffsetBytes字符池的偏移值
+    int start = STRING_CHUNK_BASE_POSITION+Utils.bytes2Int(stringPoolOffsetBytes);
+    //2. StringChunk字符池结束位置：stringSizeBytes
+    int end = Utils.bytes2Int(stringSizeBytes);
+    //3. 读取start开始位置到结束位置，即为字符池的全部内容
+    byte[] stringChunkContentBytes = Utils.copyBytes(bytes,start,end);
+
+    int firstStringSize = Utils.bytes2Short(Utils.copyBytes(stringChunkContentBytes,0,2))*2;//一个字符占两个字节，所以*2
+    stringArrayList.add(new String(Utils.filterInvalidBytes(Utils.copyBytes(stringChunkContentBytes,2,firstStringSize))));//跳过字符长度的两个字节，取出字符串。
+
+    int stringCount = Utils.bytes2Int(stringCountBytes);//计算字符串池中一共有多少个字符串
+
+    firstStringSize+=2+2;//每一个字符串+跳过字符长度的两个字节+跳过字符00 00结尾的字节，等于下一字符串开始的位置
+    while (stringArrayList.size()<stringCount){
+        int stringSize = Utils.bytes2Short(Utils.copyBytes(stringChunkContentBytes,firstStringSize,2))*2;//计算下一个字符串长度
+        stringArrayList.add(new String(Utils.filterInvalidBytes(Utils.copyBytes(stringChunkContentBytes,firstStringSize+2,stringSize))));//提取字符串
+        firstStringSize+=2+stringSize+2;//计算下一个字符串开始位置
+    }
+    return  stringArrayList;
+}
+
+
+public static void parseStartNamespaceChunk(byte[] bytes) {
+    if (!Utils.checkBytes(bytes)) {
+        return;
+    }
+
+    int startNamespaceChunkOffsets = STRING_CHUNK_BASE_POSITION + 0x00000504 + 0x00000040;
+    byte[] startNamespaceChunkBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets,4);
+    byte[] startNamespaceChunkSizeBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets+4,4);
+    byte[] lineNumberBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets+8,4);
+    byte[] unknownBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets+12,4);
+    byte[] prefixBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets+16,4);
+    byte[] uriBytes = Utils.copyBytes(bytes,startNamespaceChunkOffsets+20,4);
+
+    ArrayList<String> stringChunkContent = parseStringChunkContent(bytes);
+
+    System.out.println("startNamespaceChunk 0x:"+Utils.bytes2HexString(startNamespaceChunkBytes));
+    System.out.println("startNamespaceChunkSize 0x:"+Utils.bytes2HexString(startNamespaceChunkBytes)+" , int :"+Utils.bytes2Int(startNamespaceChunkSizeBytes));
+    System.out.println("lineNumberBytes 0x:"+Utils.bytes2HexString(lineNumberBytes)+" , int :"+Utils.bytes2Int(lineNumberBytes));
+    System.out.println("unknownBytes 0x:"+Utils.bytes2HexString(unknownBytes)+" , int :"+Utils.bytes2Int(unknownBytes));
+    System.out.println("prefixBytes 0x:"+Utils.bytes2HexString(prefixBytes)+" , string chunk index :"+Utils.bytes2Int(prefixBytes)+" , prefix string :"+stringChunkContent.get(Utils.bytes2Int(prefixBytes)));
+    System.out.println("uriBytes 0x:"+Utils.bytes2HexString(uriBytes)+" , string chunk index :"+Utils.bytes2Int(uriBytes)+" , uri string :"+stringChunkContent.get(Utils.bytes2Int(uriBytes)));
+}
+```
+
+### 五、Start Tag Thunk
+
+```assembly
+1. ChunkType：Start Tag Thunk类型，固定四个字节：0x00100102
+2. ChunkSize：Start Tag Thunk Size，固定四个字节
+3. Line Number:AndroidManifest.xml行号，固定四字节
+4. 未知，固定四字节
+5. Namespace Uri:命名空间的Uri，如：android="http://schemas.android.com/apk/res/android" 固定4字节
+6. Name:标签名字，注意是在StringChunkContent中的索引
+7. Flags(0x00140014):标签类型，固定4字节
+8. Attribute Count:标签的属性个数，固定4字节
+9. Class Attribute:标签类属性，固定4字节
+10. Attributes: 属性内容，每个属性由5*4bytes构成，实际上是一个一维大小为5的数组组成，数组中每个值的含义为[Namespace Uri, Name, Value String, Type, Data]，这里需要注意的是Type值的获取，需要右移24位。
+```
+
+![]({{site.baseurl}}/img/AndroidManifest/2021-06-13-start-tag.jpg)
+
+```assembly
+public static void parseStartTagChunk1(byte[] bytes) {
+    if (!Utils.checkBytes(bytes)) {
+        return;
+    }
+
+    int startTagChunkOffsets = STRING_CHUNK_BASE_POSITION + 0x00000504 + 0x00000040 + 0x00000018;
+    byte[] startTagThunkBytes = Utils.copyBytes(bytes, startTagChunkOffsets, 4);
+    byte[] startTagThunkSizeBytes = Utils.copyBytes(bytes, startTagChunkOffsets + 4, 4);
+
+    System.out.println("startTagThunkBytes 0x:" + Utils.bytes2HexString(startTagThunkBytes));
+    System.out.println("startTagThunkSizeBytes 0x:" + Utils.bytes2HexString(startTagThunkSizeBytes) + " , int :" + Utils.bytes2Int(startTagThunkSizeBytes));
+
+    byte[] startTagThunkContentBytes = Utils.copyBytes(bytes, startTagChunkOffsets + STRING_CHUNK_BASE_POSITION, Utils.bytes2Int(startTagThunkSizeBytes));
+    byte[] lineNubmerBytes = Utils.copyBytes(startTagThunkContentBytes, 0, 4);
+    System.out.println("lineNubmer 0x:" + Utils.bytes2HexString(lineNubmerBytes) + " , int : " + Utils.bytes2Int(lineNubmerBytes));
+
+    byte[] namespaceBytes = Utils.copyBytes(startTagThunkContentBytes, 8, 4);
+    System.out.println("namespace 0x:" + Utils.bytes2HexString(namespaceBytes) + " , int : " + Utils.bytes2Int(namespaceBytes) + " , url : " + getStringChunkContent(Utils.bytes2Int(namespaceBytes)));
+
+    byte[] name = Utils.copyBytes(startTagThunkContentBytes, 12, 4);
+    System.out.println("name 0x:" + Utils.bytes2HexString(name) + " , int : " + Utils.bytes2Int(name) + " , string : " + getStringChunkContent(Utils.bytes2Int(name)));
+
+    byte[] flags = Utils.copyBytes(startTagThunkContentBytes, 16, 4);
+    System.out.println("flags 0x:" + Utils.bytes2HexString(flags) + " , int : " + Utils.bytes2Int(flags));
+
+    byte[] attr = Utils.copyBytes(startTagThunkContentBytes, 20, 4);
+    int attrCount = Utils.bytes2Int(attr);
+    System.out.println("attr 0x:" + Utils.bytes2HexString(attr) + " , attr count : " + attrCount);
+
+    byte[] claAttr = Utils.copyBytes(startTagThunkContentBytes, 24, 4);
+    System.out.println("class attr 0x:" + Utils.bytes2HexString(claAttr) + " , class attr count : " + Utils.bytes2Int(claAttr));
+
+    byte[] attributesContentBytes = Utils.copyBytes(startTagThunkContentBytes, 28, attrCount * 5 * 4);
+    System.out.println("attributesContentBytes len : " + attributesContentBytes.length);
+    ArrayList<AttributeData> attrs = new ArrayList<>();
+    for (int i = 0; i < attrCount; i++) {
+        AttributeData attrData = new AttributeData();
+        for (int j = 0; j < 5; j++) {
+            int index = Utils.bytes2Int(Utils.copyBytes(attributesContentBytes, i * 5 * 4 + j * 4, 4));
+            switch (index) {
+                case 0://namespaceuri
+                    attrData.nameSpaceUri = index;
+                    break;
+                case 1://name
+                    attrData.name = index;
+                    break;
+                case 2://value string
+                    attrData.valuestring = index;
+                    break;
+                case 3://type
+                    attrData.type = index >> 24;
+                    break;
+                case 4://data
+                    attrData.data = index;
+                    break;
+            }
+        }
+        attrs.add(attrData);
+    }
+    System.out.println("==============");
+    for (int i = 0; i < attrCount; i++) {
+        AttributeData aData = attrs.get(i);
+        System.out.println("namespaceuri = "+getStringChunkContent(aData.nameSpaceUri));
+        System.out.println("name = "+getStringChunkContent(aData.name));
+        System.out.println("valuestring = "+getStringChunkContent(aData.valuestring));
+        System.out.println("type = "+(aData.type == -1 ?"null":AttributeType.getAttrType(aData.type)));
+        System.out.println("data = "+(aData.data == -1 ?"null":AttributeType.getAttributeData(aData)));
+        System.out.println("==============");
+    }
+}
+```
+
+---------------------------------------
+
+将AndroidManifest.xml文件头改为
+
+```assembly
+03 00 08 00 14 0C 00 00  01 00 1C 00 44 05 00 00
+21 00 00 00 00 00 00 00  00 00 00 00 A0 00 00 00
+00 00 01 00 00 00 00 00  1A 00 00 00 34 00 00 00
+52 00 00 00 76 00 00 00  82 00 00 00 9C 00 00 00
+```
+
+修改AndroidManifest.xml的方法，把下载的APK文件后缀的.apk改成.zip然后用压缩软件打开，将改好的文件拖进压缩包然后覆盖原文件，再把后缀改回.apk。
+
+AndroidManifest.xml
+
+```assembly
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest android:versionCode="1" android:versionName="1.0" package="com.example.mmsheniq" xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="19" />
+  <uses-permission android:name="android.permission.SEND_SMS" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
+  <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+  <application android:allowBackup="true" android:icon="@drawable/ic_launcher" android:label="@string/app_name" android:theme="@style/AppTheme">
+    <activity android:label="@string/app_name" android:name="com.example.mmsheniq.MainActivity" />
+    <activity android:label="                 用户注册页面" android:name="com.example.mmsheniq.RegisterActivity" />
+    <activity android:label="@string/app_name" android:name=".WelcomeActivity" android:screenOrientation="1" android:theme="@android:style/Theme.Black.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.fl4g" />
+        <action android:name="android.permission.SEND_SMS" />
+        <action android:name="android.permission.ACCESS_NETWORK_STATE" />
+        <action android:name="8d6efd232c63b7d2" />
+        <action android:name="android.intent.action.fl4g" />
+        <action android:name="android.permission.SEND_SMS" />
+        <action android:name="android.permission.ACCESS_NETWORK_STATE" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
+```
+
+得到flag
+
+8d6efd232c63b7d2
