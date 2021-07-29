@@ -1,0 +1,238 @@
+---
+layout: post
+title:  Android2.0
+date:   2021-06-12 00:01:01 +0300
+image:  2021-06-12-horse.jpg
+tags:   [ctf,reverse,swpuctf,mobile,android]
+---
+
+jeb打开，查看MainActivity
+
+```assembly
+package com.example.test.ctf03;
+
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View$OnClickListener;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+public class MainActivity extends AppCompatActivity {
+    Button button;
+    EditText pwd;
+    TextView textView;
+
+    public MainActivity() {
+        super();
+    }
+
+    public void Show(int arg3) {
+        switch(arg3) {
+            case 0: {
+                this.textView.setText("Wrong");
+                break;
+            }
+            case 1: {
+                this.textView.setText("Great");
+                break;
+            }
+        }
+    }
+
+    public void init() {
+        this.pwd = this.findViewById(0x7F0B0056);
+        this.button = this.findViewById(0x7F0B0057);
+        this.textView = this.findViewById(0x7F0B0055);
+    }
+
+    protected void onCreate(Bundle arg3) {
+        super.onCreate(arg3);
+        this.setContentView(0x7F04001A);
+        this.init();
+        this.button.setOnClickListener(new View$OnClickListener() {
+            public void onClick(View arg4) {
+                MainActivity.this.Show(JNI.getResult(MainActivity.this.pwd.getText().toString()));
+            }
+        });
+    }
+}
+```
+
+JIN
+
+```assembly
+package com.example.test.ctf03;
+
+public class JNI {
+    static {
+        System.loadLibrary("Native");
+    }
+
+    public JNI() {
+        super();
+    }
+
+    public static native int getResult(String arg0) {
+    }
+}
+```
+
+check在native层
+
+```assembly
+signed int __fastcall Java_com_example_test_ctf03_JNI_getResult(int a1)
+{
+  signed int v1; // r4
+  const char *v2; // r8
+  char *v3; // r6
+  char *v4; // r4
+  char *v5; // r5
+  int v6; // r0
+  int v7; // r0
+
+  v1 = 0;
+  v2 = (const char *)(*(int (**)(void))(*(_DWORD *)a1 + 676))();
+  if ( strlen(v2) == 15 )
+  {
+    v3 = (char *)malloc(1u);
+    v4 = (char *)malloc(1u);
+    v5 = (char *)malloc(1u);
+    Init(v3, v4, v5, v2, 15);
+    if ( !First(v3) )
+      goto LABEL_14;
+    v6 = 0;
+    do
+    {
+      v4[v6] ^= v3[v6];
+      ++v6;
+    }
+    while ( v6 != 4 );
+    if ( !strcmp(v4, (const char *)&unk_2888) )
+    {
+      v7 = 0;
+      do
+      {
+        v5[v7] ^= v4[v7];
+        ++v7;
+      }
+      while ( v7 != 4 );
+      v1 = 0;
+      if ( !strcmp(v5, "AFBo}") )
+        v1 = 1;
+    }
+    else
+    {
+LABEL_14:
+      v1 = 0;
+    }
+  }
+  return v1;
+}
+```
+
+First
+
+```assembly
+signed int __fastcall First(char *a1)
+{
+  int v1; // r1
+  int v2; // r0
+  signed int v3; // r1
+
+  v1 = 0;
+  do
+  {
+    a1[v1] = 2 * a1[v1] ^ 0x80;
+    ++v1;
+  }
+  while ( v1 != 4 );
+  v2 = strcmp(a1, "LN^dl");
+  v3 = 0;
+  if ( !v2 )
+    v3 = 1;
+  return v3;
+}
+```
+
+flag的长度为15，然后将其分成了3部分分别加密后作比较。分割的函数Init
+
+```assembly
+int __fastcall Init(int result, char *a2, char *a3, const char *a4, int a5)
+{
+  int v5; // r5
+  int v6; // r10
+
+  if ( a5 < 1 )
+  {
+    v6 = 0;
+  }
+  else
+  {
+    v5 = 0;
+    v6 = 0;
+    do
+    {
+      if ( v5 % 3 == 2 )
+      {
+        a3[v5 / 3u] = a4[v5];
+      }
+      else if ( v5 % 3 == 1 )
+      {
+        a2[v5 / 3u] = a4[v5];
+      }
+      else if ( v5 == 3 * (v5 / 3) )
+      {
+        ++v6;
+        *(_BYTE *)(result + v5 / 3u) = a4[v5];
+      }
+      ++v5;
+    }
+    while ( a5 != v5 );
+  }
+  *(_BYTE *)(result + v6) = 0;
+  a2[v6] = 0;
+  a3[v6] = 0;
+  return result;
+}
+```
+
+遍历flag字符串将每个字符分别赋值给第一个参数的数组，第二个参数的数组和第三个参数的数组。
+
+踩了一个坑，这里要注意处理每部分字符串只处理前4个字符。
+
+编写脚本
+
+```assembly
+#include <stdio.h>
+
+int main(){
+
+    char re1[5] = {'L', 'N', '^', 'd', 'l'};
+    char re2[5] = {0x20, 0x35, 0x2d, 0x16, 0x61};
+    char re3[5] = {'A', 'F', 'B', 'o', '}'};
+
+    char flag[15] = {0};
+
+    for(int i=0; i<4; i++){
+        flag[i*3+0] = (re1[i] ^ 0x80) / 2;
+    }
+    flag[12] = re1[4];
+    for(int i=0; i<4; i++){
+        flag[i*3+1] = re2[i] ^ re1[i];
+    }
+    flag[13] = re2[4];
+    for(int i=0; i<4; i++){
+        flag[i*3+2] = re3[i] ^ re2[i];
+    }
+    flag[14] = re3[4];
+    for(int i=0; i<15; i++){
+        printf("%c", flag[i]);
+    }
+
+    return 0;
+}
+```
+
+flag{sosorryla}
