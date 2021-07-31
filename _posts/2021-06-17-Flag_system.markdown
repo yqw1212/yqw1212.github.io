@@ -3,7 +3,7 @@ layout: post
 title:  Flag_system
 date:   2021-06-17 00:01:01 +0300
 image:  2021-06-17-sheet.jpg
-tags:   [ctf,reverse,mobile,adworld,android,ab]
+tags:   [ctf,reverse,mobile,adworld,android,ab,rctf2015]
 ---
 
 android备份文件，改后缀为.ab文件。
