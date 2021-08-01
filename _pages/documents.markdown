@@ -1,9 +1,9 @@
 ---
 layout: page
 title: Documents
-permalink: /document/
+permalink: /documents/
 image: ship.jpg
 ---
 
-[Angr](/angr/)
+[Angr](https://missyourmelody.com/documents/angr/index.html)
 

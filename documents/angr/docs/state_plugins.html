@@ -1,0 +1,960 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Writing State Plugins · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="environment.html" />
+    
+    
+    <link rel="prev" href="simprocedures.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Writing State Plugins</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="state-plugins">State Plugins</h1>
+<p>If you want to store some data on a state and have that information propagated from successor to successor, the easiest way to do this is with <code>state.globals</code>.
+However, this can become obnoxious with large amounts of interesting data, doesn&apos;t work at all for merging states, and isn&apos;t very object-oriented.</p>
+<p>The solution to these problems is to write a <em>State Plugin</em> - an appendix to the state that holds data and implements an interface for dealing with the lifecycle of a state.</p>
+<h2 id="my-first-plugin">My First Plugin</h2>
+<p>Let&apos;s get started!
+All state plugins are implemented as subclasses of <code>angr.SimStatePlugin</code>.
+Once you&apos;ve read this document, you can use the <a href="http://angr.io/api-doc/angr.html#angr.state_plugins.plugin.SimStatePlugin" target="_blank">API reference for this class</a> to quickly review the semantics of all the interfaces you should implement.</p>
+<p>The most important method you need to implement is <code>copy</code>: it should be annotated with the <code>memo</code> staticmethod and take a dict called the &quot;memo&quot;---these&apos;ll be important later---and returns a copy of the plugin.
+Short of that, you can do whatever you want.
+Just make sure to call the superclass initializer!</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyFirstPlugin</span><span class="hljs-params">(angr.SimStatePlugin)</span>:</span>
+<span class="hljs-meta">... </span>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, foo)</span>:</span>
+<span class="hljs-meta">... </span>        super(MyFirstPlugin, self).__init__()
+<span class="hljs-meta">... </span>        self.foo = foo
+<span class="hljs-meta">... </span>
+<span class="hljs-meta">... </span>    @angr.SimStatePlugin.memo
+<span class="hljs-meta">... </span>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">copy</span><span class="hljs-params">(self, memo)</span>:</span>
+<span class="hljs-meta">... </span>        <span class="hljs-keyword">return</span> MyFirstPlugin(self.foo)
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>state = angr.SimState(arch=<span class="hljs-string">&apos;AMD64&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.register_plugin(<span class="hljs-string">&apos;my_plugin&apos;</span>, MyFirstPlugin(<span class="hljs-string">&apos;bar&apos;</span>))
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.my_plugin.foo == <span class="hljs-string">&apos;bar&apos;</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>state2 = state.copy()
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.my_plugin.foo = <span class="hljs-string">&apos;baz&apos;</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>state3 = state.copy()
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state2.my_plugin.foo == <span class="hljs-string">&apos;bar&apos;</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state3.my_plugin.foo == <span class="hljs-string">&apos;baz&apos;</span>
+</code></pre>
+<p>It works! Note that plugins automatically become available as attributes on the state.
+<code>state.get_plugin(name)</code> is also available as a more programmatic interface.</p>
+<h2 id="wheres-the-state">Where&apos;s the state?</h2>
+<p>State plugins have access to the state, right? So why isn&apos;t it part of the initializer?
+It turns out, there are a plethora of issues related to initialization order and dependency issues, so to simplify things as much as possible, the state is not part of the initializer but is rather set onto the state in a separate phase, by using the <code>set_state</code> method.
+You can override this state if you need to do things like propagate the state to subcomponents or extract architectural information.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">set_state</span><span class="hljs-params">(self, state)</span>:</span>
+<span class="hljs-meta">... </span>    super(SimStatePlugin, self).set_state(state)
+<span class="hljs-meta">... </span>    self.symbolic_word = claripy.BVS(<span class="hljs-string">&apos;my_variable&apos;</span>, self.state.arch.bits)
+</code></pre>
+<p>Note the <code>self.state</code>! That&apos;s what the super <code>set_state</code> sets up.</p>
+<p>However, there&apos;s no guarantee on what order the states will be set onto the plugins in, so if you need to interact with <em>other plugins</em> for initialization, you need to override the <code>init_state</code> method.</p>
+<p>Once again, there&apos;s no guarantee on what order these will be called in, so the rule is to make sure you set yourself up good enough during <code>set_state</code> so that if someone else tries to interact with you, no type errors will happen.
+Here&apos;s an example of a good use of <code>init_state</code>, to map a memory region in the state.
+The use of an instance variable (presumably copied as part of <code>copy()</code>) ensures this only happens the first time the plugin is added to a state.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">init_state</span><span class="hljs-params">(self)</span>:</span>
+<span class="hljs-meta">... </span>    <span class="hljs-keyword">if</span> self.region <span class="hljs-keyword">is</span> <span class="hljs-keyword">None</span>:
+<span class="hljs-meta">... </span>       self.region = self.state.memory.map_region(SOMEWHERE, <span class="hljs-number">0x1000</span>, <span class="hljs-number">7</span>)
+</code></pre>
+<h3 id="note-weak-references">Note: weak references</h3>
+<p><code>self.state</code> is not the state itself, but rather a <a href="https://docs.python.org/2/library/weakref.html" target="_blank">weak proxy</a> to the state.
+You can still use this object as a normal state, but attempts to store it persistently will not work.</p>
+<h2 id="merging">Merging</h2>
+<p>The other element besides copying in the state lifecycle is merging.
+As input you get the plugins to merge and a list of &quot;merge conditions&quot; - symbolic booleans that are the &quot;guard conditions&quot; describing when the values from each state should actually apply.</p>
+<p>The important properties of the merge conditions are:</p>
+<ul>
+<li>They are mutually exclusive and span an entire domain - exactly one may be satisfied at once, and there will be additional constraints to ensure that at least one must be satisfied.</li>
+<li><code>len(merge_conditions)</code> == len(others) + 1, since <code>self</code> counts too.</li>
+<li><code>zip(merge_conditions, [self] + others)</code> will correctly pair merge conditions with plugins.</li>
+</ul>
+<p>During the merge function, you should <em>mutate</em> <code>self</code> to become the merged version of itself and all the others, with respect to the merge conditions.
+This involves using the if-then-else structure that claripy provides.
+Here is an example of constructing this merged structure by merging a bitvector instance variable called <code>myvar</code>, producing a binary tree of if-then-else expressions searching for the correct condition:</p>
+<pre><code class="lang-python"><span class="hljs-keyword">for</span> other_plugin, condition <span class="hljs-keyword">in</span> zip(others, merge_conditions[<span class="hljs-number">1</span>:]): <span class="hljs-comment"># chop off self&apos;s condition</span>
+    self.myvar = claripy.If(condition, other_plugin.myvar, self.myvar)
+</code></pre>
+<p>This is such a common construction that we provide a utility to perform it automatically: <code>claripy.ite_cases</code>.
+The following code snippet is identical to the previous one:</p>
+<pre><code class="lang-python">self.myvar = claripy.ite_cases(zip(merge_conditions[<span class="hljs-number">1</span>:], [o.myvar <span class="hljs-keyword">for</span> o <span class="hljs-keyword">in</span> others]), self.myvar)
+</code></pre>
+<p>Keep in mind that like the rest of the top-level claripy functions, <code>ite_cases</code> and <code>If</code> are also available from <code>state.solver</code>, and these versions will perform SimActionObject unwrapping if applicable.</p>
+<h3 id="common-ancestor">Common Ancestor</h3>
+<p>The full prototype of the <code>merge</code> interface is <code>def merge(self, others, merge_conditions, common_ancestor=None)</code>.
+<code>others</code> and <code>merge_conditions</code> have been discussed in depth already.</p>
+<p>The common ancestor is the instance of the plugin from the most recent common ancestor of the states being merged.
+It may not be available for all merges, in which case it will be None. There are no rules for how exactly you should use this to improve the quality of your merges, but you may find it useful in more complex setups.</p>
+<h2 id="widening">Widening</h2>
+<p>There is another kind of merging called <em>widening</em> which takes several states and produces a more general state. It is used during static analysis.</p>
+<p><strong>TODO: @FISH PLEASE EXPLAIN WHAT THIS MEANS</strong></p>
+<h2 id="serialization">Serialization</h2>
+<p>In order to support serialization of states which contain your plugin, you should implement the <code>__getstate__</code>/<code>__setstate__</code> magic method pair.
+Keep in mind the following guidelines:</p>
+<ul>
+<li>Your serialization result should <em>not</em> include the state.</li>
+<li>After deserialization, <code>set_state()</code> will be called again.</li>
+</ul>
+<p>This means that plugins are &quot;detached&quot; from the state and serialized in an isolated environment, and then reattached to the state on deserialization.</p>
+<h2 id="plugins-all-the-way-down">Plugins all the way down</h2>
+<p>You may have components within your state plugins which are large and complicated and start breaking object-orientation in order to make copy/merge work well with the state lifecycle.
+You&apos;re in luck! Things can be state plugins even if they aren&apos;t directly attached to a state.
+A great example of this is <code>SimFile</code>, which is a state plugin but is stored in the filesystem plugin, and is never used with <code>SimState.register_plugin</code>.
+When you&apos;re doing this, there are a handful of rules to remember which will keep your plugins safe and happy:</p>
+<ul>
+<li>Annotate your copy function with <code>@SimStatePlugin.memo</code>.</li>
+<li>In order to prevent <em>divergence</em> while copying multiple references to the same plugin, make sure you&apos;re passing the memo (the argument to copy) to the <code>.copy</code> of any subplugins. This with the previous point will preserve object identity.</li>
+<li>In order to prevent <em>duplicate merging</em> while merging multiple references to the same plugin, there should be a concept of the &quot;owner&quot; of each instance, and only the owner should run the merge routine.</li>
+<li>While passing arguments down into sub-plugins <code>merge()</code> routines, make sure you unwrap <code>others</code> and <code>common_ancestor</code> into the appropriate types. For example, if <code>PluginA</code> contains a <code>PluginB</code>, the former should do the following:</li>
+</ul>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">merge</span><span class="hljs-params">(self, others, merge_conditions, common_ancestor=None)</span>:</span>
+<span class="hljs-meta">... </span>    <span class="hljs-comment"># ... merge self</span>
+<span class="hljs-meta">... </span>    self.plugin_b.merge([o.plugin_b <span class="hljs-keyword">for</span> o <span class="hljs-keyword">in</span> others], merge_conditions,
+<span class="hljs-meta">... </span>        common_ancestor=<span class="hljs-keyword">None</span> <span class="hljs-keyword">if</span> common_ancestor <span class="hljs-keyword">is</span> <span class="hljs-keyword">None</span> <span class="hljs-keyword">else</span> common_ancestor.plugin_b)
+</code></pre>
+<h2 id="setting-defaults">Setting Defaults</h2>
+<p>To make it so that a plugin will automatically become available on a state when requested, without having to register it with the state first, you can register it as a <em>default</em>.
+The following code example will make it so that whenever you access <code>state.my_plugin</code>, a new instance of <code>MyPlugin</code> will be instanciated and registered with the state.</p>
+<pre><code class="lang-python">MyPlugin.register_default(<span class="hljs-string">&apos;my_plugin&apos;</span>)
+</code></pre>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="simprocedures.html" class="navigation navigation-prev " aria-label="Previous page: Programming SimProcedures">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="environment.html" class="navigation navigation-next " aria-label="Next page: Extending the Environment Model">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Writing State Plugins","level":"1.6.2","depth":2,"next":{"title":"Extending the Environment Model","level":"1.6.3","depth":2,"path":"docs/environment.md","ref":"docs/environment.md","articles":[]},"previous":{"title":"Programming SimProcedures","level":"1.6.1","depth":2,"path":"docs/simprocedures.md","ref":"docs/simprocedures.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/state_plugins.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

@@ -1,0 +1,1030 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Intermediate Representation · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="structured_data.html" />
+    
+    
+    <link rel="prev" href="file_system.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Intermediate Representation</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="intermediate-representation">Intermediate Representation</h1>
+<p>In order to be able to analyze and execute machine code from different CPU architectures, such as MIPS, ARM, and PowerPC in addition to the classic x86, angr performs most of its analysis on an <em>intermediate representation</em>, a structured description of the fundamental actions performed by each CPU instruction.
+By understanding angr&apos;s IR, VEX (which we borrowed from Valgrind), you will be able to write very quick static analyses and have a better understanding of how angr works.</p>
+<p>The VEX IR abstracts away several architecture differences when dealing with different architectures, allowing a single analysis to be run on all of them:</p>
+<ul>
+<li><strong>Register names.</strong> The quantity and names of registers differ between architectures, but modern CPU designs hold to a common theme: each CPU contains several general purpose registers, a register to hold the stack pointer, a set of registers to store condition flags, and so forth. The IR provides a consistent, abstracted interface to registers on different platforms. Specifically, VEX models the registers as a separate memory space, with integer offsets (e.g., AMD64&apos;s <code>rax</code> is stored starting at address 16 in this memory space).</li>
+<li><strong>Memory access.</strong> Different architectures access memory in different ways. For example, ARM can access memory in both little-endian and big-endian modes. The IR abstracts away these differences.</li>
+<li><strong>Memory segmentation.</strong> Some architectures, such as x86, support memory segmentation through the use of special segment registers. The IR understands such memory access mechanisms.</li>
+<li><strong>Instruction side-effects.</strong> Most instructions have side-effects. For example, most operations in Thumb mode on ARM update the condition flags, and stack push/pop instructions update the stack pointer. Tracking these side-effects in an <em>ad hoc</em> manner in the analysis would be crazy, so the IR makes these effects explicit.</li>
+</ul>
+<p>There are lots of choices for an IR. We use VEX, since the uplifting of binary code into VEX is quite well supported.
+VEX is an architecture-agnostic, side-effects-free representation of a number of target machine languages.
+It abstracts machine code into a representation designed to make program analysis easier.
+This representation has four main classes of objects:</p>
+<ul>
+<li><strong>Expressions.</strong> IR Expressions represent a calculated or constant value. This includes memory loads, register reads, and results of arithmetic operations.</li>
+<li><strong>Operations.</strong> IR Operations describe a <em>modification</em> of IR Expressions. This includes integer arithmetic, floating-point arithmetic, bit operations, and so forth. An IR Operation applied to IR Expressions yields an IR Expression as a result.</li>
+<li><strong>Temporary variables.</strong> VEX uses temporary variables as internal registers: IR Expressions are stored in temporary variables between use. The content of a temporary variable can be retrieved using an IR Expression. These temporaries are numbered, starting at <code>t0</code>. These temporaries are strongly typed (e.g., &quot;64-bit integer&quot; or &quot;32-bit float&quot;).</li>
+<li><strong>Statements.</strong> IR Statements model changes in the state of the target machine, such as the effect of memory stores and register writes. IR Statements use IR Expressions for values they may need. For example, a memory store <em>IR Statement</em> uses an <em>IR Expression</em> for the target address of the write, and another <em>IR Expression</em> for the content.</li>
+<li><strong>Blocks.</strong> An IR Block is a collection of IR Statements, representing an extended basic block (termed &quot;IR Super Block&quot; or &quot;IRSB&quot;) in the target architecture. A block can have several exits. For conditional exits from the middle of a basic block, a special <em>Exit</em> IR Statement is used. An IR Expression is used to represent the target of the unconditional exit at the end of the block.</li>
+</ul>
+<p>VEX IR is actually quite well documented in the <code>libvex_ir.h</code> file (<a href="https://github.com/angr/vex/blob/master/pub/libvex_ir.h" target="_blank">https://github.com/angr/vex/blob/master/pub/libvex_ir.h</a>) in the VEX repository. For the lazy, we&apos;ll detail some parts of VEX that you&apos;ll likely interact with fairly frequently. To begin with, here are some IR Expressions:</p>
+<table>
+<thead>
+<tr>
+<th>IR Expression</th>
+<th>Evaluated Value</th>
+<th>VEX Output Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constant</td>
+<td>A constant value.</td>
+<td>0x4:I32</td>
+</tr>
+<tr>
+<td>Read Temp</td>
+<td>The value stored in a VEX temporary variable.</td>
+<td>RdTmp(t10)</td>
+</tr>
+<tr>
+<td>Get Register</td>
+<td>The value stored in a register.</td>
+<td>GET:I32(16)</td>
+</tr>
+<tr>
+<td>Load Memory</td>
+<td>The value stored at a memory address, with the address specified by another IR Expression.</td>
+<td>LDle:I32 / LDbe:I64</td>
+</tr>
+<tr>
+<td>Operation</td>
+<td>A result of a specified IR Operation, applied to specified IR Expression arguments.</td>
+<td>Add32</td>
+</tr>
+<tr>
+<td>If-Then-Else</td>
+<td>If a given IR Expression evaluates to 0, return one IR Expression. Otherwise, return another.</td>
+<td>ITE</td>
+</tr>
+<tr>
+<td>Helper Function</td>
+<td>VEX uses C helper functions for certain operations, such as computing the conditional flags registers of certain architectures. These functions return IR Expressions.</td>
+<td>function_name()</td>
+</tr>
+</tbody>
+</table>
+<p>These expressions are then, in turn, used in IR Statements. Here are some common ones:</p>
+<table>
+<thead>
+<tr>
+<th>IR Statement</th>
+<th>Meaning</th>
+<th>VEX Output Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write Temp</td>
+<td>Set a VEX temporary variable to the value of the given IR Expression.</td>
+<td>WrTmp(t1) = (IR Expression)</td>
+</tr>
+<tr>
+<td>Put Register</td>
+<td>Update a register with the value of the given IR Expression.</td>
+<td>PUT(16) = (IR Expression)</td>
+</tr>
+<tr>
+<td>Store Memory</td>
+<td>Update a location in memory, given as an IR Expression, with a value, also given as an IR Expression.</td>
+<td>STle(0x1000) = (IR Expression)</td>
+</tr>
+<tr>
+<td>Exit</td>
+<td>A conditional exit from a basic block, with the jump target specified by an IR Expression. The condition is specified by an IR Expression.</td>
+<td>if (condition) goto (Boring) 0x4000A00:I32</td>
+</tr>
+</tbody>
+</table>
+<p>An example of an IR translation, on ARM, is produced below. In the example, the subtraction operation is translated into a single IR block comprising 5 IR Statements, each of which contains at least one IR Expression (although, in real life, an IR block would typically consist of more than one instruction). Register names are translated into numerical indices given to the <em>GET</em> Expression and <em>PUT</em> Statement.
+The astute reader will observe that the actual subtraction is modeled by the first 4 IR Statements of the block, and the incrementing of the program counter to point to the next instruction (which, in this case, is located at <code>0x59FC8</code>) is modeled by the last statement.</p>
+<p>The following ARM instruction:</p>
+<pre><code>subs R2, R2, #8
+</code></pre><p>Becomes this VEX IR:</p>
+<pre><code>t0 = GET:I32(16)
+t1 = 0x8:I32
+t3 = Sub32(t0,t1)
+PUT(16) = t3
+PUT(68) = 0x59FC8:I32
+</code></pre><p>Now that you understand VEX, you can actually play with some VEX in angr: We use a library called <a href="https://github.com/angr/pyvex" target="_blank">PyVEX</a> that exposes VEX into Python. In addition, PyVEX implements its own pretty-printing so that it can show register names instead of register offsets in PUT and GET instructions.</p>
+<p>PyVEX is accessable through angr through the <code>Project.factory.block</code> interface. There are many different representations you could use to access syntactic properties of a block of code, but they all have in common the trait of analyzing a particular sequence of bytes. Through the <code>factory.block</code> constructor, you get a <code>Block</code> object that can be easily turned into several different representations. Try <code>.vex</code> for a PyVEX IRSB, or <code>.capstone</code> for a Capstone block.</p>
+<p>Let&apos;s play with PyVEX:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr
+
+<span class="hljs-comment"># load the program binary</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&quot;/bin/true&quot;</span>)
+
+<span class="hljs-comment"># translate the starting basic block</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>irsb = proj.factory.block(proj.entry).vex
+<span class="hljs-comment"># and then pretty-print it</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>irsb.pp()
+
+<span class="hljs-comment"># translate and pretty-print a basic block starting at an address</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>irsb = proj.factory.block(<span class="hljs-number">0x401340</span>).vex
+<span class="hljs-meta">&gt;&gt;&gt; </span>irsb.pp()
+
+<span class="hljs-comment"># this is the IR Expression of the jump target of the unconditional exit at the end of the basic block</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(irsb.next)
+
+<span class="hljs-comment"># this is the type of the unconditional exit (e.g., a call, ret, syscall, etc)</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(irsb.jumpkind)
+
+<span class="hljs-comment"># you can also pretty-print it</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>irsb.next.pp()
+
+<span class="hljs-comment"># iterate through each statement and print all the statements</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">for</span> stmt <span class="hljs-keyword">in</span> irsb.statements:
+<span class="hljs-meta">... </span>    stmt.pp()
+
+<span class="hljs-comment"># pretty-print the IR expression representing the data, and the *type* of that IR expression written by every store statement</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> pyvex
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">for</span> stmt <span class="hljs-keyword">in</span> irsb.statements:
+<span class="hljs-meta">... </span>    <span class="hljs-keyword">if</span> isinstance(stmt, pyvex.IRStmt.Store):
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;Data:&quot;</span>,)
+<span class="hljs-meta">... </span>        stmt.data.pp()
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;&quot;</span>)
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;Type:&quot;</span>,)
+<span class="hljs-meta">... </span>        print(stmt.data.result_type)
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;&quot;</span>)
+
+<span class="hljs-comment"># pretty-print the condition and jump target of every conditional exit from the basic block</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">for</span> stmt <span class="hljs-keyword">in</span> irsb.statements:
+<span class="hljs-meta">... </span>    <span class="hljs-keyword">if</span> isinstance(stmt, pyvex.IRStmt.Exit):
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;Condition:&quot;</span>,)
+<span class="hljs-meta">... </span>        stmt.guard.pp()
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;&quot;</span>)
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;Target:&quot;</span>,)
+<span class="hljs-meta">... </span>        stmt.dst.pp()
+<span class="hljs-meta">... </span>        print(<span class="hljs-string">&quot;&quot;</span>)
+
+<span class="hljs-comment"># these are the types of every temp in the IRSB</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(irsb.tyenv.types)
+
+<span class="hljs-comment"># here is one way to get the type of temp 0</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(irsb.tyenv.types[<span class="hljs-number">0</span>])
+</code></pre>
+<h2 id="condition-flags-computation-for-x86-and-arm">Condition flags computation (for x86 and ARM)</h2>
+<p>One of the most common instruction side-effects on x86 and ARM CPUs is updating condition flags, such as the zero flag, the carry flag, or the overflow flag.
+Computer architects usually put the concatenation of these flags (yes, concatenation of the flags, since each condition flag is 1 bit wide) into a special register (i.e. <code>EFLAGS</code>/<code>RFLAGS</code> on x86, <code>APSR</code>/<code>CPSR</code> on ARM).
+This special register stores important information about the program state, and is critical for correct emulation of the CPU.</p>
+<p>VEX uses 4 registers as its &quot;Flag thunk descriptors&quot; to record details of the latest flag-setting operation.
+VEX has a lazy strategy to compute the flags: when an operation that would update the flags happens, instead of computing the flags, VEX stores a code representing this operation to the <code>cc_op</code> pseudo-register, and the arguments to the operation in <code>cc_dep1</code> and <code>cc_dep2</code>.
+Then, whenever VEX needs to get the actual flag values, it can figure out what the one bit corresponding to the flag in question actually is, based on its flag thunk descriptors.
+This is an optimization in the flags computation, as VEX can now just directly perform the relevant operation in the IR without bothering to compute and update the flags&apos; value.</p>
+<p>Amongst different operations that can be placed in <code>cc_op</code>, there is a special value 0 which corresponds to <code>OP_COPY</code> operation.
+This operation is supposed to copy the value in <code>cc_dep1</code> to the flags.
+It simply means that <code>cc_dep1</code> contains the flags&apos; value.
+angr uses this fact to let us efficiently retrieve the flags&apos; value: whenever we ask for the actual flags, angr computes their value, then dumps them back into <code>cc_dep1</code> and sets <code>cc_op = OP_COPY</code> in order to cache the computation.
+We can also use this operation to allow the user to write to the flags: we just set <code>cc_op = OP_COPY</code> to say that a new value being set to the flags, then set <code>cc_dep1</code> to that new value.</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="file_system.html" class="navigation navigation-prev " aria-label="Previous page: The Emulated Filesystem">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="structured_data.html" class="navigation navigation-next " aria-label="Next page: Working with Data and Conventions">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Intermediate Representation","level":"1.5.6","depth":2,"next":{"title":"Working with Data and Conventions","level":"1.5.7","depth":2,"path":"docs/structured_data.md","ref":"docs/structured_data.md","articles":[]},"previous":{"title":"The Emulated Filesystem","level":"1.5.5","depth":2,"path":"docs/file_system.md","ref":"docs/file_system.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/ir.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

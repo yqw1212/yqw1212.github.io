@@ -1,0 +1,1051 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Program State · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="pathgroups.html" />
+    
+    
+    <link rel="prev" href="solver.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Program State</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="machine-state---memory-registers-and-so-on">Machine State - memory, registers, and so on</h1>
+<p>So far, we&apos;ve only used angr&apos;s simulated program states (<code>SimState</code> objects) in the barest possible way in order to demonstrate basic concepts about angr&apos;s operation. Here, you&apos;ll learn about the structure of a state object and how to interact with it in a variety of useful ways.</p>
+<h2 id="review-reading-and-writing-memory-and-registers">Review: Reading and writing memory and registers</h2>
+<p>If you&apos;ve been reading this book in order (and you should be, at least for this first section), you already saw the basics of how to access memory and registers.
+<code>state.regs</code> provides read and write access to the registers through attributes with the names of each register, and <code>state.mem</code> provides typed read and write access to memory with index-access notation to specify the address followed by an attribute access to specify the type you would like to interpret the memory as.</p>
+<p>Additionally, you should now know how to work with ASTs, so you can now understand that any bitvector-typed AST can be stored in registers or memory.</p>
+<p>Here are some quick examples for copying and performing operations on data from the state:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr, claripy
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;/bin/true&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state = proj.factory.entry_state()
+
+<span class="hljs-comment"># copy rsp to rbp</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.regs.rbp = state.regs.rsp
+
+<span class="hljs-comment"># store rdx to memory at 0x1000</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.mem[<span class="hljs-number">0x1000</span>].uint64_t = state.regs.rdx
+
+<span class="hljs-comment"># dereference rbp</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.regs.rbp = state.mem[state.regs.rbp].uint64_t.resolved
+
+<span class="hljs-comment"># add rax, qword ptr [rsp + 8]</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.regs.rax += state.mem[state.regs.rsp + <span class="hljs-number">8</span>].uint64_t.resolved
+</code></pre>
+<h2 id="basic-execution">Basic Execution</h2>
+<p>Earlier, we showed how to use a Simulation Manager to do some basic execution.
+We&apos;ll show off the full capabilities of the simulation manager in the next chapter, but for now we can use a much simpler interface to demonstrate how symbolic execution works: <code>state.step()</code>.
+This method will perform one step of symbolic execution and return an object called <a href="http://angr.io/api-doc/angr.html#module-angr.engines.successors" target="_blank"><code>SimSuccessors</code></a>.
+Unlike normal emulation, symbolic execution can produce several successor states that can be classified in a number of ways.
+For now, what we care about is the <code>.successors</code> property of this object, which is a list containing all the &quot;normal&quot; successors of a given step.</p>
+<p>Why a list, instead of just a single successor state?
+Well, angr&apos;s process of symbolic execution is just the taking the operations of the individual instructions compiled into the program and performing them to mutate a SimState.
+When a line of code like <code>if (x &gt; 4)</code> is reached, what happens if x is a symbolic bitvector?
+Somewhere in the depths of angr, the comparison <code>x &gt; 4</code> is going to get performed, and the result is going to be <code>&lt;Bool x_32_1 &gt; 4&gt;</code>.</p>
+<p>That&apos;s fine, but the next question is, do we take the &quot;true&quot; branch or the &quot;false&quot; one?
+The answer is, we take both!
+We generate two entirely separate successor states - one simulating the case where the condition was true and simulating the case where the condition was false.
+In the first state, we add <code>x &gt; 4</code> as a constraint, and in the second state, we add <code>!(x &gt; 4)</code> as a constraint.
+That way, whenever we perform a constraint solve using either of these successor states, <em>the conditions on the state ensure that any solutions we get are valid inputs that will cause execution to follow the same path that the given state has followed.</em></p>
+<p>To demonstrate this, let&apos;s use a <a href="../examples/fauxware/fauxware">fake firmware image</a> as an example.
+If you look at the <a href="../examples/fauxware/fauxware.c">source code</a> for this binary, you&apos;ll see that the authentication mechanism for the firmware is backdoored; any username can be authenticated as an administrator with the password &quot;SOSNEAKY&quot;.
+Furthermore, the first comparison against user input that happens is the comparison against the backdoor, so if we step until we get more than one successor state, one of those states will contain conditions constraining the user input to be the backdoor password.
+The following snippet implements this:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;examples/fauxware/fauxware&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state = proj.factory.entry_state(stdin=angr.SimFile)  <span class="hljs-comment"># ignore that argument for now - we&apos;re disabling a more complicated default setup for the sake of education</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">while</span> <span class="hljs-keyword">True</span>:
+<span class="hljs-meta">... </span>    succ = state.step()
+<span class="hljs-meta">... </span>    <span class="hljs-keyword">if</span> len(succ.successors) == <span class="hljs-number">2</span>:
+<span class="hljs-meta">... </span>        <span class="hljs-keyword">break</span>
+<span class="hljs-meta">... </span>    state = succ.successors[<span class="hljs-number">0</span>]
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>state1, state2 = succ.successors
+<span class="hljs-meta">&gt;&gt;&gt; </span>state1
+&lt;SimState @ <span class="hljs-number">0x400629</span>&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>state2
+&lt;SimState @ <span class="hljs-number">0x400699</span>
+</code></pre>
+<p>Don&apos;t look at the constraints on these states directly - the branch we just went through involves the result of <code>strcmp</code>, which is a tricky function to emulate symbolically, and the resulting constraints are <em>very</em> complicated.</p>
+<p>The program we emulated took data from standard input, which angr treats as an infinite stream of symbolic data by default.
+To perform a constraint solve and get a possible value that input could have taken in order to satisfy the constraints, we&apos;ll need to get a reference to the actual contents of stdin.
+We&apos;ll go over how our file and input subsystems work later on this very page, but for now, just use <code>state.posix.stdin.load(0, state.posix.stdin.size)</code> to retrieve a bitvector representing all the content read from stdin so far.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>input_data = state1.posix.stdin.load(<span class="hljs-number">0</span>, state.posix.stdin.size)
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>state1.solver.eval(input_data, cast_to=bytes)
+<span class="hljs-string">b&apos;\x00\x00\x00\x00\x00\x00\x00\x00\x00SOSNEAKY\x00\x00\x00&apos;</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>state2.solver.eval(input_data, cast_to=bytes)
+<span class="hljs-string">b&apos;\x00\x00\x00\x00\x00\x00\x00\x00\x00S\x00\x80N\x00\x00 \x00\x00\x00\x00&apos;</span>
+</code></pre>
+<p>As you can see, in order to go down the <code>state1</code> path, you must have given as a password the backdoor string &quot;SOSNEAKY&quot;.
+In order to go down the <code>state2</code> path, you must have given something <em>besides</em> &quot;SOSNEAKY&quot;.
+z3 has helpfully provided one of the billions of strings fitting this criteria.</p>
+<p>Fauxware was the first program angr&apos;s symbolic execution ever successfully worked on, back in 2013.
+By finding its backdoor using angr you are participating in a grand tradition of having a bare-bones understanding of how to use symbolic execution to extract meaning from binaries!</p>
+<h2 id="state-presets">State Presets</h2>
+<p>So far, whenever we&apos;ve been working with a state, we&apos;ve created it with <code>project.factory.entry_state()</code>.
+This is just one of several <em>state constructors</em> available on the project factory:</p>
+<ul>
+<li><code>.blank_state()</code> constructs a &quot;blank slate&quot; blank state, with most of its data left uninitialized.
+When accessing uninitialized data, an unconstrained symbolic value will be returned.</li>
+<li><code>.entry_state()</code> constructs a state ready to execute at the main binary&apos;s entry point.</li>
+<li><code>.full_init_state()</code> constructs a state that is ready to execute through any initializers that need to be run before the main binary&apos;s entry point, for example, shared library constructors or preinitializers.
+When it is finished with these it will jump to the entry point.</li>
+<li><code>.call_state()</code> constructs a state ready to execute a given function.</li>
+</ul>
+<p>You can customize the state through several arguments to these constructors:</p>
+<ul>
+<li><p>All of these constructors can take an <code>addr</code> argument to specify the exact address to start.</p>
+</li>
+<li><p>If you&apos;re executing in an environment that can take command line arguments or an environment, you can pass a list of arguments through <code>args</code> and a dictionary of environment variables through <code>env</code> into <code>entry_state</code> and <code>full_init_state</code>.
+The values in these structures can be strings or bitvectors, and will be serialized into the state as the arguments and environment to the simulated execution.
+The default <code>args</code> is an empty list, so if the program you&apos;re analyzing expects to find at least an <code>argv[0]</code>, you should always provide that!</p>
+</li>
+<li><p>If you&apos;d like to have <code>argc</code> be symbolic, you can pass a symbolic bitvector as <code>argc</code> to the <code>entry_state</code> and <code>full_init_state</code> constructors.
+Be careful, though: if you do this, you should also add a constraint to the resulting state that your value for argc cannot be larger than the number of args you passed into <code>args</code>.</p>
+</li>
+<li><p>To use the call state, you should call it with <code>.call_state(addr, arg1, arg2, ...)</code>, where <code>addr</code> is the address of the function you want to call and <code>argN</code> is the Nth argument to that function, either as a python integer, string, or array, or a bitvector.
+If you want to have memory allocated and actually pass in a pointer to an object, you should wrap it in an PointerWrapper, i.e. <code>angr.PointerWrapper(&quot;point to me!&quot;)</code>.
+The results of this API can be a little unpredictable, but we&apos;re working on it.</p>
+</li>
+<li><p>To specify the calling convention used for a function with <code>call_state</code>, you can pass a <a href="http://angr.io/api-doc/angr.html#module-angr.calling_conventions" target="_blank"><code>SimCC</code> instance</a> as the <code>cc</code> argument.<br>We try to pick a sane default, but for special cases you will need to help angr out.</p>
+</li>
+</ul>
+<p>There are several more options that can be used in any of these constructors! See the <a href="http://angr.io/api-doc/angr.html#angr.factory.AngrObjectFactory" target="_blank">docs on the <code>project.factory</code> object (an <code>AngrObjectFactory</code>)</a> for more details.</p>
+<h2 id="low-level-interface-for-memory">Low level interface for memory</h2>
+<p>The <code>state.mem</code> interface is convenient for loading typed data from memory, but when you want to do raw loads and stores to and from ranges of memory, it&apos;s very cumbersome.
+It turns out that <code>state.mem</code> is actually just a bunch of logic to correctly access the underlying memory storage, which is just a flat address space filled with bitvector data: <code>state.memory</code>.
+You can use <code>state.memory</code> directly with the <code>.load(addr, size)</code> and <code>.store(addr, val)</code> methods:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>s = proj.factory.blank_state()
+<span class="hljs-meta">&gt;&gt;&gt; </span>s.memory.store(<span class="hljs-number">0x4000</span>, s.solver.BVV(<span class="hljs-number">0x0123456789abcdef0123456789abcdef</span>, <span class="hljs-number">128</span>))
+<span class="hljs-meta">&gt;&gt;&gt; </span>s.memory.load(<span class="hljs-number">0x4004</span>, <span class="hljs-number">6</span>) <span class="hljs-comment"># load-size is in bytes</span>
+&lt;BV48 <span class="hljs-number">0x89abcdef0123</span>&gt;
+</code></pre>
+<p>As you can see, the data is loaded and stored in a &quot;big-endian&quot; fashion, since the primary purpose of <code>state.memory</code> is to load an store swaths of data with no attached semantics.
+However, if you want to perform a byteswap on the loaded or stored data, you can pass a keyword argument <code>endness</code> - if you specify little-endian, byteswap will happen.
+The endness should be one of the members of the <code>Endness</code> enum in the <code>archinfo</code> package used to hold declarative data about CPU architectures for angr.
+Additionally, the endness of the program being analyzed can be found as <code>arch.memory_endness</code> - for instance <code>state.arch.memory_endness</code>.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> archinfo
+<span class="hljs-meta">&gt;&gt;&gt; </span>s.memory.load(<span class="hljs-number">0x4000</span>, <span class="hljs-number">4</span>, endness=archinfo.Endness.LE)
+&lt;BV32 <span class="hljs-number">0x67452301</span>&gt;
+</code></pre>
+<p>There is also a low-level interface for register access, <code>state.registers</code>, that uses the exact same API as <code>state.memory</code>, but explaining its behavior involves a <a href="ir.html">dive</a> into the abstractions that angr uses to seamlessly work with multiple architectures.
+The short version is that it is simply a register file, with the mapping between registers and offsets defined in <a href="https://github.com/angr/archinfo" target="_blank">archinfo</a>.</p>
+<h2 id="state-options">State Options</h2>
+<p>There are a lot of little tweaks that can be made to the internals of angr that will optimize behavior in some situations and be a detriment in others.
+These tweaks are controlled through state options.</p>
+<p>On each SimState object, there is a set (<code>state.options</code>) of all its enabled options.
+Each option (really just a string) controls the behavior of angr&apos;s execution engine in some minute way.
+A listing of the full domain of options, along with the defaults for different state types, can be found in <a href="appendices/options.html">the appendix</a>.
+You can access an individual option for adding to a state through <code>angr.options</code>.
+The individual options are named with CAPITAL_LETTERS, but there are also common groupings of objects that you might want to use bundled together, named with lowercase_letters.</p>
+<p>When creating a SimState through any constructor, you may pass the keyword arguments <code>add_options</code> and <code>remove_options</code>, which should be sets of options that modify the initial options set from the default.</p>
+<pre><code class="lang-python"><span class="hljs-comment"># Example: enable lazy solves, an option that causes state satisfiability to be checked as infrequently as possible.</span>
+<span class="hljs-comment"># This change to the settings will be propagated to all successor states created from this state after this line.</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>s.options.add(angr.options.LAZY_SOLVES)
+
+<span class="hljs-comment"># Create a new state with lazy solves enabled</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>s = proj.factory.entry_state(add_options={angr.options.LAZY_SOLVES})
+
+<span class="hljs-comment"># Create a new state without simplification options enabled</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>s = proj.factory.entry_state(remove_options=angr.options.simplification)
+</code></pre>
+<h2 id="state-plugins">State Plugins</h2>
+<p>With the exception of the set of options just discussed, everything stored in a SimState is actually stored in a <em>plugin</em> attached to the state.
+Almost every property on the state we&apos;ve discussed so far is a plugin - <code>memory</code>, <code>registers</code>, <code>mem</code>, <code>regs</code>, <code>solver</code>, etc.
+This design allows for code modularity as well as the ability to easily <a href="state_plugins.html">implement new kinds of data storage</a> for other aspects of an emulated state, or the ability to provide alternate implementations of plugins.</p>
+<p>For example, the normal <code>memory</code> plugin simulates a flat memory space, but analyses can choose to enable the &quot;abstract memory&quot; plugin, which uses alternate data types for addresses to simulate free-floating memory mappings independent of address, to provide <code>state.memory</code>.
+Conversely, plugins can reduce code complexity: <code>state.memory</code> and <code>state.registers</code> are actually two different instances of the same plugin, since the registers are emulated with an address space as well.</p>
+<h3 id="the-globals-plugin">The globals plugin</h3>
+<p><code>state.globals</code> is an extremely simple plugin: it implements the interface of a standard python dict, allowing you to store arbitrary data on a state.</p>
+<h3 id="the-history-plugin">The history plugin</h3>
+<p><code>state.history</code> is a very important plugin storing historical data about the path a state has taken during execution.
+It is actually a linked list of several history nodes, each one representing a single round of execution---you can traverse this list with <code>state.history.parent.parent</code> etc.</p>
+<p>To make it more convenient to work with this structure, the history also provides several efficient iterators over the history of certain values.
+In general, these values are stored as <code>history.recent_NAME</code> and the iterator over them is just <code>history.NAME</code>.
+For example, <code>for addr in state.history.bbl_addrs: print hex(addr)</code> will print out a basic block address trace for the binary, while <code>state.history.recent_bbl_addrs</code> is the list of basic blocks executed in the most recent step, <code>state.history.parent.recent_bbl_addrs</code> is the list of basic blocks executed in the previous step, etc.
+If you ever need to quickly obtain a flat list of these values, you can access <code>.hardcopy</code>, e.g. <code>state.history.bbl_addrs.hardcopy</code>.
+Keep in mind though, index-based accessing is implemented on the iterators.</p>
+<p>Here is a brief listing of some of the values stored in the history:</p>
+<ul>
+<li><code>history.descriptions</code> is a listing of string descriptions of each of the rounds of execution performed on the state.</li>
+<li><code>history.bbl_addrs</code> is a listing of the basic block addresses executed by the state.
+There may be more than one per round of execution, and not all addresses may correspond to binary code - some may be addresses at which SimProcedures are hooked.</li>
+<li><code>history.jumpkinds</code> is a listing of the disposition of each of the control flow transitions in the state&apos;s history, as VEX enum strings.</li>
+<li><code>history.jump_guards</code> is a listing of the conditions guarding each of the branches that the state has encountered.</li>
+<li><code>history.events</code> is a semantic listing of &quot;interesting events&quot; which happened during execution, such as the presence of a symbolic jump condition, the program popping up a message box, or execution terminating with an exit code.</li>
+<li><code>history.actions</code> is usually empty, but if you add the <code>angr.options.refs</code> options to the state, it will be populated with a log of all the memory, register, and temporary value accesses performed by the program.</li>
+</ul>
+<h3 id="the-callstack-plugin">The callstack plugin</h3>
+<p>angr will track the call stack for the emulated program.
+On every call instruction, a frame will be added to the top of the tracked callstack, and whenever the stack pointer drops below the point where the topmost frame was called, a frame is popped.
+This allows angr to robustly store data local to the current emulated function.</p>
+<p>Similar to the history, the callstack is also a linked list of nodes, but there are no provided iterators over the contents of the nodes - instead you can directly iterate over <code>state.callstack</code> to get the callstack frames for each of the active frames, in order from most recent to oldest.
+If you just want the topmost frame, this is <code>state.callstack</code>.</p>
+<ul>
+<li><code>callstack.func_addr</code> is the address of the function currently being executed</li>
+<li><code>callstack.call_site_addr</code> is the address of the basic block which called the current function</li>
+<li><code>callstack.stack_ptr</code> is the value of the stack pointer from the beginning of the current function</li>
+<li><code>callstack.ret_addr</code> is the location that the current function will return to if it returns</li>
+</ul>
+<h2 id="more-about-io-files-file-systems-and-network-sockets">More about I/O: Files, file systems, and network sockets</h2>
+<p>Please refer to <a href="file_system.html">Working with File System, Sockets, and Pipes</a> for a more complete and detailed documentation of how I/O is modeled in angr.</p>
+<h2 id="copying-and-merging">Copying and Merging</h2>
+<p>A state supports very fast copies, so that you can explore different possibilities:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;/bin/true&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>s = proj.factory.blank_state()
+<span class="hljs-meta">&gt;&gt;&gt; </span>s1 = s.copy()
+<span class="hljs-meta">&gt;&gt;&gt; </span>s2 = s.copy()
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>s1.mem[<span class="hljs-number">0x1000</span>].uint32_t = <span class="hljs-number">0x41414141</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>s2.mem[<span class="hljs-number">0x1000</span>].uint32_t = <span class="hljs-number">0x42424242</span>
+</code></pre>
+<p>States can also be merged together.</p>
+<pre><code class="lang-python"><span class="hljs-comment"># merge will return a tuple. the first element is the merged state</span>
+<span class="hljs-comment"># the second element is a symbolic variable describing a state flag</span>
+<span class="hljs-comment"># the third element is a boolean describing whether any merging was done</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>(s_merged, m, anything_merged) = s1.merge(s2)
+
+<span class="hljs-comment"># this is now an expression that can resolve to &quot;AAAA&quot; *or* &quot;BBBB&quot;</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>aaaa_or_bbbb = s_merged.mem[<span class="hljs-number">0x1000</span>].uint32_t
+</code></pre>
+<p>TODO: describe limitations of merging</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="solver.html" class="navigation navigation-prev " aria-label="Previous page: Solver Engine">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="pathgroups.html" class="navigation navigation-next " aria-label="Next page: Simulation Managers">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Program State","level":"1.3.4","depth":2,"next":{"title":"Simulation Managers","level":"1.3.5","depth":2,"path":"docs/pathgroups.md","ref":"docs/pathgroups.md","articles":[]},"previous":{"title":"Solver Engine","level":"1.3.3","depth":2,"path":"docs/solver.md","ref":"docs/solver.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/states.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

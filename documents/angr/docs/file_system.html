@@ -1,0 +1,1025 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>The Emulated Filesystem · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="ir.html" />
+    
+    
+    <link rel="prev" href="speed.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >The Emulated Filesystem</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="working-with-file-system-sockets-and-pipes">Working with File System, Sockets, and Pipes</h1>
+<p>It&apos;s very important to be able to control the environment that emulated programs see, including how symbolic data is introduced from the environment!
+angr has a robust series of abstractions to help you set up the environment you want.</p>
+<p>The root of any interaction with the filesystem, sockets, pipes, or terminals is a SimFile object.
+A SimFile is a <em>storage</em> abstraction that defines a sequence of bytes, symbolic or otherwise.
+There are several kinds of SimFiles which store their data very differently - the two easiest examples are <code>SimFile</code> (the base class is actually called <code>SimFileBase</code>), which stores files as a flat address-space of data, and <code>SimPackets</code>, which stores a sequence of variable-sized reads.
+The former is best for modeling programs that need to perform seeks on their files, and is the default storage for opened files, while the latter is best for modeling programs that depend on short-reads or use scanf, and is the default storage for stdin/stdout/stderr.</p>
+<p>Because SimFiles can have such diverse storage mechanisms, the interface for interacting with them is <em>very</em> abstracted.
+You can read from the file from some position, you can write to the file at some position, you can ask how many bytes are currently stored in the file, and you can concretize the file, generating a testcase for it.
+If you know specifically which SimFile class you&apos;re working with, you can take much more powerful control over it, and as a result you&apos;re encouraged to manually create any files you want to work with when you create your initial state.</p>
+<p>Specifically, each SimFile class creates its own abstraction of a &quot;position&quot; within the file - each read and write takes a position and returns a new position that you should use to continue from where you left off.
+If you&apos;re working with SimFiles of unknown type you have to treat this position as a totally opaque object with no semantics other than the contract with the read/write functions.</p>
+<p>However! This is a very poor match to how programs generally interact with files, so angr also has a SimFileDescriptor abstraction, which provides the familiar read/write/seek/tell interfaces but will also return error conditions when the underlying storage don&apos;t support the appropriate operations - just like normal file descriptors!</p>
+<p>You may access the mapping from file descriptor number to file descriptor object in <code>state.posix.fd</code>.
+The file descriptor API may be found <a href="http://angr.io/api-doc/angr.html#angr.storage.file.SimFileDescriptorBase" target="_blank">here</a>.</p>
+<h3 id="just-tell-me-how-to-do-what-i-want-to-do">Just tell me how to do what I want to do!</h3>
+<p>Okay okay!!</p>
+<p>To create a SimFile, you should just create an instance of the class you want to use.
+Refer to the <a href="http://angr.io/api-doc/angr.html#module-angr.storage.file" target="_blank">API docs</a> for the full instructions.</p>
+<p>Let&apos;s go through a few illustrative examples, which cover how you can work with a concrete file, a symbolic file, a file with mixed concrete and symbolic content, or streams.</p>
+<h4 id="example-1-create-a-file-with-concrete-content">Example 1: Create a file with concrete content</h4>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile = angr.SimFile(<span class="hljs-string">&apos;myconcretefile&apos;</span>, content=<span class="hljs-string">&apos;hello world!\n&apos;</span>)
+</code></pre>
+<p>Here&apos;s a nuance - you can&apos;t use SimFiles without a state attached, because reasons.
+You&apos;ll <strong>never</strong> have to do this in a real scenario (this operation happens automatically when you pass a SimFile into a constructor or the filesystem) but let&apos;s mock it up:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;/bin/true&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state = proj.factory.blank_state()
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.set_state(state)
+</code></pre>
+<p>To demonstrate the behavior of these files we&apos;re going to use the fact that the default SimFile position is just the number of bytes from the start of the file. <code>SimFile.read</code> returns a tuple (bitvector data, actual size, new pos):</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">5</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> claripy
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(data == <span class="hljs-string">&apos;hello&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(actual_size == <span class="hljs-number">5</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(new_pos == <span class="hljs-number">5</span>)
+</code></pre>
+<p>Continue the read, trying to read way too much:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(new_pos, <span class="hljs-number">1000</span>)
+</code></pre>
+<p>angr doesn&apos;t try to sanitize the data returned, only the size - we returned 1000 bytes!
+The intent is that you&apos;re only allowed to use up to actual_size of them.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> len(data) == <span class="hljs-number">1000</span>*<span class="hljs-number">8</span>  <span class="hljs-comment"># bitvector sizes are in bits</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(actual_size == <span class="hljs-number">8</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(data.get_bytes(<span class="hljs-number">0</span>, <span class="hljs-number">8</span>) == <span class="hljs-string">&apos; world!\n&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(new_pos == <span class="hljs-number">13</span>)
+</code></pre>
+<h4 id="example-2-create-a-file-with-symbolic-content-and-a-defined-size">Example 2: Create a file with symbolic content and a defined size</h4>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>simfile = angr.SimFile(<span class="hljs-string">&apos;mysymbolicfile&apos;</span>, size=<span class="hljs-number">0x20</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.set_state(state)
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">0x30</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> data.symbolic
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(actual_size == <span class="hljs-number">0x20</span>)
+</code></pre>
+<p>The basic SimFile provides the same interface as <code>state.memory</code>, so you can load data directly:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> simfile.load(<span class="hljs-number">0</span>, actual_size) <span class="hljs-keyword">is</span> data.get_bytes(<span class="hljs-number">0</span>, <span class="hljs-number">0x20</span>)
+</code></pre>
+<h4 id="example-3-create-a-file-with-constrained-symbolic-content">Example 3: Create a file with constrained symbolic content</h4>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>bytes_list = [claripy.BVS(<span class="hljs-string">&apos;byte_%d&apos;</span> % i, <span class="hljs-number">8</span>) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> range(<span class="hljs-number">32</span>)]
+<span class="hljs-meta">&gt;&gt;&gt; </span>bytes_ast = claripy.Concat(*bytes_list)
+<span class="hljs-meta">&gt;&gt;&gt; </span>mystate = proj.factory.entry_state(stdin=angr.SimFile(<span class="hljs-string">&apos;/dev/stdin&apos;</span>, content=bytes_ast))
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">for</span> byte <span class="hljs-keyword">in</span> bytes_list:
+<span class="hljs-meta">... </span>    mystate.solver.add(byte &gt;= <span class="hljs-number">0x20</span>)
+<span class="hljs-meta">... </span>    mystate.solver.add(byte &lt;= <span class="hljs-number">0x7e</span>)
+</code></pre>
+<h4 id="example-4-create-a-file-with-some-mixed-concrete-and-symbolic-content-but-no-eof">Example 4: Create a file with some mixed concrete and symbolic content, but no EOF</h4>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>variable = claripy.BVS(<span class="hljs-string">&apos;myvar&apos;</span>, <span class="hljs-number">10</span>*<span class="hljs-number">8</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile = angr.SimFile(<span class="hljs-string">&apos;mymixedfile&apos;</span>, content=variable.concat(claripy.BVV(<span class="hljs-string">&apos;\n&apos;</span>)), has_end=<span class="hljs-keyword">False</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.set_state(state)
+</code></pre>
+<p>We can always query the number of bytes stored in the file:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(simfile.size == <span class="hljs-number">11</span>)
+</code></pre>
+<p>Reads will generate additional symbolic data past the current frontier:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">15</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(actual_size == <span class="hljs-number">15</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(new_pos == <span class="hljs-number">15</span>)
+
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(data.get_bytes(<span class="hljs-number">0</span>, <span class="hljs-number">10</span>) == variable)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> claripy.is_true(data.get_bytes(<span class="hljs-number">10</span>, <span class="hljs-number">1</span>) == <span class="hljs-string">&apos;\n&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> data.get_bytes(<span class="hljs-number">11</span>, <span class="hljs-number">4</span>).symbolic
+</code></pre>
+<h4 id="example-5-create-a-file-with-a-symbolic-size-hasend-is-implicitly-true-here">Example 5: Create a file with a symbolic size (<code>has_end</code> is implicitly true here)</h4>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>symsize = claripy.BVS(<span class="hljs-string">&apos;mysize&apos;</span>, <span class="hljs-number">64</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.solver.add(symsize &gt;= <span class="hljs-number">10</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.solver.add(symsize &lt; <span class="hljs-number">20</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile = angr.SimFile(<span class="hljs-string">&apos;mysymsizefile&apos;</span>, size=symsize)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.set_state(state)
+</code></pre>
+<p>Reads will encode all possibilities:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> set(state.solver.eval_upto(actual_size, <span class="hljs-number">30</span>)) == set(range(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>))
+</code></pre>
+<p>The maximum size can&apos;t be easily resolved, so the data returned is 30 bytes long, and we&apos;re supposed to use it conjunction with actual_size.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> len(data) == <span class="hljs-number">30</span>*<span class="hljs-number">8</span>
+</code></pre>
+<p>Symbolic read sizes work too!</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>symreadsize = claripy.BVS(<span class="hljs-string">&apos;myreadsize&apos;</span>, <span class="hljs-number">64</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.solver.add(symreadsize &gt;= <span class="hljs-number">5</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state.solver.add(symreadsize &lt; <span class="hljs-number">30</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, symreadsize)
+</code></pre>
+<p>All sizes between 5 and 20 should be possible:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> set(state.solver.eval_upto(actual_size, <span class="hljs-number">30</span>)) == set(range(<span class="hljs-number">5</span>, <span class="hljs-number">20</span>))
+</code></pre>
+<h4 id="example-6-working-with-streams-simpackets">Example 6: Working with streams (<code>SimPackets</code>)</h4>
+<p>So far, we&apos;ve only used the SimFile class, which models a random-accessible file object.
+However, in real life, files are not everything.
+Streams (standard I/O, TCP, etc.) are a great example:
+While they hold data like a normal file does, they do not support random accesses, e.g., you cannot read out the second byte of stdin if you have already read passed that position, and you cannot modify any byte that has been previously sent out to a network endpoint.
+This allows us to design a simpler abstraction for streams in angr.</p>
+<p>Believe it or not, this simpler abstraction for streams will benefit symbolic execution.
+Consider an example program that calls <code>scanf</code> N times to read in N strings.
+With a traditional SimFile, as we do not know the length of each input string, there does not exist any clear boundary in the file between these symbolic input strings.
+In this case, angr will perform N symbolic reads where each read will generate a gigantic tree of claripy ASTs, with string lengths being symbolic.
+This is a nightmare for constraint solving.
+Nevertheless, the fact that <code>scanf</code> is used on a stream (stdin) dictates that there will be zero overlap between individual reads, regardless of the sizes of each symbolic input string.
+We may as well model stdin as a stream that comprises of <em>consecutive packets</em>, instead of a file containing a sequence of bytes.
+Each of the packet can be of a fixed length or a symbolic length.
+Since there will be absolutely no byte overlap between packets, the constraints that angr will produce after executing this example program will be a lot simpler.</p>
+<p>The key concept involved is &quot;short reads&quot;, i.e. when you ask for <code>n</code> bytes but actually get back fewer bytes than that.
+We use a different class implementing SimFileBase, <code>SimPackets</code>, to automatically enable support for short reads.
+By default, stdin, stdout, and stderr are all SimPackets objects.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>simfile = angr.SimPackets(<span class="hljs-string">&apos;mypackets&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.set_state(state)
+</code></pre>
+<p>This&apos;ll just generate a single packet.
+For SimPackets, the position is just a packet number!
+If left unspecified, short_reads is determined from a state option.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>data, actual_size, new_pos = simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>, short_reads=<span class="hljs-keyword">True</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> len(data) == <span class="hljs-number">20</span>*<span class="hljs-number">8</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> set(state.solver.eval_upto(actual_size, <span class="hljs-number">30</span>)) == set(range(<span class="hljs-number">21</span>))
+</code></pre>
+<p>Data in a SimPackets is stored as tuples of (packet data, packet size) in <code>.content</code>.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>print(simfile.content)
+[(&lt;BV160 packet_0_mypackets&gt;, &lt;BV64 packetsize_0_mypackets&gt;)]
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>simfile.read(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, short_reads=<span class="hljs-keyword">False</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(simfile.content)
+[(&lt;BV160 packet_0_mypackets&gt;, &lt;BV64 packetsize_0_mypackets&gt;), (&lt;BV8 packet_1_mypackets&gt;, &lt;BV64 <span class="hljs-number">0x1</span>&gt;)]
+</code></pre>
+<p>So hopefully you understand sort of the kind of data that a SimFile can store and what&apos;ll happen when a program tries to interact with it with various combinations of symbolic and concrete data.
+Those examples only covered reads, but writes are pretty similar.</p>
+<h3 id="the-filesystem-for-real-now">The filesystem, for real now</h3>
+<p>If you want to make a SimFile available to the program, we need to either stick it in the filesystem or serve stdin/stdout from it.</p>
+<p>The simulated filesystem is the <code>state.fs</code> plugin.
+You can store, load, and delete files from the filesystem, with the <code>insert</code>, <code>get</code>, and <code>delete</code> methods.
+Refer to the <a href="http://angr.io/api-doc/angr.html#module-angr.state_plugins.filesystem" target="_blank">api docs</a> for details.</p>
+<p>So to make our file available as <code>/tmp/myfile</code>:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>state.fs.insert(<span class="hljs-string">&apos;/tmp/myfile&apos;</span>, simfile)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.fs.get(<span class="hljs-string">&apos;/tmp/myfile&apos;</span>) <span class="hljs-keyword">is</span> simfile
+</code></pre>
+<p>Then, after execution, we would extract the file from the result state and use <code>simfile.concretize()</code> to generate a testcase to reach that state.
+Keep in mind that <code>concretize()</code> returns different types depending on the file type - for a SimFile it&apos;s a bytestring and for SimPackets it&apos;s a list of bytestrings.</p>
+<p>The simulated filesystem supports a fun concept of &quot;mounts&quot;, where you can designate a subtree as instrumented by a particular provider.
+The most common mount is to expose a part of the host filesystem to the guest, lazily importing file data when the program asks for it:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>state.fs.mount(<span class="hljs-string">&apos;/&apos;</span>, angr.SimHostFilesystem(<span class="hljs-string">&apos;./guest_chroot&apos;</span>))
+</code></pre>
+<p>You can write whatever kind of mount you want to instrument filesystem access by subclassing <code>angr.SimMount</code>!</p>
+<h3 id="stdio-streams">Stdio streams</h3>
+<p>For stdin and friends, it&apos;s a little more complicated.
+The relevant plugin is <code>state.posix</code>, which stores all abstractions relevant to a POSIX-compliant environment.
+You can always get a state&apos;s stdin SimFile with <code>state.posix.stdin</code>, but you can&apos;t just replace it - as soon as the state is created, references to this file are created in the file descriptors.
+Because of this you need to specify it at the time the POSIX plugin is created:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>state.register_plugin(<span class="hljs-string">&apos;posix&apos;</span>, angr.state_plugins.posix.SimSystemPosix(stdin=simfile, stdout=simfile, stderr=simfile))
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.posix.stdin <span class="hljs-keyword">is</span> simfile
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.posix.stdout <span class="hljs-keyword">is</span> simfile
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.posix.stderr <span class="hljs-keyword">is</span> simfile
+</code></pre>
+<p>Or, there&apos;s a nice shortcut while creating the state if you only need to specify stdin:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>state = proj.factory.entry_state(stdin=simfile)
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">assert</span> state.posix.stdin <span class="hljs-keyword">is</span> simfile
+</code></pre>
+<p>Any of those places you can specify a SimFileBase, you can also specify a string or a bitvector (a flat SimFile with fixed size will be created to hold it) or a SimFile type (it&apos;ll be instantiated for you).</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="speed.html" class="navigation navigation-prev " aria-label="Previous page: Optimizing Symbolic Execution">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="ir.html" class="navigation navigation-next " aria-label="Next page: Intermediate Representation">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"The Emulated Filesystem","level":"1.5.5","depth":2,"next":{"title":"Intermediate Representation","level":"1.5.6","depth":2,"path":"docs/ir.md","ref":"docs/ir.md","articles":[]},"previous":{"title":"Optimizing Symbolic Execution","level":"1.5.4","depth":2,"path":"docs/speed.md","ref":"docs/speed.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/file_system.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
