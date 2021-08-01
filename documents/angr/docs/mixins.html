@@ -1,0 +1,949 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>The Mixin Pattern · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="speed.html" />
+    
+    
+    <link rel="prev" href="pipeline.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >The Mixin Pattern</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="whats-up-with-mixins-anyway">What&apos;s Up With Mixins, Anyway?</h1>
+<p>If you are trying to work more intently with the deeper parts of angr, you will need to understand one of the design patterns we use frequently: the mixin pattern.</p>
+<p>In brief, the mixin pattern is where python&apos;s subclassing features is used not to implement IS-A relationships (a Child is a kind of Person) but instead to implement pieces of functionality for a type in different classes to make more modular and maintainable code. Here&apos;s an example of the mixin pattern in action:</p>
+<pre><code class="lang-python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Base</span>:</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">add_one</span><span class="hljs-params">(self, v)</span>:</span>
+        <span class="hljs-keyword">return</span> v + <span class="hljs-number">1</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StringsMixin</span><span class="hljs-params">(Base)</span>:</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">add_one</span><span class="hljs-params">(self, v)</span>:</span>
+        coerce = type(v) <span class="hljs-keyword">is</span> str
+        <span class="hljs-keyword">if</span> coerce:
+            v = int(v)
+        result = super().add_one(v)
+        <span class="hljs-keyword">if</span> coerce:
+            result = str(result)
+        <span class="hljs-keyword">return</span> result
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ArraysMixin</span><span class="hljs-params">(Base)</span>:</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">add_one</span><span class="hljs-params">(self, v)</span>:</span>
+        <span class="hljs-keyword">if</span> type(v) <span class="hljs-keyword">is</span> list:
+            <span class="hljs-keyword">return</span> [super().add_one(v_x) <span class="hljs-keyword">for</span> v_x <span class="hljs-keyword">in</span> v]
+        <span class="hljs-keyword">else</span>:
+            <span class="hljs-keyword">return</span> super().add_one(v)
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FinalClass</span><span class="hljs-params">(ArraysMixin, StringsMixin, Base)</span>:</span>
+    <span class="hljs-keyword">pass</span>
+</code></pre>
+<p>With this construction, we are able to define a very simple interface in the <code>Base</code> class, and by &quot;mixing in&quot; two mixins, we can create the <code>FinalClass</code> which has the same interface but with additional features.
+This is accomplished through python&apos;s powerful multiple inheritance model, which handles method dispatch by creating a <em>method resolution order</em>, or MRO, which is unsuprisingly a list which determines the order in which methods are called as execution proceeds through <code>super()</code> calls.
+You can view a class&apos; MRO as such:</p>
+<pre><code class="lang-python">FinalClass.__mro__
+
+(FinalClass, ArraysMixin, StringsMixin, Base, object)
+</code></pre>
+<p>This means that when we take an instance of <code>FinalClass</code> and call <code>add_one()</code>, python first checks to see if <code>FinalClass</code> defines an <code>add_one</code>, and then <code>ArraysMixin</code>, and so on and so forth.
+Furthermore, when <code>ArraysMixin</code> calls <code>super().add_one()</code>, python will skip past <code>ArraysMixin</code> in the MRO, first checking if <code>StringsMixin</code> defines an <code>add_one</code>, and so forth.</p>
+<p>Because multiple inheritance can create strange dependency graphs in the subclass relationship, there are rules for generating the MRO and for determining if a given mix of mixins is even allowed. This is important to understand when building complex classes with many mixins which have dependencies on each other.
+In short: left-to-right, depth-first, but deferring any base classes which are shared by multiple subclasses (the merge point of a diamond pattern in the inheritance graph) until the last point where they would be encountered in this depth-first search.
+For example, if you have classes A, B(A), C(B), D(A), E(C, D), then the method resolution order will be E, C, B, D, A.
+If there is any case in which the MRO would be ambiguous, the class construction is illegal and will throw an exception at import time.</p>
+<p>This is complicated! If you find yourself confused, the canonical document explaining the rationale, history, and mechanics of python&apos;s multiple inheritence can be found <a href="https://www.python.org/download/releases/2.3/mro/" target="_blank">here</a>.</p>
+<h2 id="mixins-in-claripy-solvers">Mixins in Claripy Solvers</h2>
+<p>yan please write something here</p>
+<h2 id="mixins-in-angr-engines">Mixins in angr Engines</h2>
+<p>The main entry point to a SimEngine is <code>process()</code>, but how do we determine what that does?</p>
+<p>The mixin model is used in SimEngine and friends in order to allow pieces of functionality to be reused between static and symbolic analyses.
+The default engine, <code>UberEngine</code>, is defined as follows:</p>
+<pre><code class="lang-python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UberEngine</span><span class="hljs-params">(SimEngineFailure, SimEngineSyscall, HooksMixin, SimEngineUnicorn, SuperFastpathMixin, TrackActionsMixin, SimInspectMixin, HeavyResilienceMixin, SootMixin, HeavyVEXMixin)</span>:</span>
+    <span class="hljs-keyword">pass</span>
+</code></pre>
+<p>Each of these mixins provides either execution through a different medium or some additional instrumentation feature.
+Though they are not listed here explicitly, there are some base classes implicit to this hierarchy which set up the way this class is traversed.
+Most of these mixins inherit from <code>SuccessorsMixin</code>, which is what provides the basic <code>process()</code> implementation.
+This function sets up the <code>SimSuccessors</code> for the rest of the mixins to fill in, and then calls <code>process_successors()</code>, which each of the mixins which provide some mode of execution implement.
+If the mixin can handle the step, it does so and returns, otherwise it calls <code>super().process_successors()</code>.
+In this way, the MRO for the engine class determines what the order of precedence for the engine&apos;s pieces is.</p>
+<h3 id="heavyvexmixin-and-friends">HeavyVEXMixin and friends</h3>
+<p>Let&apos;s take a closer look at the last mixin, <code>HeavyVEXMixin</code>.
+If you look at the module hierarchy of the angr <code>engines</code> submodule, you will see that the <code>vex</code> submodule has a lot of pieces in it which are organized by how tightly tied to particular state types or data types they are.
+The heavy VEX mixin is one version of the culmination of all of these.
+Let&apos;s look at its definition:</p>
+<pre><code class="lang-python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HeavyVEXMixin</span><span class="hljs-params">(SuccessorsMixin, ClaripyDataMixin, SimStateStorageMixin, VEXMixin, VEXLifter)</span>:</span>
+    ...
+    <span class="hljs-comment"># a WHOLE lot of implementation</span>
+</code></pre>
+<p>So, the heavy VEX mixin is meant to provide fully instrumented symbolic execution on a SimState.
+What does this entail? The mixins tell the tale.</p>
+<p>First, the plain <code>VEXMixin</code>.
+This mixin is designed to provide the barest-bones framework for processing a VEX block.
+Take a look at its <a href="https://github.com/angr/angr/blob/master/angr/engines/vex/light/light.py" target="_blank">source code</a>.
+Its main purpose is to perform the preliminary digestion of the VEX IRSB and dispatch processing of it to methods which are provided by mixins - look at the methods which are either <code>pass</code> or <code>return NotImplemented</code>.
+Notice that absolutely none of its code makes any assumption whatsoever of what the type of <code>state</code> is or even what the type of the data words inside <code>state</code> are.
+This job is delegated to other mixins, making the <code>VEXMixin</code> an appropriate base class for literally any analysis on VEX blocks.</p>
+<p>The next-most interesting mixin is the <code>ClaripyDataMixin</code>, whose source code is <a href="https://github.com/angr/angr/blob/master/angr/engines/vex/claripy/datalayer.py" target="_blank">here</a>.
+This mixin actually integrates the fact that we are executing over the domain of Claripy ASTs.
+It does this by implementing some of the methods which are unimplemented in the <code>VEXMixin</code>, most importantly the <code>ITE</code> expression, all the operations, and the clean helpers.</p>
+<p>In terms of what it looks like to actually touch the SimState, the <code>SimStateStorageMixin</code> provides the glue between the <code>VEXMixin</code>&apos;s interface for memory writes et al and SimState&apos;s interface for memory writes and such.
+It is unremarkable, except for a small interaction between it and the <code>ClaripyDataMixin</code>.
+The Claripy mixin also overrides the memory/register read/write functions, for the purpose of converting between the bitvector and floating-point types, since the vex interface expects to be able to load and store floats, but the SimState interface wants to load and store only bitvectors.
+Because of this, <em>the claripy mixin must come before the storage mixin in the MRO</em>.
+This is very much an interaction like the one in the add_one example at the start of this page - one mixin serves as a data filtering layer for another mixin.</p>
+<h3 id="instrumenting-the-data-layer">Instrumenting the data layer</h3>
+<p>Let&apos;s turn our attention to a mixin which is not included in the <code>HeavyVEXMixin</code> but rather mixed into the <code>UberEngine</code> formula explicitly: the <code>TrackActionsMixin</code>.
+This mixin implements &quot;SimActions&quot;, which is angr parlance for dataflow tracking.
+Again, look at the <a href="https://github.com/angr/angr/blob/master/angr/engines/vex/heavy/actions.py" target="_blank">source code</a>.
+The way it does this is that it <em>wraps and unwraps the data layer</em> to pass around additional information about data flows.
+Look at how it instruments <code>RdTmp</code>, for instance.
+It immediately <code>super()</code>-calls to the next method in the MRO, but instead of returning that data it returns a tuple of the data and its dependencies, which depending on whether you want temporary variables to be atoms in the dataflow model, will either be just the tmp which was read or the dependencies of the value written to that tmp.</p>
+<p>This pattern continues for every single method that this mixin touches - any expression it receives must be unpacked into the expression and its dependencies, and any result must be packaged with its dependencies before it is returned.
+This works because the mixin above it makes no assumptions about what data it is passing around, and the mixin below it never gets to see any dependencies whatsoever. In fact, there could be multiple mixins performing this kind of wrap-unwrap trick and they could all coexist peacefully!</p>
+<p>Note that a mixin which instruments the data layer in this way is <em>obligated</em> to override <em>every single method which takes or returns an expression value</em>, even if it doesn&apos;t perform any operation on the expression other than doing the wrapping and unwrapping.
+To understand why, imagine that the mixin does not override the <code>_handle_vex_const</code> expression, so immediate value loads are not annotated with dependencies.
+The expression value which will be returned from the mixin which does provide <code>_handle_vex_const</code> will not be a tuple of (expression, deps), it will just be the expression.
+Imagine this execution is taking place in the context of a <code>WrTmp(t0, Const(0))</code>.
+The const expression will be passed down to the <code>WrTmp</code> handler along with the identifier of the tmp to write to.
+However, since <code>_handle_vex_stmt_WrTmp</code> <em>will</em> be overridden by our mixin which touches the data layer, it expects to be passed the tuple including the deps, and so it will crash when trying to unpack the not-a-tuple value.</p>
+<p>In this way, you can sort of imagine that a mixin which instruments the data layer in this way is actually creating a contract within python&apos;s nonexistent typesystem - you are guaranteed to receive back any types you return, but you must pass down any types you receive as return values from below.</p>
+<h2 id="mixins-in-the-memory-model">Mixins in the memory model</h2>
+<p>audrey please write something here. or fish, I&apos;m not picky</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="pipeline.html" class="navigation navigation-prev " aria-label="Previous page: The Whole Pipeline">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="speed.html" class="navigation navigation-next " aria-label="Next page: Optimizing Symbolic Execution">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"The Mixin Pattern","level":"1.5.3","depth":2,"next":{"title":"Optimizing Symbolic Execution","level":"1.5.4","depth":2,"path":"docs/speed.md","ref":"docs/speed.md","articles":[]},"previous":{"title":"The Whole Pipeline","level":"1.5.2","depth":2,"path":"docs/pipeline.md","ref":"docs/pipeline.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/mixins.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

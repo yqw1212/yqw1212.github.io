@@ -1,0 +1,1117 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Loading a Binary · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="solver.html" />
+    
+    
+    <link rel="prev" href="toplevel.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Loading a Binary</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="loading-a-binary---cle-and-angr-projects">Loading a Binary - CLE and angr Projects</h1>
+<p>Previously, you saw just the barest taste of angr&apos;s loading facilities - you loaded <code>/bin/true</code>, and then loaded it again without its shared libraries. You also saw <code>proj.loader</code> and a few things it could do. Now, we&apos;ll dive into the nuances of these interfaces and the things they can tell you.</p>
+<p>We briefly mentioned angr&apos;s binary loading component, CLE. CLE stands for &quot;CLE Loads Everything&quot;, and is responsible for taking a binary (and any libraries that it depends on) and presenting it to the rest of angr in a way that is easy to work with.</p>
+<h2 id="the-loader">The Loader</h2>
+<p>Let&apos;s load <code>examples/fauxware/fauxware</code> and take a deeper look at how to interact with the loader.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr, monkeyhex
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;examples/fauxware/fauxware&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader
+&lt;Loaded fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x5008000</span>]&gt;
+</code></pre>
+<h3 id="loaded-objects">Loaded Objects</h3>
+<p>The CLE loader (<code>cle.Loader</code>) represents an entire conglomerate of loaded <em>binary objects</em>, loaded and mapped into a single memory space.
+Each binary object is loaded by a loader backend that can handle its filetype (a subclass of <code>cle.Backend</code>).
+For example, <code>cle.ELF</code> is used to load ELF binaries.</p>
+<p>There will also be objects in memory that don&apos;t correspond to any loaded binary.
+For example, an object used to provide thread-local storage support, and an externs object used to provide unresolved symbols.</p>
+<p>You can get the full list of objects that CLE has loaded with <code>loader.all_objects</code>, as well as several more targeted classifications:</p>
+<pre><code class="lang-python"><span class="hljs-comment"># All loaded objects</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.all_objects
+[&lt;ELF Object fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x60105f</span>]&gt;,
+ &lt;ELF Object libc<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x1000000</span>:<span class="hljs-number">0x13c999f</span>]&gt;,
+ &lt;ELF Object ld<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x2000000</span>:<span class="hljs-number">0x2227167</span>]&gt;,
+ &lt;ELFTLSObject Object cle<span class="hljs-comment">##tls, maps [0x3000000:0x3015010]&gt;,</span>
+ &lt;ExternObject Object cle<span class="hljs-comment">##externs, maps [0x4000000:0x4008000]&gt;,</span>
+ &lt;KernelObject Object cle<span class="hljs-comment">##kernel, maps [0x5000000:0x5008000]&gt;]</span>
+
+<span class="hljs-comment"># This is the &quot;main&quot; object, the one that you directly specified when loading the project</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.main_object
+&lt;ELF Object fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x60105f</span>]&gt;
+
+<span class="hljs-comment"># This is a dictionary mapping from shared object name to object</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.shared_objects
+{ <span class="hljs-string">&apos;fauxware&apos;</span>: &lt;ELF Object fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x60105f</span>]&gt;,
+  <span class="hljs-string">&apos;libc.so.6&apos;</span>: &lt;ELF Object libc<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x1000000</span>:<span class="hljs-number">0x13c999f</span>]&gt;,
+  <span class="hljs-string">&apos;ld-linux-x86-64.so.2&apos;</span>: &lt;ELF Object ld<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x2000000</span>:<span class="hljs-number">0x2227167</span>]&gt; }
+
+<span class="hljs-comment"># Here&apos;s all the objects that were loaded from ELF files</span>
+<span class="hljs-comment"># If this were a windows program we&apos;d use all_pe_objects!</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.all_elf_objects
+[&lt;ELF Object fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x60105f</span>]&gt;,
+ &lt;ELF Object libc<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x1000000</span>:<span class="hljs-number">0x13c999f</span>]&gt;,
+ &lt;ELF Object ld<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x2000000</span>:<span class="hljs-number">0x2227167</span>]&gt;]
+
+<span class="hljs-comment"># Here&apos;s the &quot;externs object&quot;, which we use to provide addresses for unresolved imports and angr internals</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.extern_object
+&lt;ExternObject Object cle<span class="hljs-comment">##externs, maps [0x4000000:0x4008000]&gt;</span>
+
+<span class="hljs-comment"># This object is used to provide addresses for emulated syscalls</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.kernel_object
+&lt;KernelObject Object cle<span class="hljs-comment">##kernel, maps [0x5000000:0x5008000]&gt;</span>
+
+<span class="hljs-comment"># Finally, you can to get a reference to an object given an address in it</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.find_object_containing(<span class="hljs-number">0x400000</span>)
+&lt;ELF Object fauxware, maps [<span class="hljs-number">0x400000</span>:<span class="hljs-number">0x60105f</span>]&gt;
+</code></pre>
+<p>You can interact directly with these objects to extract metadata from them:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>obj = proj.loader.main_object
+
+<span class="hljs-comment"># The entry point of the object</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.entry
+<span class="hljs-number">0x400580</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.min_addr, obj.max_addr
+(<span class="hljs-number">0x400000</span>, <span class="hljs-number">0x60105f</span>)
+
+<span class="hljs-comment"># Retrieve this ELF&apos;s segments and sections</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.segments
+&lt;Regions: [&lt;ELFSegment memsize=<span class="hljs-number">0xa74</span>, filesize=<span class="hljs-number">0xa74</span>, vaddr=<span class="hljs-number">0x400000</span>, flags=<span class="hljs-number">0x5</span>, offset=<span class="hljs-number">0x0</span>&gt;,
+           &lt;ELFSegment memsize=<span class="hljs-number">0x238</span>, filesize=<span class="hljs-number">0x228</span>, vaddr=<span class="hljs-number">0x600e28</span>, flags=<span class="hljs-number">0x6</span>, offset=<span class="hljs-number">0xe28</span>&gt;]&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.sections
+&lt;Regions: [&lt;Unnamed | offset <span class="hljs-number">0x0</span>, vaddr <span class="hljs-number">0x0</span>, size <span class="hljs-number">0x0</span>&gt;,
+           &lt;.interp | offset <span class="hljs-number">0x238</span>, vaddr <span class="hljs-number">0x400238</span>, size <span class="hljs-number">0x1c</span>&gt;,
+           &lt;.note.ABI-tag | offset <span class="hljs-number">0x254</span>, vaddr <span class="hljs-number">0x400254</span>, size <span class="hljs-number">0x20</span>&gt;,
+            ...etc
+
+<span class="hljs-comment"># You can get an individual segment or section by an address it contains:</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.find_segment_containing(obj.entry)
+&lt;ELFSegment memsize=<span class="hljs-number">0xa74</span>, filesize=<span class="hljs-number">0xa74</span>, vaddr=<span class="hljs-number">0x400000</span>, flags=<span class="hljs-number">0x5</span>, offset=<span class="hljs-number">0x0</span>&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.find_section_containing(obj.entry)
+&lt;.text | offset <span class="hljs-number">0x580</span>, vaddr <span class="hljs-number">0x400580</span>, size <span class="hljs-number">0x338</span>&gt;
+
+<span class="hljs-comment"># Get the address of the PLT stub for a symbol</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>addr = obj.plt[<span class="hljs-string">&apos;strcmp&apos;</span>]
+<span class="hljs-meta">&gt;&gt;&gt; </span>addr
+<span class="hljs-number">0x400550</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.reverse_plt[addr]
+<span class="hljs-string">&apos;strcmp&apos;</span>
+
+<span class="hljs-comment"># Show the prelinked base of the object and the location it was actually mapped into memory by CLE</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.linked_base
+<span class="hljs-number">0x400000</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>obj.mapped_base
+<span class="hljs-number">0x400000</span>
+</code></pre>
+<h3 id="symbols-and-relocations">Symbols and Relocations</h3>
+<p>You can also work with symbols while using CLE.
+A symbol is a fundamental concept in the world of executable formats, effectively mapping a name to an address.</p>
+<p>The easiest way to get a symbol from CLE is to use <code>loader.find_symbol</code>, which takes either a name or an address and returns a Symbol object.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>strcmp = proj.loader.find_symbol(<span class="hljs-string">&apos;strcmp&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp
+&lt;Symbol <span class="hljs-string">&quot;strcmp&quot;</span> <span class="hljs-keyword">in</span> libc.so<span class="hljs-number">.6</span> at <span class="hljs-number">0x1089cd0</span>&gt;
+</code></pre>
+<p>The most useful attributes on a symbol are its name, its owner, and its address, but the &quot;address&quot; of a symbol can be ambiguous.
+The Symbol object has three ways of reporting its address:</p>
+<ul>
+<li><code>.rebased_addr</code> is its address in the global address space. This is what is shown in the print output.</li>
+<li><code>.linked_addr</code> is its address relative to the prelinked base of the binary. This is the address reported in, for example, <code>readelf(1)</code>.</li>
+<li><code>.relative_addr</code> is its address relative to the object base. This is known in the literature (particularly the Windows literature) as an RVA (relative virtual address).</li>
+</ul>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.name
+<span class="hljs-string">&apos;strcmp&apos;</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.owner
+&lt;ELF Object libc<span class="hljs-number">-2.23</span>.so, maps [<span class="hljs-number">0x1000000</span>:<span class="hljs-number">0x13c999f</span>]&gt;
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.rebased_addr
+<span class="hljs-number">0x1089cd0</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.linked_addr
+<span class="hljs-number">0x89cd0</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.relative_addr
+<span class="hljs-number">0x89cd0</span>
+</code></pre>
+<p>In addition to providing debug information, symbols also support the notion of dynamic linking.
+libc provides the strcmp symbol as an export, and the main binary depends on it.
+If we ask CLE to give us a strcmp symbol from the main object directly, it&apos;ll tell us that this is an <em>import symbol</em>.
+Import symbols do not have meaningful addresses associated with them, but they do provide a reference to the symbol that was used to resolve them, as <code>.resolvedby</code>.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.is_export
+<span class="hljs-keyword">True</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>strcmp.is_import
+<span class="hljs-keyword">False</span>
+
+<span class="hljs-comment"># On Loader, the method is find_symbol because it performs a search operation to find the symbol.</span>
+<span class="hljs-comment"># On an individual object, the method is get_symbol because there can only be one symbol with a given name.</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>main_strcmp = proj.loader.main_object.get_symbol(<span class="hljs-string">&apos;strcmp&apos;</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>main_strcmp
+&lt;Symbol <span class="hljs-string">&quot;strcmp&quot;</span> <span class="hljs-keyword">in</span> fauxware (<span class="hljs-keyword">import</span>)&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>main_strcmp.is_export
+<span class="hljs-keyword">False</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>main_strcmp.is_import
+<span class="hljs-keyword">True</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>main_strcmp.resolvedby
+&lt;Symbol <span class="hljs-string">&quot;strcmp&quot;</span> <span class="hljs-keyword">in</span> libc.so<span class="hljs-number">.6</span> at <span class="hljs-number">0x1089cd0</span>&gt;
+</code></pre>
+<p>The specific ways that the links between imports and exports should be registered in memory are handled by another notion called <em>relocations</em>. 
+A relocation says, &quot;when you match <em>[import]</em> up with an export symbol, please write the export&apos;s address to <em>[location]</em>, formatted as <em>[format]</em>.&quot;
+We can see the full list of relocations for an object (as <code>Relocation</code> instances) as <code>obj.relocs</code>, or just a mapping from symbol name to Relocation as <code>obj.imports</code>.
+There is no corresponding list of export symbols.</p>
+<p>A relocation&apos;s corresponding import symbol can be accessed as <code>.symbol</code>.
+The address the relocation will write to is accessable through any of the address identifiers you can use for Symbol, and you can get a reference to the object requesting the relocation with <code>.owner</code> as well.</p>
+<pre><code class="lang-python"><span class="hljs-comment"># Relocations don&apos;t have a good pretty-printing, so those addresses are python-internal, unrelated to our program</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.loader.shared_objects[<span class="hljs-string">&apos;libc.so.6&apos;</span>].imports
+{<span class="hljs-string">&apos;__libc_enable_secure&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_GLOB_DAT at <span class="hljs-number">0x7ff5c5fce780</span>&gt;,
+ <span class="hljs-string">&apos;__tls_get_addr&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_JUMP_SLOT at <span class="hljs-number">0x7ff5c6018358</span>&gt;,
+ <span class="hljs-string">&apos;_dl_argv&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_GLOB_DAT at <span class="hljs-number">0x7ff5c5fd2e48</span>&gt;,
+ <span class="hljs-string">&apos;_dl_find_dso_for_object&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_JUMP_SLOT at <span class="hljs-number">0x7ff5c6018588</span>&gt;,
+ <span class="hljs-string">&apos;_dl_starting_up&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_GLOB_DAT at <span class="hljs-number">0x7ff5c5fd2550</span>&gt;,
+ <span class="hljs-string">&apos;_rtld_global&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_GLOB_DAT at <span class="hljs-number">0x7ff5c5fce4e0</span>&gt;,
+ <span class="hljs-string">&apos;_rtld_global_ro&apos;</span>: &lt;cle.backends.elf.relocation.amd64.R_X86_64_GLOB_DAT at <span class="hljs-number">0x7ff5c5fcea20</span>&gt;}
+</code></pre>
+<p>If an import cannot be resolved to any export, for example, because a shared library could not be found, CLE will automatically update the externs object (<code>loader.extern_obj</code>) to claim it provides the symbol as an export.</p>
+<h2 id="loading-options">Loading Options</h2>
+<p>If you are loading something with <code>angr.Project</code> and you want to pass an option to the <code>cle.Loader</code> instance that Project implicitly creates, you can just pass the keyword argument directly to the Project constructor, and it will be passed on to CLE.
+You should look at the <a href="http://angr.io/api-doc/cle.html" target="_blank">CLE API docs.</a> if you want to know everything that could possibly be passed in as an option, but we will go over some important and frequently used options here.</p>
+<h4 id="basic-options">Basic Options</h4>
+<p>We&apos;ve discussed <code>auto_load_libs</code> already - it enables or disables CLE&apos;s attempt to automatically resolve shared library dependencies, and is on by default.
+Additionally, there is the opposite, <code>except_missing_libs</code>, which, if set to true, will cause an exception to be thrown whenever a binary has a shared library dependency that cannot be resolved.</p>
+<p>You can pass a list of strings to <code>force_load_libs</code> and anything listed will be treated as an unresolved shared library dependency right out of the gate, or you can pass a list of strings to <code>skip_libs</code> to prevent any library of that name from being resolved as a dependency.
+Additionally, you can pass a list of strings (or a single string) to <code>ld_path</code>, which will be used as an additional search path for shared libraries, before any of the defaults: the same directory as the loaded program, the current working directory, and your system libraries.</p>
+<h4 id="per-binary-options">Per-Binary Options</h4>
+<p>If you want to specify some options that only apply to a specific binary object, CLE will let you do that too. The parameters <code>main_opts</code> and <code>lib_opts</code> do this by taking dictionaries of options. <code>main_opts</code> is a mapping from option names to option values, while <code>lib_opts</code> is a mapping from library name to dictionaries mapping option names to option values.</p>
+<p>The options that you can use vary from backend to backend, but some common ones are:</p>
+<ul>
+<li><code>backend</code> - which backend to use, as either a class or a name</li>
+<li><code>base_addr</code> - a base address to use</li>
+<li><code>entry_point</code> - an entry point to use</li>
+<li><code>arch</code> - the name of an architecture to use</li>
+</ul>
+<p>Example:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>angr.Project(<span class="hljs-string">&apos;examples/fauxware/fauxware&apos;</span>, main_opts={<span class="hljs-string">&apos;backend&apos;</span>: <span class="hljs-string">&apos;blob&apos;</span>, <span class="hljs-string">&apos;arch&apos;</span>: <span class="hljs-string">&apos;i386&apos;</span>}, lib_opts={<span class="hljs-string">&apos;libc.so.6&apos;</span>: {<span class="hljs-string">&apos;backend&apos;</span>: <span class="hljs-string">&apos;elf&apos;</span>}})
+&lt;Project examples/fauxware/fauxware&gt;
+</code></pre>
+<h3 id="backends">Backends</h3>
+<p>CLE currently has backends for statically loading ELF, PE, CGC, Mach-O and ELF core dump files, as well as loading files into a flat address space. CLE will automatically detect the correct backend to use in most cases, so you shouldn&apos;t need to specify which backend you&apos;re using unless you&apos;re doing some pretty weird stuff.</p>
+<p>You can force CLE to use a specific backend for an object by including a key in its options dictionary, as described above. Some backends cannot autodetect which architecture to use and <em>must</em> have a <code>arch</code> specified. The key doesn&apos;t need to match any list of architectures; angr will identify which architecture you mean given almost any common identifier for any supported arch.</p>
+<p>To refer to a backend, use the name from this table:</p>
+<table>
+<thead>
+<tr>
+<th>backend name</th>
+<th>description</th>
+<th>requires <code>arch</code>?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>elf</td>
+<td>Static loader for ELF files based on PyELFTools</td>
+<td>no</td>
+</tr>
+<tr>
+<td>pe</td>
+<td>Static loader for PE files based on PEFile</td>
+<td>no</td>
+</tr>
+<tr>
+<td>mach-o</td>
+<td>Static loader for Mach-O files. Does not support dynamic linking or rebasing.</td>
+<td>no</td>
+</tr>
+<tr>
+<td>cgc</td>
+<td>Static loader for Cyber Grand Challenge binaries</td>
+<td>no</td>
+</tr>
+<tr>
+<td>backedcgc</td>
+<td>Static loader for CGC binaries that allows specifying memory and register backers</td>
+<td>no</td>
+</tr>
+<tr>
+<td>elfcore</td>
+<td>Static loader for ELF core dumps</td>
+<td>no</td>
+</tr>
+<tr>
+<td>blob</td>
+<td>Loads the file into memory as a flat image</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="symbolic-function-summaries">Symbolic Function Summaries</h2>
+<p>By default, Project tries to replace external calls to library functions by using symbolic summaries termed <em>SimProcedures</em> - effectively just python functions that imitate the library function&apos;s effect on the state. We&apos;ve implemented <a href="https://github.com/angr/angr/tree/master/angr/procedures" target="_blank">a whole bunch of functions</a> as SimProcedures. These builtin procedures are available in the <code>angr.SIM_PROCEDURES</code> dictionary, which is two-leveled, keyed first on the package name (libc, posix, win32, stubs) and then on the name of the library function. Executing a SimProcedure instead of the actual library function that gets loaded from your system makes analysis a LOT more tractable, at the cost of <a href="gotchas.html">some potential inaccuracies</a>.</p>
+<p>When no such summary is available for a given function:</p>
+<ul>
+<li>if <code>auto_load_libs</code> is <code>True</code> (this is the default), then the <em>real</em> library function is executed instead. This may or may not be what you want, depending on the actual function. For example, some of libc&apos;s functions are extremely complex to analyze and will most likely cause an explosion of the number of states for the path trying to execute them.</li>
+<li>if <code>auto_load_libs</code> is <code>False</code>, then external functions are unresolved, and Project will resolve them to a generic &quot;stub&quot; SimProcedure called <code>ReturnUnconstrained</code>. It does what its name says: it returns a unique unconstrained symbolic value each time it is called.</li>
+<li>if <code>use_sim_procedures</code> (this is a parameter to <code>angr.Project</code>, not <code>cle.Loader</code>) is <code>False</code> (it is <code>True</code> by default), then only symbols provided by the extern object will be replaced with SimProcedures, and they will be replaced by a stub <code>ReturnUnconstrained</code>, which does nothing but return a symbolic value.</li>
+<li>you may specify specific symbols to exclude from being replaced with SimProcedures with the parameters to <code>angr.Project</code>: <code>exclude_sim_procedures_list</code> and <code>exclude_sim_procedures_func</code>.</li>
+<li>Look at the code for <code>angr.Project._register_object</code> for the exact algorithm.</li>
+</ul>
+<h4 id="hooking">Hooking</h4>
+<p>The mechanism by which angr replaces library code with a python summary is called hooking, and you can do it too! When performing simulation, at every step angr checks if the current address has been hooked, and if so, runs the hook instead of the binary code at that address. The API to let you do this is <code>proj.hook(addr, hook)</code>, where <code>hook</code> is a SimProcedure instance. You can manage your project&apos;s hooks with <code>.is_hooked</code>, <code>.unhook</code>, and <code>.hooked_by</code>, which should hopefully not require explanation.</p>
+<p>There is an alternate API for hooking an address that lets you specify your own off-the-cuff function to use as a hook, by using <code>proj.hook(addr)</code> as a function decorator. If you do this, you can also optionally specify a <code>length</code> keyword argument to make execution jump some number of bytes forward after your hook finishes.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>stub_func = angr.SIM_PROCEDURES[<span class="hljs-string">&apos;stubs&apos;</span>][<span class="hljs-string">&apos;ReturnUnconstrained&apos;</span>] <span class="hljs-comment"># this is a CLASS</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.hook(<span class="hljs-number">0x10000</span>, stub_func())  <span class="hljs-comment"># hook with an instance of the class</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.is_hooked(<span class="hljs-number">0x10000</span>)            <span class="hljs-comment"># these functions should be pretty self-explanitory</span>
+<span class="hljs-keyword">True</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.hooked_by(<span class="hljs-number">0x10000</span>)
+&lt;ReturnUnconstrained&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.unhook(<span class="hljs-number">0x10000</span>)
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>@proj.hook(<span class="hljs-number">0x20000</span>, length=<span class="hljs-number">5</span>)
+<span class="hljs-meta">... </span><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">my_hook</span><span class="hljs-params">(state)</span>:</span>
+<span class="hljs-meta">... </span>    state.regs.rax = <span class="hljs-number">1</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj.is_hooked(<span class="hljs-number">0x20000</span>)
+<span class="hljs-keyword">True</span>
+</code></pre>
+<p>Furthermore, you can use <code>proj.hook_symbol(name, hook)</code>, providing the name of a symbol as the first argument, to hook the address where the symbol lives.
+One very important usage of this is to extend the behavior of angr&apos;s built-in library SimProcedures.
+Since these library functions are just classes, you can subclass them, overriding pieces of their behavior, and then use your subclass in a hook.</p>
+<h2 id="so-far-so-good">So far so good!</h2>
+<p>By now, you should have a reasonable understanding of how to control the environment in which your analysis happens, on the level of the CLE loader and the angr Project.
+You should also understand that angr makes a reasonable attempt to simplify its analysis by hooking complex library functions with SimProcedures that summarize the effects of the functions.</p>
+<p>In order to see all the things you can do with the CLE loader and its backends, look at the <a href="http://angr.io/api-doc/cle.html" target="_blank">CLE API docs.</a></p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="toplevel.html" class="navigation navigation-prev " aria-label="Previous page: Top Level Interfaces">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="solver.html" class="navigation navigation-next " aria-label="Next page: Solver Engine">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Loading a Binary","level":"1.3.2","depth":2,"next":{"title":"Solver Engine","level":"1.3.3","depth":2,"path":"docs/solver.md","ref":"docs/solver.md","articles":[]},"previous":{"title":"Top Level Interfaces","level":"1.3.1","depth":2,"path":"docs/toplevel.md","ref":"docs/toplevel.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/loading.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

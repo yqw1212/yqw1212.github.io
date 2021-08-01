@@ -1,0 +1,961 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Backward Slicing · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="identifier.html" />
+    
+    
+    <link rel="prev" href="cfg.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../../">
+            
+                <a href="../../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../../INSTALL.html">
+            
+                <a href="../../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../../HACKING.html">
+            
+                <a href="../../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../../HELPWANTED.html">
+            
+                <a href="../../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="../faq.html">
+            
+                <a href="../faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="../toplevel.html">
+            
+                <a href="../toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="../loading.html">
+            
+                <a href="../loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="../solver.html">
+            
+                <a href="../solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="../states.html">
+            
+                <a href="../states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="../pathgroups.html">
+            
+                <a href="../pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="../simulation.html">
+            
+                <a href="../simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="../analyses.html">
+            
+                <a href="../analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="../be_creative.html">
+            
+                <a href="../be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="cfg.html">
+            
+                <a href="cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.4.2" data-path="backward_slice.html">
+            
+                <a href="backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="identifier.html">
+            
+                <a href="identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="../gotchas.html">
+            
+                <a href="../gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="../pipeline.html">
+            
+                <a href="../pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="../mixins.html">
+            
+                <a href="../mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="../speed.html">
+            
+                <a href="../speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="../file_system.html">
+            
+                <a href="../file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="../ir.html">
+            
+                <a href="../ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="../structured_data.html">
+            
+                <a href="../structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="../claripy.html">
+            
+                <a href="../claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="../concretization_strategies.html">
+            
+                <a href="../concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="../java_support.html">
+            
+                <a href="../java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="../symbion.html">
+            
+                <a href="../symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="../simprocedures.html">
+            
+                <a href="../simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="../state_plugins.html">
+            
+                <a href="../state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="../environment.html">
+            
+                <a href="../environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="../exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="../analysis_writing.html">
+            
+                <a href="../analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="../angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="../angr_management.html">
+            
+                <a href="../angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="../examples.html">
+            
+                <a href="../examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="../appendices/ops.html">
+            
+                <a href="../appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="../appendices/options.html">
+            
+                <a href="../appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../../CHANGELOG.html">
+            
+                <a href="../../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../../MIGRATION.html">
+            
+                <a href="../../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="../migration-7.html">
+            
+                <a href="../migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="../.." >Backward Slicing</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="backward-slicing">Backward Slicing</h1>
+<p>A <em>program slice</em> is a subset of statements that is obtained from the original program, usually by removing zero or more statements.
+Slicing is often helpful in debugging and program understanding.
+For instance, it&#x2019;s usually easier to locate the source of a variable on a program slice.</p>
+<p>A backward slice is constructed from a <em>target</em> in the program, and all data flows in this slice end at the <em>target</em>.</p>
+<p>angr has a built-in analysis, called <code>BackwardSlice</code>, to construct a backward program slice.
+This section will act as a how-to for angr&#x2019;s <code>BackwardSlice</code> analysis, and followed by some in-depth discussion over the implementation choices and limitations.</p>
+<h2 id="first-step-first">First Step First</h2>
+<p>To build a <code>BackwardSlice</code>, you will need the following information as input.</p>
+<ul>
+<li><strong>Required</strong> CFG. A control flow graph (CFG) of the program. This CFG must be an accurate CFG (CFGEmulated).</li>
+<li><strong>Required</strong> Target, which is the final destination that your backward slice terminates at.</li>
+<li><strong>Optional</strong> CDG. A control dependence graph (CDG) derived from the CFG.
+angr has a built-in analysis <code>CDG</code> for that purpose.</li>
+<li><strong>Optional</strong> DDG. A data dependence graph (DDG) built on top of the CFG.
+angr has a built-in analysis <code>DDG</code> for that purpose.</li>
+</ul>
+<p>A <code>BackwardSlice</code> can be constructed with the following code:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr
+<span class="hljs-comment"># Load the project</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>b = angr.Project(<span class="hljs-string">&quot;examples/fauxware/fauxware&quot;</span>, load_options={<span class="hljs-string">&quot;auto_load_libs&quot;</span>: <span class="hljs-keyword">False</span>})
+
+<span class="hljs-comment"># Generate a CFG first. In order to generate data dependence graph afterwards, you&#x2019;ll have to:</span>
+<span class="hljs-comment"># - keep all input states by specifying keep_state=True.</span>
+<span class="hljs-comment"># - store memory, register and temporary values accesses by adding the angr.options.refs option set.</span>
+<span class="hljs-comment"># Feel free to provide more parameters (for example, context_sensitivity_level) for CFG </span>
+<span class="hljs-comment"># recovery based on your needs.</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>cfg = b.analyses.CFGEmulated(keep_state=<span class="hljs-keyword">True</span>, 
+<span class="hljs-meta">... </span>                             state_add_options=angr.sim_options.refs, 
+<span class="hljs-meta">... </span>                             context_sensitivity_level=<span class="hljs-number">2</span>)
+
+<span class="hljs-comment"># Generate the control dependence graph</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>cdg = b.analyses.CDG(cfg)
+
+<span class="hljs-comment"># Build the data dependence graph. It might take a while. Be patient!</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>ddg = b.analyses.DDG(cfg)
+
+<span class="hljs-comment"># See where we wanna go... let&#x2019;s go to the exit() call, which is modeled as a </span>
+<span class="hljs-comment"># SimProcedure.</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>target_func = cfg.kb.functions.function(name=<span class="hljs-string">&quot;exit&quot;</span>)
+<span class="hljs-comment"># We need the CFGNode instance</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>target_node = cfg.get_any_node(target_func.addr)
+
+<span class="hljs-comment"># Let&#x2019;s get a BackwardSlice out of them!</span>
+<span class="hljs-comment"># `targets` is a list of objects, where each one is either a CodeLocation </span>
+<span class="hljs-comment"># object, or a tuple of CFGNode instance and a statement ID. Setting statement </span>
+<span class="hljs-comment"># ID to -1 means the very beginning of that CFGNode. A SimProcedure does not </span>
+<span class="hljs-comment"># have any statement, so you should always specify -1 for it.</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>bs = b.analyses.BackwardSlice(cfg, cdg=cdg, ddg=ddg, targets=[ (target_node, <span class="hljs-number">-1</span>) ])
+
+<span class="hljs-comment"># Here is our awesome program slice!</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(bs)
+</code></pre>
+<p>Sometimes it&#x2019;s difficult to get a data dependence graph, or you may simply want build a program slice on top of a CFG.
+That&#x2019;s basically why DDG is an optional parameter.
+You can build a <code>BackwardSlice</code> solely based on CFG by doing:</p>
+<pre><code>&gt;&gt;&gt; bs = b.analyses.BackwardSlice(cfg, control_flow_slice=True)
+BackwardSlice (to [(&lt;CFGNode exit (0x10000a0) [0]&gt;, -1)])
+</code></pre><h2 id="using-the-backwardslice-object">Using The <code>BackwardSlice</code> Object</h2>
+<p>Before you go ahead and use <code>BackwardSlice</code> object, you should notice that the design of this class is fairly arbitrary right now, and it is still subject to change in the near future. We&#x2019;ll try our best to keep this documentation up-to-date.</p>
+<h3 id="members">Members</h3>
+<p>After construction, a <code>BackwardSlice</code> has the following members which describe a program slice:</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Mode</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>runs_in_slice</td>
+<td>CFG-only</td>
+<td>A <code>networkx.DiGraph</code> instance showing addresses of blocks and SimProcedures in the program slice, as well as transitions between them</td>
+</tr>
+<tr>
+<td>cfg_nodes_in_slice</td>
+<td>CFG-only</td>
+<td>A <code>networkx.DiGraph</code> instance showing CFGNodes in the program slice and transitions in between</td>
+</tr>
+<tr>
+<td>chosen_statements</td>
+<td>With DDG</td>
+<td>A dict mapping basic block addresses to lists of statement IDs that are part of the program slice</td>
+</tr>
+<tr>
+<td>chosen_exits</td>
+<td>With DDG</td>
+<td>A dict mapping basic block addresses to a list of &#x201C;exits&#x201D;. Each exit in the list is a valid transition in the program slice</td>
+</tr>
+</tbody>
+</table>
+<p>Each &#x201C;exit&#x201D; in <code>chosen_exit</code> is a tuple including a statement ID and a list of target addresses.
+For example, an &#x201C;exit&#x201D; might look like the following:</p>
+<pre><code>(35, [ 0x400020 ])
+</code></pre><p>If the &#x201C;exit&#x201D; is the default exit of a basic block, it&#x2019;ll look like the following:</p>
+<pre><code>(&#x201C;default&#x201D;, [ 0x400085 ])
+</code></pre><h3 id="export-an-annotated-control-flow-graph">Export an Annotated Control Flow Graph</h3>
+<p>TODO</p>
+<h3 id="user-friendly-representation">User-friendly Representation</h3>
+<p>Take a look at <code>BackwardSlice.dbg_repr()</code>!</p>
+<p>TODO</p>
+<h2 id="implementation-choices">Implementation Choices</h2>
+<p>TODO</p>
+<h2 id="limitations">Limitations</h2>
+<p>TODO</p>
+<h3 id="completeness">Completeness</h3>
+<p>TODO</p>
+<h3 id="soundness">Soundness</h3>
+<p>TODO</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="cfg.html" class="navigation navigation-prev " aria-label="Previous page: CFG">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="identifier.html" class="navigation navigation-next " aria-label="Next page: Function Identifier">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Backward Slicing","level":"1.4.2","depth":2,"next":{"title":"Function Identifier","level":"1.4.3","depth":2,"path":"docs/analyses/identifier.md","ref":"docs/analyses/identifier.md","articles":[]},"previous":{"title":"CFG","level":"1.4.1","depth":2,"path":"docs/analyses/cfg.md","ref":"docs/analyses/cfg.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/analyses/backward_slice.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"../..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../../gitbook/gitbook.js"></script>
+    <script src="../../gitbook/theme.js"></script>
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

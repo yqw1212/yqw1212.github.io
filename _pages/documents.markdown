@@ -5,4 +5,5 @@ permalink: /documents/
 image: 
 ---
 
-[Angr](/angr)
+[Angr](/documents/angr/)
+

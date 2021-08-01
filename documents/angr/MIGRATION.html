@@ -1,0 +1,957 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Migrating to angr 8 · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="docs/migration-7.html" />
+    
+    
+    <link rel="prev" href="CHANGELOG.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="INSTALL.html">
+            
+                <a href="INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="HACKING.html">
+            
+                <a href="HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="HELPWANTED.html">
+            
+                <a href="HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="docs/faq.html">
+            
+                <a href="docs/faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="docs/toplevel.html">
+            
+                <a href="docs/toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="docs/loading.html">
+            
+                <a href="docs/loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="docs/solver.html">
+            
+                <a href="docs/solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="docs/states.html">
+            
+                <a href="docs/states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="docs/pathgroups.html">
+            
+                <a href="docs/pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="docs/simulation.html">
+            
+                <a href="docs/simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="docs/analyses.html">
+            
+                <a href="docs/analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="docs/be_creative.html">
+            
+                <a href="docs/be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="docs/analyses/cfg.html">
+            
+                <a href="docs/analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="docs/analyses/backward_slice.html">
+            
+                <a href="docs/analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="docs/analyses/identifier.html">
+            
+                <a href="docs/analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="docs/gotchas.html">
+            
+                <a href="docs/gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="docs/pipeline.html">
+            
+                <a href="docs/pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="docs/mixins.html">
+            
+                <a href="docs/mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="docs/speed.html">
+            
+                <a href="docs/speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="docs/file_system.html">
+            
+                <a href="docs/file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="docs/ir.html">
+            
+                <a href="docs/ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="docs/structured_data.html">
+            
+                <a href="docs/structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="docs/claripy.html">
+            
+                <a href="docs/claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="docs/concretization_strategies.html">
+            
+                <a href="docs/concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="docs/java_support.html">
+            
+                <a href="docs/java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="docs/symbion.html">
+            
+                <a href="docs/symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="docs/simprocedures.html">
+            
+                <a href="docs/simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="docs/state_plugins.html">
+            
+                <a href="docs/state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="docs/environment.html">
+            
+                <a href="docs/environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="docs/exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="docs/analysis_writing.html">
+            
+                <a href="docs/analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="docs/angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="docs/angr_management.html">
+            
+                <a href="docs/angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="docs/examples.html">
+            
+                <a href="docs/examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="docs/appendices/ops.html">
+            
+                <a href="docs/appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="docs/appendices/options.html">
+            
+                <a href="docs/appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="CHANGELOG.html">
+            
+                <a href="CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.8.4" data-path="MIGRATION.html">
+            
+                <a href="MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="docs/migration-7.html">
+            
+                <a href="docs/migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >Migrating to angr 8</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="migrating-to-angr-8">Migrating to angr 8</h1>
+<p>angr has moved from python 2 to python 3!
+We took this opportunity of a major version bump to make a few breaking API changes that improve quality-of-life.</p>
+<h2 id="what-do-i-need-to-know-for-migrating-my-scripts-to-python-3">What do I need to know for migrating my scripts to python 3?</h2>
+<p>To begin, just the standard py3k changes, the relevant parts of which we&apos;ll rehash here as a reference guide:</p>
+<ul>
+<li>Strings and bytestrings<ul>
+<li>Strings are now unicode by default, a new <code>bytes</code> type holds bytestrings</li>
+<li>Bytestring literals can be constructued with the b prefix, like <code>b&apos;ABCD&apos;</code></li>
+<li>Conversion between strings and bytestrings happens with <code>.encode()</code> and <code>.decode()</code>, which use utf-8 as a default. The <code>latin-1</code> codec will map byte values to their equivilant unicode codepoints</li>
+<li>The <code>ord()</code> and <code>chr()</code> functions operate on strings, not bytestrings</li>
+<li>Enumerating over or indexing into bytestrings produces an unsigned 8 bit integer, not a 1-byte bytestring</li>
+<li>Bytestrings have all the string manipulation functions present on strings, including <code>join</code>, <code>upper</code>/<code>lower</code>, <code>translate</code>, etc</li>
+<li><code>hex</code> and <code>base64</code> are no longer string encoding codecs. For hex, use <code>bytes.fromhex()</code> and <code>bytes.hex()</code>. For base64 use the <code>base64</code> module.</li>
+</ul>
+</li>
+<li>Builtin functions<ul>
+<li><code>print</code> and <code>exec</code> are now builtin functions instead of statements</li>
+<li>Many builtin functions previously returning lists now return iterators, such as <code>map</code>, <code>filter</code>, and <code>zip</code>. <code>reduce</code> is no longer a builtin; you have to import it from <code>functools</code>.</li>
+</ul>
+</li>
+<li>Numbers<ul>
+<li>The <code>/</code> operator is explicitly floating-point division, the <code>//</code> operator is expliclty integer division. The magic functions for overriding these ops are <code>__truediv__</code> and <code>__floordiv__</code></li>
+<li>The int and long types have been merged, there is only int now</li>
+</ul>
+</li>
+<li>Dictionary objects have had their <code>.iterkeys</code>, <code>.itervalues</code>, and <code>.iteritems</code> methods removed, and then non-iter versions have been made to return efficient iterators</li>
+<li>Comparisons between objects of very different types (such as between strings and ints) will raise an exception</li>
+</ul>
+<p>In terms of how this has affected angr, any string that represents data from the emulated program will be a bytestring.
+This means that where you previously said <code>state.solver.eval(x, cast_to=str)</code> you should now say <code>cast_to=bytes</code>.
+When creating concrete bitvectors from strings (including implicitly by just making a comparison against a string) these should be bytestrings. If they are not they will be utf-8 converted and a warning will be printed.
+Symbol names should be unicode strings.</p>
+<p>For division, however, ASTs are strongly typed so they will treat both division operators as the kind of division that makes sense for their type.</p>
+<h2 id="clemory-api-changes">Clemory API changes</h2>
+<p>The memory object in CLE (project.loader.memory, not state.memory) has had a few breaking API changes since the bytes type is much nicer to work with than the py2 string for this specific case, and the old API was an inconsistent mess.</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory.read_bytes(addr, n) -&gt; list[str]</code></td>
+<td><code>memory.load(addr, n) -&gt; bytes</code></td>
+</tr>
+<tr>
+<td><code>memory.write_bytes(addr, list[str])</code></td>
+<td><code>memory.store(addr, bytes)</code></td>
+</tr>
+<tr>
+<td><code>memory.get_byte(addr) -&gt; str</code></td>
+<td><code>memory[addr] -&gt; int</code></td>
+</tr>
+<tr>
+<td><code>memory.read_addr_at(addr) -&gt; int</code></td>
+<td><code>memory.unpack_word(addr) -&gt; int</code></td>
+</tr>
+<tr>
+<td><code>memory.write_addr_at(addr, value) -&gt; int</code></td>
+<td><code>memory.pack_word(addr, value)</code></td>
+</tr>
+<tr>
+<td><code>memory.stride_repr -&gt; list[(start, end, str)]</code></td>
+<td><code>memory.backers() -&gt; iter[(start, bytearray)]</code></td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, <code>pack_word</code> and <code>unpack_word</code> now take optional <code>size</code>, <code>endness</code>, and <code>signed</code> parameters.
+We have also added <code>memory.pack(addr, fmt, *data)</code> and <code>memory.unpack(addr, fmt)</code>, which take format strings for use with the <code>struct</code> module.</p>
+<p>If you were using the <code>cbackers</code> or <code>read_bytes_c</code> functions, the conversion is a little more complicated - we were able to remove the split notion of &quot;backers&quot; and &quot;updates&quot; and replaced all backers with bytearrays that we mutate, so we can work directly with the backer objects.
+The <code>backers()</code> function iterates through all bottom-level backer objects and their start addresses. You can provide an optional address to the function, and it will skip over all backers that end before that address.</p>
+<p>Here is some sample code for producing a C-pointer to a given address:</p>
+<pre><code class="lang-python"><span class="hljs-keyword">import</span> cffi, cle
+ffi = cffi.FFI()
+ld = cle.Loader(<span class="hljs-string">&apos;/bin/true&apos;</span>)
+
+addr = ld.main_object.entry
+<span class="hljs-keyword">try</span>:
+    backer_start, backer = next(ld.memory.backers(addr))
+<span class="hljs-keyword">except</span> StopIteration:
+    <span class="hljs-keyword">raise</span> Exception(<span class="hljs-string">&quot;not mapped&quot;</span>)
+
+<span class="hljs-keyword">if</span> backer_start &gt; addr:
+    <span class="hljs-keyword">raise</span> Exception(<span class="hljs-string">&quot;not mapped&quot;</span>)
+
+cbacker = ffi.from_buffer(backer)
+addr_pointer = cbacker + (addr - backer_start)
+</code></pre>
+<p>You should not have to use this if you aren&apos;t passing the data to a native library - the normal load methods should now be more than fast enough for intensive use.</p>
+<h2 id="cle-symbols-changes">CLE symbols changes</h2>
+<p>Previously, your mechanisms for looking up symbols by their address were <code>loader.find_symbol()</code> and <code>object.symbols_by_addr</code>, where there was clearly some overlap.
+However, <code>symbols_by_addr</code> stayed because it was the only way to enumerate symbols in an object.
+This has changed! <code>symbols_by_addr</code> is deprecated and here is now <code>object.symbols</code>, a sorted list of Symbol objects, to enumerate symbols in a binary.</p>
+<p>Additionally, you can now enumerate all symbols in the entire project with <code>loader.symbols</code>.
+This change has also enabled us to add a <code>fuzzy</code> parameter to <code>find_symbol</code> (returns the first symbol before the given address) and make the output of <code>loader.describe_addr</code> much nicer (shows offset from closest symbol).</p>
+<h2 id="deprecations-and-name-changes">Deprecations and name changes</h2>
+<ul>
+<li>All parameters in cle that started with <code>custom_</code> - so, <code>custom_base_addr</code>, <code>custom_entry_point</code>, <code>custom_offset</code>, <code>custom_arch</code>, and <code>custom_ld_path</code> - have had the <code>custom_</code> removed from the beginning of their names.</li>
+<li>All the functions that were deprecated more than a year ago (at or before the angr 7 release) have been removed.</li>
+<li><code>state.se</code> has been deprecated.
+You should have been using <code>state.solver</code> for the past few years.</li>
+<li>Support for immutable simulation managers has been removed.
+So far as we&apos;re aware, nobody was actually useing this, and it was making debugging a pain.</li>
+</ul>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="CHANGELOG.html" class="navigation navigation-prev " aria-label="Previous page: Changelog">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="docs/migration-7.html" class="navigation navigation-next " aria-label="Next page: Migrating to angr 7">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Migrating to angr 8","level":"1.8.4","depth":2,"next":{"title":"Migrating to angr 7","level":"1.8.5","depth":2,"path":"docs/migration-7.md","ref":"docs/migration-7.md","articles":[]},"previous":{"title":"Changelog","level":"1.8.3","depth":2,"path":"CHANGELOG.md","ref":"CHANGELOG.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"MIGRATION.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

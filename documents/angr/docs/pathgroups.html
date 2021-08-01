@@ -1,0 +1,1010 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Simulation Managers · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="simulation.html" />
+    
+    
+    <link rel="prev" href="states.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <span>
+            
+                    
+                    Introductory Errata
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../INSTALL.html">
+            
+                <a href="../INSTALL.html">
+            
+                    
+                    Installing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../HACKING.html">
+            
+                <a href="../HACKING.html">
+            
+                    
+                    How to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.3" data-path="../HELPWANTED.html">
+            
+                <a href="../HELPWANTED.html">
+            
+                    
+                    What to Contribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.4" data-path="faq.html">
+            
+                <a href="faq.html">
+            
+                    
+                    Frequently Asked Questions
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" >
+            
+                <span>
+            
+                    
+                    Core Concepts
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="toplevel.html">
+            
+                <a href="toplevel.html">
+            
+                    
+                    Top Level Interfaces
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="loading.html">
+            
+                <a href="loading.html">
+            
+                    
+                    Loading a Binary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="solver.html">
+            
+                <a href="solver.html">
+            
+                    
+                    Solver Engine
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.4" data-path="states.html">
+            
+                <a href="states.html">
+            
+                    
+                    Program State
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.3.5" data-path="pathgroups.html">
+            
+                <a href="pathgroups.html">
+            
+                    
+                    Simulation Managers
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.6" data-path="simulation.html">
+            
+                <a href="simulation.html">
+            
+                    
+                    Execution Engines
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.7" data-path="analyses.html">
+            
+                <a href="analyses.html">
+            
+                    
+                    Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.8" data-path="be_creative.html">
+            
+                <a href="be_creative.html">
+            
+                    
+                    Remarks
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" >
+            
+                <span>
+            
+                    
+                    Built-in Analyses
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="analyses/cfg.html">
+            
+                <a href="analyses/cfg.html">
+            
+                    
+                    CFG
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.2" data-path="analyses/backward_slice.html">
+            
+                <a href="analyses/backward_slice.html">
+            
+                    
+                    Backward Slicing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="analyses/identifier.html">
+            
+                <a href="analyses/identifier.html">
+            
+                    
+                    Function Identifier
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" >
+            
+                <span>
+            
+                    
+                    Advanced Topics
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="gotchas.html">
+            
+                <a href="gotchas.html">
+            
+                    
+                    Gotchas
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="pipeline.html">
+            
+                <a href="pipeline.html">
+            
+                    
+                    The Whole Pipeline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.3" data-path="mixins.html">
+            
+                <a href="mixins.html">
+            
+                    
+                    The Mixin Pattern
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.4" data-path="speed.html">
+            
+                <a href="speed.html">
+            
+                    
+                    Optimizing Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.5" data-path="file_system.html">
+            
+                <a href="file_system.html">
+            
+                    
+                    The Emulated Filesystem
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.6" data-path="ir.html">
+            
+                <a href="ir.html">
+            
+                    
+                    Intermediate Representation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.7" data-path="structured_data.html">
+            
+                <a href="structured_data.html">
+            
+                    
+                    Working with Data and Conventions
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.8" data-path="claripy.html">
+            
+                <a href="claripy.html">
+            
+                    
+                    Claripy
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.9" data-path="concretization_strategies.html">
+            
+                <a href="concretization_strategies.html">
+            
+                    
+                    Symbolic Memory Addressing
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.10" data-path="java_support.html">
+            
+                <a href="java_support.html">
+            
+                    
+                    Java Symbolic Execution
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.11" data-path="symbion.html">
+            
+                <a href="symbion.html">
+            
+                    
+                    Symbion
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <span>
+            
+                    
+                    Extending angr
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.6.1" data-path="simprocedures.html">
+            
+                <a href="simprocedures.html">
+            
+                    
+                    Programming SimProcedures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.2" data-path="state_plugins.html">
+            
+                <a href="state_plugins.html">
+            
+                    
+                    Writing State Plugins
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.3" data-path="environment.html">
+            
+                <a href="environment.html">
+            
+                    
+                    Extending the Environment Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.4" data-path="exploration_techniques.md">
+            
+                <span>
+            
+                    
+                    TODO: Writing Exploration Techniques
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.5" data-path="analysis_writing.html">
+            
+                <a href="analysis_writing.html">
+            
+                    
+                    Writing Analyses
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.6" data-path="angr-bf.md">
+            
+                <span>
+            
+                    
+                    TODO: Adding Support for New Architectures
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6.7" data-path="angr_management.html">
+            
+                <a href="angr_management.html">
+            
+                    
+                    Scripting angr management
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="examples.html">
+            
+                <a href="examples.html">
+            
+                    
+                    Examples
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" >
+            
+                <span>
+            
+                    
+                    Appendix
+            
+                </span>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.8.1" data-path="appendices/ops.html">
+            
+                <a href="appendices/ops.html">
+            
+                    
+                    List of Claripy Operations
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.2" data-path="appendices/options.html">
+            
+                <a href="appendices/options.html">
+            
+                    
+                    List of State Options
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.3" data-path="../CHANGELOG.html">
+            
+                <a href="../CHANGELOG.html">
+            
+                    
+                    Changelog
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.4" data-path="../MIGRATION.html">
+            
+                <a href="../MIGRATION.html">
+            
+                    
+                    Migrating to angr 8
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8.5" data-path="migration-7.html">
+            
+                <a href="migration-7.html">
+            
+                    
+                    Migrating to angr 7
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Simulation Managers</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="simulation-managers">Simulation Managers</h1>
+<p>The most important control interface in angr is the SimulationManager, which allows you to control symbolic execution over groups of states simultaneously, applying search strategies to explore a program&apos;s state space.
+Here, you&apos;ll learn how to use it.</p>
+<p>Simulation managers let you wrangle multiple states in a slick way.
+States are organized into &#x201C;stashes&#x201D;, which you can step forward, filter, merge, and move around as you wish.
+This allows you to, for example, step two different stashes of states at different rates, then merge them together.
+The default stash for most operations is the <code>active</code> stash, which is where your states get put when you initialize a new simulation manager.</p>
+<h3 id="stepping">Stepping</h3>
+<p>The most basic capability of a simulation manager is to step forward all states in a given stash by one basic block.
+You do this with <code>.step()</code>.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">import</span> angr
+<span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;examples/fauxware/fauxware&apos;</span>, auto_load_libs=<span class="hljs-keyword">False</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>state = proj.factory.entry_state()
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr = proj.factory.simgr(state)
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.active
+[&lt;SimState @ <span class="hljs-number">0x400580</span>&gt;]
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.step()
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.active
+[&lt;SimState @ <span class="hljs-number">0x400540</span>&gt;]
+</code></pre>
+<p>Of course, the real power of the stash model is that when a state encounters a symbolic branch condition, both of the successor states appear in the stash, and you can step both of them in sync.
+When you don&apos;t really care about controlling analysis very carefully and you just want to step until there&apos;s nothing left to step, you can just use the <code>.run()</code> method.</p>
+<pre><code class="lang-python"><span class="hljs-comment"># Step until the first symbolic branch</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">while</span> len(simgr.active) == <span class="hljs-number">1</span>:
+<span class="hljs-meta">... </span>   simgr.step()
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr
+&lt;SimulationManager <span class="hljs-keyword">with</span> <span class="hljs-number">2</span> active&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.active
+[&lt;SimState @ <span class="hljs-number">0x400692</span>&gt;, &lt;SimState @ <span class="hljs-number">0x400699</span>&gt;]
+
+<span class="hljs-comment"># Step until everything terminates</span>
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.run()
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr
+&lt;SimulationManager <span class="hljs-keyword">with</span> <span class="hljs-number">3</span> deadended&gt;
+</code></pre>
+<p>We now have 3 deadended states!
+When a state fails to produce any successors during execution, for example, because it reached an <code>exit</code> syscall, it is removed from the active stash and placed in the <code>deadended</code> stash.</p>
+<h3 id="stash-management">Stash Management</h3>
+<p>Let&apos;s see how to work with other stashes.</p>
+<p>To move states between stashes, use <code>.move()</code>,  which takes <code>from_stash</code>, <code>to_stash</code>, and <code>filter_func</code> (optional, default is to move everything).
+For example, let&apos;s move everything that has a certain string in its output:</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>simgr.move(from_stash=<span class="hljs-string">&apos;deadended&apos;</span>, to_stash=<span class="hljs-string">&apos;authenticated&apos;</span>, filter_func=<span class="hljs-keyword">lambda</span> s: <span class="hljs-string">b&apos;Welcome&apos;</span> <span class="hljs-keyword">in</span> s.posix.dumps(<span class="hljs-number">1</span>))
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr
+&lt;SimulationManager <span class="hljs-keyword">with</span> <span class="hljs-number">2</span> authenticated, <span class="hljs-number">1</span> deadended&gt;
+</code></pre>
+<p>We were able to just create a new stash named &quot;authenticated&quot; just by asking for states to be moved to it.
+All the states in this stash have &quot;Welcome&quot; in their stdout, which is a fine metric for now.</p>
+<p>Each stash is just a list, and you can index into or iterate over the list to access each of the individual states, but there are some alternate methods to access the states too.
+If you prepend the name of a stash with <code>one_</code>, you will be given the first state in the stash.
+If you prepend the name of a stash with <code>mp_</code>, you will be given a <a href="https://github.com/zardus/mulpyplexer" target="_blank">mulpyplexed</a> version of the stash.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span><span class="hljs-keyword">for</span> s <span class="hljs-keyword">in</span> simgr.deadended + simgr.authenticated:
+<span class="hljs-meta">... </span>    print(hex(s.addr))
+<span class="hljs-number">0x1000030</span>
+<span class="hljs-number">0x1000078</span>
+<span class="hljs-number">0x1000078</span>
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.one_deadended
+&lt;SimState @ <span class="hljs-number">0x1000030</span>&gt;
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.mp_authenticated
+MP([&lt;SimState @ <span class="hljs-number">0x1000078</span>&gt;, &lt;SimState @ <span class="hljs-number">0x1000078</span>&gt;])
+<span class="hljs-meta">&gt;&gt;&gt; </span>simgr.mp_authenticated.posix.dumps(<span class="hljs-number">0</span>)
+MP([<span class="hljs-string">&apos;\x00\x00\x00\x00\x00\x00\x00\x00\x00SOSNEAKY\x00&apos;</span>,
+    <span class="hljs-string">&apos;\x00\x00\x00\x00\x00\x00\x00\x00\x00S\x80\x80\x80\x80@\x80@\x00&apos;</span>])
+</code></pre>
+<p>Of course, <code>step</code>, <code>run</code>, and any other method that operates on a single stash of paths can take a <code>stash</code> argument, specifying which stash to operate on.</p>
+<p>There are lots of fun tools that the simulation manager provides you for managing your stashes.
+We won&apos;t go into the rest of them for now, but you should check out the API documentation. TODO: link</p>
+<h2 id="stash-types">Stash types</h2>
+<p>You can use stashes for whatever you like, but there are a few stashes that will be used to categorize some special kinds of states.
+These are:</p>
+<table>
+<thead>
+<tr>
+<th>Stash</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>active</td>
+<td>This stash contains the states that will be stepped by default, unless an alternate stash is specified.</td>
+</tr>
+<tr>
+<td>deadended</td>
+<td>A state goes to the deadended stash when it cannot continue the execution for some reason, including no more valid instructions, unsat state of all of its successors, or an invalid instruction pointer.</td>
+</tr>
+<tr>
+<td>pruned</td>
+<td>When using <code>LAZY_SOLVES</code>, states are not checked for satisfiability unless absolutely necessary. When a state is found to be unsat in the presence of <code>LAZY_SOLVES</code>, the state hierarchy is traversed to identify when, in its history, it initially became unsat. All states that are descendants of that point (which will also be unsat, since a state cannot become un-unsat) are pruned and put in this stash.</td>
+</tr>
+<tr>
+<td>unconstrained</td>
+<td>If the <code>save_unconstrained</code> option is provided to the SimulationManager constructor, states that are determined to be unconstrained (i.e., with the instruction pointer controlled by user data or some other source of symbolic data) are placed here.</td>
+</tr>
+<tr>
+<td>unsat</td>
+<td>If the <code>save_unsat</code> option is provided to the SimulationManager constructor, states that are determined to be unsatisfiable (i.e., they have constraints that are contradictory, like the input having to be both &quot;AAAA&quot; and &quot;BBBB&quot; at the same time) are placed here.</td>
+</tr>
+</tbody>
+</table>
+<p>There is another list of states that is not a stash: <code>errored</code>.
+If, during execution, an error is raised, then the state will be wrapped in an <code>ErrorRecord</code> object, which contains the state and the error it raised, and then the record will be inserted into <code>errored</code>.
+You can get at the state as it was at the beginning of the execution tick that caused the error with <code>record.state</code>, you can see the error that was raised with <code>record.error</code>, and you can launch a debug shell at the site of the error with <code>record.debug()</code>.
+This is an invaluable debugging tool!</p>
+<h3 id="simple-exploration">Simple Exploration</h3>
+<p>An extremely common operation in symbolic execution is to find a state that reaches a certain address, while discarding all states that go through another address.
+Simulation manager has a shortcut for this pattern, the <code>.explore()</code> method.</p>
+<p>When launching <code>.explore()</code> with a <code>find</code> argument, execution will run until a state is found that matches the find condition, which can be the address of an instruction to stop at, a list of addresses to stop at, or a function which takes a state and returns whether it meets some criteria.
+When any of the states in the active stash match the <code>find</code> condition, they are placed in the <code>found</code> stash, and execution terminates.
+You can then explore the found state, or decide to discard it and continue with the other ones.
+You can also specify an <code>avoid</code> condition in the same format as <code>find</code>.
+When a state matches the avoid condition, it is put in the <code>avoided</code> stash, and execution continues.
+Finally, the <code>num_find</code> argument controls the number of states that should be found before returning, with a default of 1.
+Of course, if you run out of states in the active stash before finding this many solutions, execution will stop anyway.</p>
+<p>Let&apos;s look at a simple crackme <a href="examples.html#reverseme-modern-binary-exploitation---csci-4968">example</a>:</p>
+<p>First, we load the binary.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>proj = angr.Project(<span class="hljs-string">&apos;examples/CSCI-4968-MBE/challenges/crackme0x00a/crackme0x00a&apos;</span>)
+</code></pre>
+<p>Next, we create a SimulationManager.</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>simgr = proj.factory.simgr()
+</code></pre>
+<p>Now, we symbolically execute until we find a state that matches our condition (i.e., the &quot;win&quot; condition).</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>simgr.explore(find=<span class="hljs-keyword">lambda</span> s: <span class="hljs-string">b&quot;Congrats&quot;</span> <span class="hljs-keyword">in</span> s.posix.dumps(<span class="hljs-number">1</span>))
+&lt;SimulationManager <span class="hljs-keyword">with</span> <span class="hljs-number">1</span> active, <span class="hljs-number">1</span> found&gt;
+</code></pre>
+<p>Now, we can get the flag out of that state!</p>
+<pre><code class="lang-python"><span class="hljs-meta">&gt;&gt;&gt; </span>s = simgr.found[<span class="hljs-number">0</span>]
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(s.posix.dumps(<span class="hljs-number">1</span>))
+Enter password: Congrats!
+
+<span class="hljs-meta">&gt;&gt;&gt; </span>flag = s.posix.dumps(<span class="hljs-number">0</span>)
+<span class="hljs-meta">&gt;&gt;&gt; </span>print(flag)
+g00dJ0B!
+</code></pre>
+<p>Pretty simple, isn&apos;t it?</p>
+<p>Other examples can be found by browsing the <a href="examples.html">examples</a>.</p>
+<h2 id="exploration-techniques">Exploration Techniques</h2>
+<p>angr ships with several pieces of canned functionality that let you customize the behavior of a simulation manager, called <em>exploration techniques</em>.
+The archetypical example of why you would want an exploration technique is to modify the pattern in which the state space of the program is explored - the default &quot;step everything at once&quot; strategy is effectively breadth-first search, but with an exploration technique you could implement, for example, depth-first search.
+However, the instrumentation power of these techniques is much more flexible than that - you can totally alter the behavior of angr&apos;s stepping process.
+Writing your own exploration techniques will be covered in a later chapter.</p>
+<p>To use an exploration technique, call <code>simgr.use_technique(tech)</code>, where tech is an instance of an ExplorationTechnique subclass.
+angr&apos;s built-in exploration techniques can be found under <code>angr.exploration_techniques</code>.</p>
+<p>Here&apos;s a quick overview of some of the built-in ones:</p>
+<ul>
+<li><em>DFS</em>: Depth first search, as mentioned earlier. Keeps only one state active at once, putting the rest in the <code>deferred</code> stash until it deadends or errors.</li>
+<li><em>Explorer</em>: This technique implements the <code>.explore()</code> functionality, allowing you to search for and avoid addresses.</li>
+<li><em>LengthLimiter</em>: Puts a cap on the maximum length of the path a state goes through.</li>
+<li><em>LoopSeer</em>: Uses a reasonable approximation of loop counting to discard states that appear to be going through a loop too many times, putting them in a <code>spinning</code> stash and pulling them out again if we run out of otherwise viable states.</li>
+<li><em>ManualMergepoint</em>: Marks an address in the program as a merge point, so states that reach that address will be briefly held, and any other states that reach that same point within a timeout will be merged together.</li>
+<li><em>MemoryWatcher</em>: Monitors how much memory is free/available on the system between simgr steps and stops exploration if it gets too low.</li>
+<li><em>Oppologist</em>: The &quot;operation apologist&quot; is an especially fun gadget - if this technique is enabled and angr encounters an unsupported instruction, for example a bizzare and foreign floating point SIMD op, it will concretize all the inputs to that instruction and emulate the single instruction using the unicorn engine, allowing execution to continue.</li>
+<li><em>Spiller</em>: When there are too many states active, this technique can dump some of them to disk in order to keep memory consumption low.</li>
+<li><em>Threading</em>: Adds thread-level parallelism to the stepping process. This doesn&apos;t help much because of python&apos;s global interpreter locks, but if you have a program whose analysis spends a lot of time in angr&apos;s native-code dependencies (unicorn, z3, libvex) you can seem some gains.</li>
+<li><em>Tracer</em>: An exploration technique that causes execution to follow a dynamic trace recorded from some other source. The <a href="https://github.com/angr/tracer" target="_blank">dynamic tracer repository</a> has some tools to generate those traces.</li>
+<li><em>Veritesting</em>: An implementation of a <a href="https://users.ece.cmu.edu/~dbrumley/pdf/Avgerinos%20et%20al._2014_Enhancing%20Symbolic%20Execution%20with%20Veritesting.pdf" target="_blank">CMU paper</a> on automatically identifying useful merge points. This is so useful, you can enable it automatically with <code>veritesting=True</code> in the SimulationManager constructor! Note that it frequenly doesn&apos;t play nice with other techniques due to the invasive way it implements static symbolic execution.</li>
+</ul>
+<p>Look at the API documentation for the <a href="http://angr.io/api-doc/angr.html#module-angr.manager" target="_blank">simulation manager</a> and <a href="http://angr.io/api-doc/angr.html#angr.exploration_techniques.ExplorationTechnique" target="_blank">exploration techniques</a> for more information.</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="states.html" class="navigation navigation-prev " aria-label="Previous page: Program State">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="simulation.html" class="navigation navigation-next " aria-label="Next page: Execution Engines">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Simulation Managers","level":"1.3.5","depth":2,"next":{"title":"Execution Engines","level":"1.3.6","depth":2,"path":"docs/simulation.md","ref":"docs/simulation.md","articles":[]},"previous":{"title":"Program State","level":"1.3.4","depth":2,"path":"docs/states.md","ref":"docs/states.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/pathgroups.md","mtime":"2021-07-15T09:05:26.000Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-08-01T08:40:14.923Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
