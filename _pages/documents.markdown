@@ -5,5 +5,5 @@ permalink: /documents/
 image: ship.jpg
 ---
 
-[Angr](https://missyourmelody.com/documents/angr/index.html)
+[Angr](https://missyourmelody.com/document/angr/index.html)
 
