@@ -2,7 +2,7 @@
 layout: page
 title: Documents
 permalink: /documents/
-image: 
+image: ship.jpg
 ---
 
 [Angr](/documents/angr/)
