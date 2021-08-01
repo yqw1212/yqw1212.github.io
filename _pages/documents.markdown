@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Documents
-permalink: /documents/
+permalink: /documents
 image: ship.jpg
 ---
 
