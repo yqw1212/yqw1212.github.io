@@ -1,8 +1,8 @@
 ---
 layout: page
 title: Documents
-permalink: /documents/
-image: ship.jpg
+permalink: /document/
+image: 
 ---
 
 [Angr](/documents/angr/)
