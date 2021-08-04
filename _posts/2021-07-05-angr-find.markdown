@@ -1,0 +1,291 @@
+---
+layout: post
+title:  Angr
+date:   2021-07-05 00:01:01 +0300
+image:  2021-07-05-woman.jpg
+tags:   [ctf,reverse,angr]
+---
+
+## 00_angr_find
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  signed int i; // [esp+1Ch] [ebp-1Ch]
+  char s1[9]; // [esp+23h] [ebp-15h]
+  unsigned int v6; // [esp+2Ch] [ebp-Ch]
+
+  v6 = __readgsdword(0x14u);
+  print_msg();
+  printf("Enter the password: ");
+  __isoc99_scanf("%8s", s1);
+  for ( i = 0; i <= 7; ++i )
+    s1[i] = complex_function(s1[i], i);
+  if ( !strcmp(s1, "QWSYJIQP") )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+complex_function
+
+```assembly
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (3 * a2 + a1 - 65) % 26 + 65;
+}
+```
+
+这题基础题主要是熟悉一下Angr的基本使用步骤,一般来说使用Angr的步骤可以分为：
+
+- 创建project
+- 设置state
+- 新建符号量:BVS(bitvector symbolic)或BVV(bitvector value)
+- 把符号量设置到内存或者其他地方
+- 设置Simulation Managers，进行路径探索的对象
+- 运行，探索满足路径需要的值
+- 约束求解，获取执行结果
+
+```assembly
+import angr
+import sys
+
+def main(argv):
+  # Create an Angr project.
+  # 使用angr的首要步骤就是创建Project加载二进制文件。
+  # angr的二进制装载组件是CLE，它负责装载二进制对象（以及它依赖的任何库）并把这个对象以易于操作的方式交给angr的其他组件。
+  # angr将这些包含在Project类中。一个Project类是代表了你的二进制文件的实体。对angr的大部分操作都会经过它。
+
+  # project = angr.Project(path_to_binary, auto_load_libs=False)
+  # auto_load_libs 设置是否自动载入依赖的库，如果auto_load_libs是True（默认值），真正的库函数会被执行。
+  # 这可能正是也可能不是你想要的，取决于具体的函数。
+  # 比如说一些libc的函数分析起来过于复杂并且很有可能引起path对其的尝试执行过程中的state数量的爆炸增长。
+  # 如果auto_load_libs是False，且外部函数是无法找到的，
+  # 并且Project会将它们引用到一个通用的叫做ReturnUnconstrained的SimProcedure上去，它就像它的名字所说的那样：它返回一个不受约束的值
+  project = angr.Project("./00_angr_find")
+
+  # 设置 state
+  # Tell Angr where to start executing (should it start from the main()
+  # function or somewhere else?) For now, use the entry_state function
+  # to instruct Angr to start from the main() function.
+  # state代表程序的一个实例镜像，模拟执行某个时刻的状态，就类似于快照。
+  # 保存运行状态的上下文信息，如内存/寄存器等。
+  # 除了使用.entry_state() 创建 state 对象, 我们还可以根据需要使用其他构造函数创建state
+  initial_state = project.factory.entry_state()
+
+  # 设置 Simulation Managers
+  # Create a simulation manager initialized with the starting state. It provides
+  # a number of useful tools to search and execute the binary.
+  # Project 对象仅表示程序一开始的样子，而在执行时，我们实际上是对SimState对象进行操作，
+  # 它代表程序的一个实例镜像，模拟执行某个时刻的状态
+  # SimState 对象包含程序运行时信息，如内存/寄存器/文件系统数据等。
+  # SM（Simulation Managers）是angr中最重要的控制接口，
+  # 它使你能够同时控制一组状态(state)的符号执行，应用搜索策略来探索程序的状态空间。
+  simulation = project.factory.simgr(initial_state)
+
+  # 运行，探索满足路径需要的值
+  # Explore the binary to attempt to find the address that prints "Good Job."
+  # You will have to find the address you want to find and insert it here. 
+  # This function will keep executing until it either finds a solution or it 
+  # has explored every possible path through the executable.
+  print_good_address = 0x804867d  # :integer (probably in hexadecimal)
+  # 符号执行最普遍的操作是找到能够到达某个地址的状态，同时丢弃其他不能到达这个地址的状态。
+  # SM为使用这种执行模式提供了.explore()方法
+  '''
+  当使用find参数启动.explore()方法时，程序将会一直执行，直到发现了一个和find参数指定的条件相匹配的状态。
+  find参数的内容可以是想要执行到的某个地址、或者想要执行到的地址列表、或者一个获取state作为参数并判断这个state是否满足某些条件的函数。
+  当activestash中的任意状态和find中的条件匹配的时候，它们就会被放到found stash中，执行随即停止。
+  之后可以探索找到的状态，或者决定丢弃它，转而探索其它状态。
+  '''
+  simulation.explore(find=print_good_address)
+
+  # Check that we have found a solution. The simulation.explore() method will
+  # set simulation.found to a list of the states that it could find that reach
+  # the instruction we asked it to search for. Remember, in Python, if a list
+  # is empty, it will be evaluated as false, otherwise true.
+  if simulation.found:
+    # The explore method stops after it finds a single state that arrives at the
+    # target address.
+    solution_state = simulation.found[0]
+
+    # Print the string that Angr wrote to stdin to follow solution_state. This 
+    # is our solution.
+    print(solution_state.posix.dumps(sys.stdin.fileno()))
+  else:
+    # If Angr could not find a path that reaches print_good_address, throw an
+    # error. Perhaps you mistyped the print_good_address?
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
+`sys.stdin.fileno()`,在UNIX中，按照惯例，三个文件描述符分别表示标准输入、标准输出和标准错误
+
+```assembly
+>>> import sys
+>>> sys.stdin.fileno()
+0
+>>> sys.stdout.fileno()
+1
+>>> sys.stderr.fileno()
+2
+```
+
+所以一般也可以写成：
+
+```assembly
+solution = solution_state.posix.dumps(0)
+```
+
+## 01_angr_avoid
+
+引入了`.explore()`方法的另一个参数avoid
+
+```assembly
+import angr
+import sys
+
+def main(argv):
+  project = angr.Project("./01_angr_avoid")
+  initial_state = project.factory.entry_state()
+  simulation = project.factory.simgr(initial_state)
+
+  # Explore the binary, but this time, instead of only looking for a state that
+  # reaches the print_good_address, also find a state that does not reach 
+  # will_not_succeed_address. The binary is pretty large, to save you some time,
+  # everything you will need to look at is near the beginning of the address 
+  # space.
+  '''
+  def explore(self, stash='active', n=None, find=None, avoid=None, find_stash='found', avoid_stash='avoid', cfg=None,um_find=1, **kwargs):
+  '''
+  print_good_address = 0x080485e5
+  will_not_succeed_address = 0x080485a8
+  simulation.explore(find=print_good_address, avoid=will_not_succeed_address)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+    print(solution_state.posix.dumps(sys.stdin.fileno()))
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
+## 02_angr_find_condition
+
+这一题和之前的题目其实一样的，只不过题目本意是教会我们如何根据程序本身的输出来告诉angr应避免或保留的内容。因为有时候打开二进制文件将看到有很多打印“ Good Job”的块，或“Try Again”的块。每次都记录下这些块的所有起始地址是一个麻烦的的问题，这时候我们可以直接根据打印到stdout的内容告诉angr保留或丢弃状态.
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  signed int i; // [esp+18h] [ebp-40h]
+  signed int j; // [esp+1Ch] [ebp-3Ch]
+  char s1[20]; // [esp+24h] [ebp-34h]
+  char s2[4]; // [esp+38h] [ebp-20h]
+  unsigned int v8; // [esp+4Ch] [ebp-Ch]
+
+  v8 = __readgsdword(0x14u);
+  print_msg();
+  for ( i = 0; i <= 19; ++i )
+    s2[i] = 0;
+  qmemcpy(s2, "IYMKPHJA", 8);
+  printf("Enter the password: ");
+  __isoc99_scanf("%8s", s1);
+  for ( j = 0; j <= 7; ++j )
+    s1[j] = complex_function(s1[j], j + 8);
+  if ( !strcmp(s1, s2) )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+complex_function
+
+```assembly
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (31 * a2 + a1 - 65) % 26 + 65;
+}
+```
+
+引入一个函数来对状态进行检测是为了实现动态的选择想获取的state。
+
+```assembly
+# It is very useful to be able to search for a state that reaches a certain
+# instruction. However, in some cases, you may not know the address of the
+# specific instruction you want to reach (or perhaps there is no single
+# instruction goal.) In this challenge, you don't know which instruction
+# grants you success. Instead, you just know that you want to find a state where
+# the binary prints "Good Job."
+#
+# Angr is powerful in that it allows you to search for a states that meets an
+# arbitrary condition that you specify in Python, using a predicate you define
+# as a function that takes a state and returns True if you have found what you
+# are looking for, and False otherwise.
+
+import angr
+import sys
+
+def main(argv):
+  project = angr.Project("./02_angr_find_condition")
+  initial_state = project.factory.entry_state()
+  simulation = project.factory.simgr(initial_state)
+
+  # Define a function that checks if you have found the state you are looking
+  # for.
+  def is_successful(state):
+    # Dump whatever has been printed out by the binary so far into a string.
+    # 将打印到标准输出的内容放入stdout_output变量
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+
+    # Return whether 'Good Job.' has been printed yet.
+    # 字节对象
+    return b'Good Job.' in stdout_output  # :boolean
+
+  # Same as above, but this time check if the state should abort. If you return
+  # False, Angr will continue to step the state. In this specific challenge, the
+  # only time at which you will know you should abort is when the program prints
+  # "Try again."
+  def should_abort(state):
+    # 将打印到标准输出的内容放入stdout_output变量
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    # 字节对象
+    return b'Try again.' in stdout_output  # :boolean
+
+  # Tell Angr to explore the binary and find any state that is_successful identfies
+  # as a successful state by returning True.
+  simulation.explore(find=is_successful, avoid=should_abort)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+    print(solution_state.posix.dumps(sys.stdin.fileno()))
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
