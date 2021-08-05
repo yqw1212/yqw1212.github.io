@@ -1,0 +1,687 @@
+---
+layout: post
+title:  Angr(3)
+date:   2021-07-07 00:01:01 +0300
+image:  2021-07-07-bulb.jpg
+tags:   [ctf,reverse,angr]
+---
+
+## 08_angr_constraints
+
+main
+
+```
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  signed int i; // [esp+Ch] [ebp-Ch]
+
+  print_msg();
+  password = 1381586754;
+  dword_804A044 = 1129398869;
+  dword_804A048 = 1112757837;
+  dword_804A04C = 1430669138;
+  memset(&buffer, 0, 0x11u);
+  printf("Enter the password: ");
+  __isoc99_scanf("%16s", &buffer);
+  for ( i = 0; i <= 15; ++i )
+    *(_BYTE *)(i + 134520912) = complex_function(*(char *)(i + 134520912), 15 - i);
+  if ( check_equals_BWYRUBQCMVSBRGFU((int)&buffer, 0x10u) )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+buffer
+
+```assembly
+.bss:0804A050 buffer          db    ? ;               ; DATA XREF: main+45↑o
+.bss:0804A050                                         ; main+65↑o ...
+.bss:0804A051                 db    ? ;
+.bss:0804A052                 db    ? ;
+.bss:0804A053                 db    ? ;
+.bss:0804A054                 db    ? ;
+.bss:0804A055                 db    ? ;
+.bss:0804A056                 db    ? ;
+.bss:0804A057                 db    ? ;
+.bss:0804A058                 db    ? ;
+.bss:0804A059                 db    ? ;
+.bss:0804A05A                 db    ? ;
+.bss:0804A05B                 db    ? ;
+.bss:0804A05C                 db    ? ;
+.bss:0804A05D                 db    ? ;
+.bss:0804A05E                 db    ? ;
+.bss:0804A05F                 db    ? ;
+.bss:0804A060                 db    ? ;
+.bss:0804A061                 db    ? ;
+.bss:0804A062                 db    ? ;
+.bss:0804A063                 db    ? ;
+.bss:0804A063 _bss            ends
+```
+
+complex_function
+
+```assembly
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (a1 - 65 + 53 * a2) % 26 + 65;
+}
+```
+
+check_equals_BWYRUBQCMVSBRGFU
+
+```assembly
+_BOOL4 __cdecl check_equals_BWYRUBQCMVSBRGFU(int a1, unsigned int a2)
+{
+  int v3; // [esp+8h] [ebp-8h]
+  unsigned int i; // [esp+Ch] [ebp-4h]
+
+  v3 = 0;
+  for ( i = 0; i < a2; ++i )
+  {
+    if ( *(_BYTE *)(i + a1) == *(_BYTE *)(i + 134520896) )
+      ++v3;
+  }
+  return v3 == a2;
+}
+```
+
+### 路径爆炸
+
+符号执行技术在复杂程序的测试案例生成的应用中造成阻碍的两个大问题：一个是约束求解问题，另一个就是路径爆炸问题
+
+所谓符号执行就是把程序中的变量符号化去模拟程序运行，搜集路径约束条件并使用约束求解器对其进行求解后得到结果。当一个程序存在循环结构时，即使逻辑十分简单也可能会产生规模十分巨大的执行路径。在符号执行的过程中，每个分支点都会产生两个实例，当程序中存在循环结构展开时，可能会导致程序分支路径数呈指数级增长，即路径爆炸问题。故我们需要提供更多的约束条件控制路径爆照问题
+
+`check_equals_AUPDNNPROEZRJWKB()`函数就是一个字符一个字符的比较，就会产生路径爆炸问题，原始也是每次调用循环中的if语句（16次）时，计算机都需要产生判断分支，从而导致2 ^ 16 = 65,536分支，这将花费很长时间来测试并获得我们的答案。我们解决这个问题的答案，直接用约束条件取代这个判断函数，用字符串直接比较约束，从而避免因为循环和判断语句逐一字符比较而产生分支引起路径爆炸问题
+
+### 约束求解
+
+在angr中提供了可以用加入一个约束条件到一个state中的方法（`state.solver.add`），将每一个符号化的布尔值作为一个关于符号变量合法性的断言。之后可以通过使用`state.solver.eval(symbol)`对各个断言进行评测来求出一个合法的符号值（若有多个合法值，返回其中的一个）。简单来说就是通过 `.add` 对 state 对象添加约束，并使用 `.eval` 接口求解，得到符号变量的可行解
+
+和z3很像：
+
+```assembly
+# fresh state
+>>> state = proj.factory.entry_state()
+>>> state.solver.add(x - y >= 4)
+>>> state.solver.add(y > 0)
+>>> state.solver.eval(x)
+5
+>>> state.solver.eval(y)
+1
+>>> state.solver.eval(x + y)
+6
+```
+
+exp
+
+```assembly
+# char* input = user_input();
+# char* encrypted_input = complex_function(input);
+# if (check_equals_AABBCCDDEEFFGGHH(encrypted_input, 16)) {
+#   puts("Good Job.");
+# } else {
+#   puts("Try again.");
+# }
+#
+# The function checks if *to_check == "AABBCCDDEEFFGGHH". Verify this yourself.
+# While you, as a human, can easily determine that this function is equivalent
+# to simply comparing the strings, the computer cannot. Instead the computer 
+# would need to branch every time the if statement in the loop was called (16 
+# times), resulting in 2^16 = 65,536 branches, which will take too long of a 
+# time to evaluate for our needs.
+#
+# In this puzzle, your goal will be to stop the program before this function is
+# called and manually constrain the to_check variable to be equal to the
+# password you identify by decompiling the binary. Since, you, as a human, know
+# that if the strings are equal, the program will print "Good Job.", you can
+# be assured that if the program can solve for an input that makes them equal,
+# the input will be the correct password.
+
+import angr
+import claripy
+from Crypto.Util.number import long_to_bytes
+import sys
+
+def main():
+  project = angr.Project("./08_angr_constraints")
+
+  start_address = 0x804862a
+  initial_state = project.factory.blank_state(addr=start_address)
+
+  password = claripy.BVS('password', 8*16)
+
+  '''
+  .bss:0804A050 buffer          db    ? ;               ; DATA XREF: main+45↑o
+  .bss:0804A050                                         ; main+65↑o ...
+  '''
+  password_address = 0x804a050
+  initial_state.memory.store(password_address, password)
+
+  simulation = project.factory.simgr(initial_state)
+
+  # Angr will not be able to reach the point at which the binary prints out
+  # 'Good Job.'. We cannot use that as the target anymore.
+  '''
+  .text:0804866E                 sub     esp, 8
+  .text:08048671                 push    10h
+  .text:08048673                 push    offset buffer
+  .text:08048678                 call    check_equals_BWYRUBQCMVSBRGFU
+  .text:0804867D                 add     esp, 10h
+  '''
+  address_to_check_constraint = 0x8048671
+  simulation.explore(find=address_to_check_constraint)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+
+    # Recall that we need to constrain the to_check parameter (see top) of the 
+    # check_equals_ function. Determine the address that is being passed as the
+    # parameter and load it into a bitvector so that we can constrain it.
+    constrained_parameter_address = 0x804a050
+    constrained_parameter_size_bytes = 16
+    # 使用 state.memory 的 .load(addr, size)接口读出buffer处的内存数据
+    constrained_parameter_bitvector = solution_state.memory.load(
+      constrained_parameter_address,
+      constrained_parameter_size_bytes
+    )
+
+    # Constrain the system to find an input that will make
+    # constrained_parameter_bitvector equal the desired value.
+    constrained_parameter_desired_value = 'BWYRUBQCMVSBRGFU' # :string
+    solution_state.add_constraints(constrained_parameter_bitvector == constrained_parameter_desired_value)
+
+    # Solve for the constrained_parameter_bitvector.
+    solution = long_to_bytes(solution_state.se.eval(password))
+
+    print(solution)
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main()
+
+```
+
+## 09_angr_hooks
+
+使用angr的hook技术解决路径爆炸问题
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  _BOOL4 v3; // eax
+  signed int i; // [esp+8h] [ebp-10h]
+  signed int j; // [esp+Ch] [ebp-Ch]
+
+  print_msg();
+  qmemcpy(password, "XKSPZSJKJYQCQXZV", 16);
+  memset(buffer, 0, 0x11u);
+  printf("Enter the password: ");
+  __isoc99_scanf("%16s", buffer);
+  for ( i = 0; i <= 15; ++i )
+    *(_BYTE *)(i + 0x804A054) = complex_function(*(char *)(i + 0x804A054), 18 - i);
+  equals = check_equals_XKSPZSJKJYQCQXZV((int)buffer, 0x10u);
+  for ( j = 0; j <= 15; ++j )
+    *(_BYTE *)(j + 0x804A044) = complex_function(*(char *)(j + 0x804A044), j + 9);
+  __isoc99_scanf("%16s", buffer);
+  v3 = equals && !strncmp(buffer, password, 0x10u);
+  equals = v3;
+  if ( v3 )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+.bss
+
+```
+.bss:0804A044 password        dd ?                    ; DATA XREF: main+16↑w
+.bss:0804A044                                         ; main+135↑o
+.bss:0804A048 dword_804A048   dd ?                    ; DATA XREF: main+20↑w
+.bss:0804A04C dword_804A04C   dd ?                    ; DATA XREF: main+2A↑w
+.bss:0804A050 dword_804A050   dd ?                    ; DATA XREF: main+34↑w
+.bss:0804A054                 public buffer
+.bss:0804A054 ; char buffer[20]
+.bss:0804A054 buffer          db 14h dup(?)           ; DATA XREF: main+45↑o
+.bss:0804A054                                         ; main+65↑o ...
+.bss:0804A068                 public equals
+.bss:0804A068 equals          dd ?                    ; DATA XREF: main+CD↑w
+.bss:0804A068                                         ; main+127↑r ...
+.bss:0804A068 _bss            ends
+```
+
+complex_function
+
+```
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (a1 - 65 + 23 * a2) % 26 + 65;
+}
+```
+
+check_equals_XKSPZSJKJYQCQXZV
+
+```assembly
+_BOOL4 __cdecl check_equals_XKSPZSJKJYQCQXZV(int a1, unsigned int a2)
+{
+  int v3; // [esp+8h] [ebp-8h]
+  unsigned int i; // [esp+Ch] [ebp-4h]
+
+  v3 = 0;
+  for ( i = 0; i < a2; ++i )
+  {
+    if ( *(_BYTE *)(i + a1) == *(_BYTE *)(i + 134520900) )
+      ++v3;
+  }
+  return v3 == a2;
+}
+```
+
+上一题是使用增加条件约束的方法减少路径分支，这一题直接利用hook改写`complex_function`函数为我们自己的函数
+
+### Hook
+
+angr使用一系列引擎（SimEngine的子类）来模拟被执行代码对输入状态产生的影响。其中就有`hook engine`来处理hook的情况。默认情况下，angr 会使用 `SimProcedures` 中的符号摘要替换库函数，即设置 Hooking，这些 python 函数摘要高效地模拟库函数对状态的影响。可以通过 `angr.procedures`或 `angr.SimProcedures` 查看列表
+
+`SimProcedure` 其实就是 Hook 机制，可以通过 `proj.hook(addr,hook)` 设置，其中 hook 是一个 `SimProcedure` 实例。 通过 `.is_hooked / .unhook / .hook_by` 进行管理。将 `proj.hook(addr)` 作为函数装饰器，可以编写自己的 hook 函数。还可以通过 `proj.hook_symbol(name,hook)` hook 函数
+
+```assembly
+# This level performs the following computations:
+#
+# 1. Get 16 bytes of user input and encrypt it.
+# 2. Save the result of check_equals_AABBCCDDEEFFGGHH (or similar)
+# 3. Get another 16 bytes from the user and encrypt it.
+# 4. Check that it's equal to a predefined password.
+#
+# The ONLY part of this program that we have to worry about is #2. We will be
+# replacing the call to check_equals_ with our own version, using a hook, since
+# check_equals_ will run too slowly otherwise.
+
+import angr
+import claripy
+import sys
+
+def main(argv):
+  project = angr.Project("./09_angr_hooks")
+
+  # Since Angr can handle the initial call to scanf, we can start from the
+  # beginning.
+  # 由于Angr可以处理对scanf的初始调用，因此我们可以从头开始
+  initial_state = project.factory.entry_state()
+
+  # Hook the address of where check_equals_ is called.
+  check_equals_called_address = 0x80486b8
+
+  # The length parameter in angr.Hook specifies how many bytes the execution
+  # engine should skip after completing the hook. This will allow hooks to
+  # replace certain instructions (or groups of instructions). Determine the
+  # instructions involved in calling check_equals_, and then determine how many
+  # bytes are used to represent them in memory. This will be the skip length.
+  # 第一个参数即需要Hook的调用函数的地址，
+  # 第二个参数length即指定执行引擎在完成挂钩后应跳过多少字节。具体多少字节由Hook处地址的指令长度确定
+  '''
+  .text:080486B8                 call    check_equals_XKSPZSJKJYQCQXZV
+  .text:080486BD                 add     esp, 10h
+  '''
+  instruction_to_skip_length = 5
+  @project.hook(check_equals_called_address, length=instruction_to_skip_length)
+  def skip_check_equals_(state):
+    # Determine the address where user input is stored. It is passed as a
+    # parameter ot the check_equals_ function. Then, load the string. Reminder:
+    # int check_equals_(char* to_check, int length) { ...
+    user_input_buffer_address = 0x804a054 # :integer, probably hexadecimal
+    user_input_buffer_length = 16
+    user_input_string = state.memory.load(
+      user_input_buffer_address,
+      user_input_buffer_length
+    )
+
+    # 处理check函数的返回值
+    # gcc uses eax to store the return value, if it is an integer. We need to
+    # set eax to 1 if check_against_string == user_input_string and 0 otherwise.
+    # However, since we are describing an equation to be used by z3 (not to be
+    # evaluated immediately), we cannot use Python if else syntax. Instead, we 
+    # have to use claripy's built in function that deals with if statements.
+    state.regs.eax = claripy.If(
+      user_input_string == 'XKSPZSJKJYQCQXZV',
+      claripy.BVV(1, 32), 
+      claripy.BVV(0, 32)
+    )
+
+  simulation = project.factory.simgr(initial_state)
+
+  def is_successful(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Good Job.' in stdout_output
+
+  def should_abort(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Try again.' in stdout_output
+
+  simulation.explore(find=is_successful, avoid=should_abort)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+
+    # Since we are allowing Angr to handle the input, retrieve it by printing
+    # the contents of stdin. Use one of the early levels as a reference.
+    solution = solution_state.posix.dumps(sys.stdin.fileno())
+    print(solution)
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
+## 10_angr_simprocedures
+
+利用函数名进行hook，而不是复杂的利用函数的调用地址
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  signed int i; // [esp+20h] [ebp-28h]
+  char s[17]; // [esp+2Bh] [ebp-1Dh]
+  unsigned int v6; // [esp+3Ch] [ebp-Ch]
+
+  v6 = __readgsdword(0x14u);
+  print_msg();
+  memcpy(&password, "WQNDNKKWAWOLXBAC", 0x10u);
+  memset(s, 0, 0x11u);
+  printf("Enter the password: ");
+  __isoc99_scanf("%16s", s);
+  for ( i = 0; i <= 15; ++i )
+    s[i] = complex_function(s[i], 18 - i);
+  if ( check_equals_WQNDNKKWAWOLXBAC((int)s, 0x10u) )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+.bss
+
+```assembly
+.bss:0804C048 password        db    ? ;               ; DATA XREF: main+41↑o
+.bss:0804C049                 db    ? ;
+.bss:0804C04A                 db    ? ;
+.bss:0804C04B                 db    ? ;
+.bss:0804C04C                 db    ? ;
+.bss:0804C04D                 db    ? ;
+.bss:0804C04E                 db    ? ;
+.bss:0804C04F                 db    ? ;
+.bss:0804C050                 db    ? ;
+.bss:0804C051                 db    ? ;
+.bss:0804C052                 db    ? ;
+.bss:0804C053                 db    ? ;
+.bss:0804C054                 db    ? ;
+.bss:0804C055                 db    ? ;
+.bss:0804C056                 db    ? ;
+.bss:0804C057                 db    ? ;
+.bss:0804C058                 db    ? ;
+.bss:0804C059                 db    ? ;
+.bss:0804C05A                 db    ? ;
+.bss:0804C05B                 db    ? ;
+.bss:0804C05B _bss            ends
+```
+
+complex_function
+
+```assembly
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (a1 - 65 + 29 * a2) % 26 + 65;
+}
+```
+
+check_equals_WQNDNKKWAWOLXBAC
+
+```assembly
+_BOOL4 __cdecl check_equals_WQNDNKKWAWOLXBAC(int a1, unsigned int a2)
+{
+  int v3; // [esp+8h] [ebp-8h]
+  unsigned int i; // [esp+Ch] [ebp-4h]
+
+  v3 = 0;
+  for ( i = 0; i < a2; ++i )
+  {
+    if ( *(_BYTE *)(i + a1) == *(_BYTE *)(i + 0x804C048) )
+      ++v3;
+  }
+  return v3 == a2;
+}
+```
+
+### Hooking Symbols
+
+每一个程序都有一个符号表，angr可以确保从每个导入符号都可以解析出地址，可以使用angr提供的`Project.hook_symbol`API来通过符号名来Hook函数所有的调用地址，这意味着可以用自己的代码替换函数.
+
+```assembly
+# This challenge is similar to the previous one. It operates under the same
+# premise that you will have to replace the check_equals_ function. In this 
+# case, however, check_equals_ is called so many times that it wouldn't make 
+# sense to hook where each one was called. Instead, use a SimProcedure to write
+# your own check_equals_ implementation and then hook the check_equals_ symbol 
+# to replace all calls to scanf with a call to your SimProcedure.
+
+import angr
+import claripy
+import sys
+
+def main(argv):
+  project = angr.Project("./10_angr_simprocedures")
+
+  initial_state = project.factory.entry_state()
+
+  # Define a class that inherits angr.SimProcedure in order to take advantage
+  # of Angr's SimProcedures.
+  class ReplacementCheckEquals(angr.SimProcedure):
+    # A SimProcedure replaces a function in the binary with a simulated one
+    # written in Python. Other than it being written in Python, the function
+    # acts largely the same as any function written in C. Any parameter after
+    # 'self' will be treated as a parameter to the function you are replacing.
+    # The parameters will be bitvectors. Additionally, the Python can return in
+    # the ususal Pythonic way. Angr will treat this in the same way it would
+    # treat a native function in the binary returning. 
+    # 另外，Python可以以常用的Python方式返回，Angr将以与原来函数相同的方式对待它
+    #
+    # int check_equals_AABBCCDDEEFFGGHH(char* to_check, int length) { ... }
+    # self之后的任何参数都将被视为要替换的函数的参数， 参数将是符号位向量。
+    def run(self, to_check, length):
+      # Note the use of self.state to find the state of the system in a 
+      # SimProcedure.
+      user_input_string = self.state.memory.load(
+        to_check,
+        length
+      )
+      
+      # Finally, instead of setting eax, we can use a Pythonic return statement
+      # to return the output of this function. 
+      # Hint: Look at the previous solution.
+      return claripy.If(
+        user_input_string == 'WQNDNKKWAWOLXBAC',
+        claripy.BVV(1, 32), 
+        claripy.BVV(0, 32)
+      )
+
+
+  # Hook the check_equals symbol. Angr automatically looks up the address 
+  # associated with the symbol. Alternatively, you can use 'hook' instead
+  # of 'hook_symbol' and specify the address of the function. To find the 
+  # correct symbol, disassemble the binary.
+  check_equals_symbol = 'check_equals_WQNDNKKWAWOLXBAC' # :string
+  project.hook_symbol(check_equals_symbol, ReplacementCheckEquals())
+
+  simulation = project.factory.simgr(initial_state)
+
+  def is_successful(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Good Job.' in stdout_output
+
+  def should_abort(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Try again.' in stdout_output
+
+  simulation.explore(find=is_successful, avoid=should_abort)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+
+    solution = solution_state.posix.dumps(sys.stdin.fileno())
+    print(solution)
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
+## 11_angr_sim_scanf
+
+hook`scanf`函数
+
+main
+
+```
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  _BOOL4 v3; // eax
+  signed int i; // [esp+20h] [ebp-28h]
+  char s[4]; // [esp+28h] [ebp-20h]
+  int v7; // [esp+2Ch] [ebp-1Ch]
+  unsigned int v8; // [esp+3Ch] [ebp-Ch]
+
+  v8 = __readgsdword(0x14u);
+  print_msg();
+  memset(s, 0, 0x14u);
+  *(_DWORD *)s = 'ULCD';
+  v7 = 'RMSE';
+  for ( i = 0; i <= 7; ++i )
+    s[i] = complex_function(s[i], i);
+  printf("Enter the password: ");
+  __isoc99_scanf("%u %u", buffer0, buffer1);
+  v3 = !strncmp(buffer0, s, 4u) && !strncmp(buffer1, (const char *)&v7, 4u);
+  if ( v3 )
+    puts("Good Job.");
+  else
+    puts("Try again.");
+  return 0;
+}
+```
+
+.bss
+
+```assembly
+.bss:0805D898 buffer0         db 8 dup(?)             ; DATA XREF: main+112↑o
+.bss:0805D898                                         ; main+133↑o ...
+.bss:0805D8A0                 public padding1
+```
+
+complex_function
+
+```assembly
+int __cdecl complex_function(signed int a1, int a2)
+{
+  if ( a1 <= 64 || a1 > 90 )
+  {
+    puts("Try again.");
+    exit(1);
+  }
+  return (a1 - 65 + 29 * a2) % 26 + 65;
+}
+```
+
+### globals
+
+在这里`scanf0`和`scanf1`是函数`ReplacementScanf`的局部变量，为了让函数外部也能获得我们输入的符号位向量，从而调用求解器获得答案，需要将这两个符号位向量变为全局变量，这里我们需要调用带有全局状态的globals插件中“保存”对我们的符号值的引用。globals插件允许使用列表，元组或多个键的字典来存储多个位向量.
+
+```assembly
+# This time, the solution involves simply replacing scanf with our own version,
+# since Angr does not support requesting multiple parameters with scanf.
+
+import angr
+import claripy
+import sys
+
+def main(argv):
+  project = angr.Project("./11_angr_sim_scanf")
+
+  initial_state = project.factory.entry_state()
+
+  class ReplacementScanf(angr.SimProcedure):
+    # 'scanf("%u %u", ...)'.
+    def run(self, format_string, param0, param1):
+      scanf0 = claripy.BVS('scanf0', 32)
+      scanf1 = claripy.BVS('scanf1', 32)
+
+      # The scanf function writes user input to the buffers to which the 
+      # parameters point.
+      scanf0_address = param0
+      self.state.memory.store(scanf0_address, scanf0, endness=project.arch.memory_endness)
+      scanf1_address = param1
+      self.state.memory.store(scanf1_address, scanf1, endness=project.arch.memory_endness)
+
+      # Now, we want to 'set aside' references to our symbolic values in the
+      # globals plugin included by default with a state. You will need to
+      # store multiple bitvectors. You can either use a list, tuple, or multiple
+      # keys to reference the different bitvectors.
+      self.state.globals['solutions'] = (scanf0, scanf1)
+
+  scanf_symbol = '__isoc99_scanf'
+  project.hook_symbol(scanf_symbol, ReplacementScanf())
+
+  simulation = project.factory.simgr(initial_state)
+
+  def is_successful(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Good Job.' in stdout_output
+
+  def should_abort(state):
+    stdout_output = state.posix.dumps(sys.stdout.fileno())
+    return b'Try again.' in stdout_output
+
+  simulation.explore(find=is_successful, avoid=should_abort)
+
+  if simulation.found:
+    solution_state = simulation.found[0]
+
+    # Grab whatever you set aside in the globals dict.
+    stored_solutions = solution_state.globals['solutions']
+    solution = ' '.join(map(str, map(solution_state.se.eval, stored_solutions)))
+
+    print(solution)
+  else:
+    raise Exception('Could not find the solution')
+
+if __name__ == '__main__':
+  main(sys.argv)
+
+```
+
