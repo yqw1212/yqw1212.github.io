@@ -1,0 +1,19 @@
+<?xml version="1.0"  encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+        <dc:creator opf:role="aut" opf:file-as="Smith, Craig">Craig Smith</dc:creator>
+<dc:identifier opf:scheme="calibre" id="calibre_id">e7716d4e-9f8c-4ce4-83cb-29d33d28b7d9</dc:identifier>
+        <dc:identifier opf:scheme="uuid" id="uuid_id">e7716d4e-9f8c-4ce4-83cb-29d33d28b7d9</dc:identifier>
+        <dc:contributor opf:file-as="calibre" opf:role="bkp">calibre (2.55.0) [http://calibre-ebook.com]</dc:contributor>
+        <dc:date>2016-02-28T08:00:00+00:00</dc:date>
+        <dc:publisher>No Starch Press, Inc.</dc:publisher>
+        <dc:rights>All rights reserved.</dc:rights>
+        <meta content="{&quot;Craig Smith&quot;: &quot;&quot;}" name="calibre:author_link_map"/>
+    <dc:title>The Car Hacker’s Handbook</dc:title>
+<meta name="calibre:title_sort" content="Car Hacker’s Handbook, The"/>
+<dc:language>eng</dc:language>
+</metadata>
+    <guide>
+        <reference href="cover.jpg" title="Cover" type="cover"/>
+    </guide>
+</package>
