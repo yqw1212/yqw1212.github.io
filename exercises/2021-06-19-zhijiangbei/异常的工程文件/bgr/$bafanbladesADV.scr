@@ -1,0 +1,12 @@
+# This script is used with the $bafanbladesADV widget
+# Editing this script will affect every display this widget is used on
+# This uses the Advanced button in Dynamic Animation to assign
+# this script and tag file to the widget locally
+# See the Engineering Manual section 10.5.7 Dynamic Animation "Advanced" button
+
+if {[GETVAL @%TTAGLS(1)] == 1} then {
+
+SETVAL "@%TTAGLS(0)=%ROTATEPLUS 32"
+
+}
+
