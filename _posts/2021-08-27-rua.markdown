@@ -1,0 +1,527 @@
+---
+layout: post
+title:  rua
+date:   2021-08-27 00:01:01 +0300
+image:  2021-08-27-woman.jpg
+tags:   [ctf,reverse,rust,祥云杯2021,mac,chacha20]
+---
+
+搜索字符串可以看到chacha20字样~~（能一眼看到就见鬼了）~~，定位该字符串。
+
+```assembly
+__const:000000010003FD95 aAssertionFaile_1 DCB "assertion failed: (*n).value.is_none()called `Option::unwrap()` "
+__const:000000010003FD95                                         ; DATA XREF: sub_1000036C8:loc_100003870↑o
+__const:000000010003FD95                 DCB "on a `None` value/Users/HAHAH/.cargo/registry/src/mirrors.ustc.e"
+__const:000000010003FD95                 DCB "du.cn-61ef6e0cd06fb9b8/chacha20-0.7.2/src/chacha.rs",0
+__const:000000010003FE49                 ALIGN 0x10
+__const:000000010003FE50 xmmword_10003FE50 DCB 0xF9, 0x73, 0x45, 5, 0xC4, 0x9F, 0xA3, 0xD5, 0x87
+__const:000000010003FE50                                         ; DATA XREF: sub_10000B37C+44↑r
+__const:000000010003FE50                 DCB 0x5F, 4, 0x95, 0x1D, 0xDF, 0x88, 0x72
+__const:000000010003FE60 xmmword_10003FE60 DCB 0x6E, 1, 0xE6, 0x23, 0x67, 0xBA, 0x5F, 0xD5, 0x2D
+__const:000000010003FE60                                         ; DATA XREF: sub_10000B37C+4C↑r
+__const:000000010003FE60                 DCB 0xBB, 0xDA, 0x72, 0x13, 0xE7, 0x19, 0xE6
+__const:000000010003FE70 qword_10003FE70 DCQ 0xBAC4D8F6DA2010B1  ; DATA XREF: sub_10000B37C+58↑r
+__const:000000010003FE78 unk_10003FE78   DCB    0                ; DATA XREF: sub_10000B37C+15C↑o
+__const:000000010003FE78                                         ; sub_10000B37C+188↑o
+__const:000000010003FE79 aCalledResultUn_0 DCB "called `Result::unwrap()` on an `Err` value/Users/HAHAH/.cargo/r"
+__const:000000010003FE79                                         ; DATA XREF: sub_10000A980+190↑o
+__const:000000010003FE79                                         ; sub_10000AB4C:loc_10000AD60↑o ...
+__const:000000010003FE79                 DCB "egistry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/cipher-0.3.0/sr"
+__const:000000010003FE79                 DCB "c/stream.rssrc/main.rsprintf_llvm_version_printf_cargoY",0xA
+__const:000000010003FE79                 DCB "N",0xA
+__const:000000010003FE79                 DCB "LoopError",0
+__const:000000010003FF3D                 ALIGN 0x20
+```
+
+根据逆向经验，看到附近的几串数字很可疑，查看交叉引用，基本可以确定为有用函数：
+
+```assembly
+void __fastcall sub_10000B37C(__int64 a1, __int64 a2)
+{
+  __int64 v2; // x0
+  __int64 v3; // x19
+  char v4; // w1
+  char v5; // w20
+  __int64 v6; // x1
+  __int64 v7[2]; // [xsp+0h] [xbp-90h] BYREF
+  __int64 v8; // [xsp+10h] [xbp-80h] BYREF
+  __int64 v9; // [xsp+18h] [xbp-78h]
+  __int64 v10; // [xsp+20h] [xbp-70h]
+  __int64 v11; // [xsp+28h] [xbp-68h]
+  int64x2_t v12; // [xsp+30h] [xbp-60h]
+  void **v13; // [xsp+40h] [xbp-50h] BYREF
+  __int64 v14; // [xsp+48h] [xbp-48h]
+  __int64 v15; // [xsp+50h] [xbp-40h]
+  __int64 v16; // [xsp+58h] [xbp-38h]
+  void *v17; // [xsp+60h] [xbp-30h]
+  __int64 v18; // [xsp+68h] [xbp-28h]
+
+  v7[0] = a1;
+  v7[1] = a2;
+  v9 = 0LL;
+  v10 = 0LL;
+  v8 = 1LL;
+  v2 = sub_10000B54C(0x2AuLL);
+  if ( !v2 )
+    sub_10003CE78(0x2ALL, 1LL);
+  v3 = v2;
+  *(_OWORD *)v2 = xmmword_10003FE50;
+  *(_OWORD *)(v2 + 0x10) = xmmword_10003FE60;
+  *(_QWORD *)(v2 + 0x20) = 0xBAC4D8F6DA2010B1LL;
+  *(_WORD *)(v2 + 0x28) = 0xB391;
+  v11 = v2;
+  v12 = vdupq_n_s64(0x2AuLL);
+  while ( (sub_100009318(v7) & 1) == 0 )
+  {
+    v5 = v4;
+    v6 = v10;
+    if ( v9 == v10 )
+    {
+      sub_10003A910(&v8);
+      v6 = v10;
+    }
+    *(_BYTE *)(v8 + v6) = v5;
+    if ( ++v10 == 0x2A )
+    {
+      if ( *(_QWORD *)v8 ^ *(_QWORD *)v3 | *(_QWORD *)(v8 + 8) ^ *(_QWORD *)(v3 + 8) | *(_QWORD *)(v8 + 0x10) ^ *(_QWORD *)(v3 + 0x10) | *(_QWORD *)(v8 + 0x18) ^ *(_QWORD *)(v3 + 0x18) | *(_QWORD *)(v8 + 0x20) ^ *(_QWORD *)(v3 + 0x20) | (unsigned __int16)(*(_WORD *)(v8 + 0x28) ^ *(_WORD *)(v3 + 0x28)) )
+      {
+        v13 = &off_10004CAC0;
+        v14 = 1LL;
+        v15 = 0LL;
+        v16 = 0LL;
+        v17 = &unk_10003FE78;
+        v18 = 0LL;
+        sub_10000C51C(&v13);
+      }
+      else
+      {
+        v13 = &off_10004CAB0;
+        v14 = 1LL;
+        v15 = 0LL;
+        v16 = 0LL;
+        v17 = &unk_10003FE78;
+        v18 = 0LL;
+        sub_10000C51C(&v13);
+      }
+      sub_10001D0CC(0LL);
+    }
+  }
+  sub_10003D3D4(
+    "called `Result::unwrap()` on an `Err` value/Users/HAHAH/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/cip"
+    "her-0.3.0/src/stream.rssrc/main.rsprintf_llvm_version_printf_cargoY\n"
+    "N\n"
+    "LoopError",
+    0x2BLL,
+    &v13,
+    &off_10004CA48,
+    &off_10004CA98);
+}
+```
+
+题目应该用到了chacha20加密算法，先了解一下。
+
+ChaCha20，ChaCha系列流密码，作为salsa密码的改良版，具有更强的抵抗密码分析攻击的特性，“20”表示该算法有20轮的加密计算。
+
+由于是流密码，故以字节为单位进行加密，安全性的关键体现在密钥流生成的过程，即所依赖的伪随机数生成器（PRNG）的强度，加密过程即是将密钥流与明文逐字节异或得到密文，反之，解密是将密文再与密钥流做一次异或运算得到明文。
+
+在生成密钥流时，首先生成ChaCha20的初始矩阵矩阵的输入为一个256位的密钥、64位随机数、64位计数器值以及4×32位的常数，它们均填充在32位整型数组中作为初始矩阵。
+
+排列方式如下：
+
+|            |            |            |            |
+| ---------- | ---------- | ---------- | ---------- |
+| 0x61707865 | 0x3320646e | 0x79622d32 | 0x6b206574 |
+| Key[0]     | Key[1]     | Key[2]     | Key[3]     |
+| Key[4]     | Key[5]     | Key[6]     | Key[7]     |
+| Counter[0] | Counter[1] | nonce[0]   | nonce[1]   |
+
+Salsa20核函数流程也是一个特征：
+
+```assembly
+#define R(a,b) (((a) << (b)) | ((a) >> (32 - (b))))
+void salsa20_word_specification(uint32 out[16],uint32 in[16]){
+    int i;
+    uint32 x[16];
+    for (i = 0;i < 16;++i) x[i] = in[i];
+    for (i = 20;i > 0;i -= 2) { // 20轮计算
+        x[ 4] ^= R(x[ 0]+x[12], 7);  x[ 8] ^= R(x[ 4]+x[ 0], 9);
+        x[12] ^= R(x[ 8]+x[ 4],13);  x[ 0] ^= R(x[12]+x[ 8],18);
+        x[ 9] ^= R(x[ 5]+x[ 1], 7);  x[13] ^= R(x[ 9]+x[ 5], 9);
+        x[ 1] ^= R(x[13]+x[ 9],13);  x[ 5] ^= R(x[ 1]+x[13],18);
+        x[14] ^= R(x[10]+x[ 6], 7);  x[ 2] ^= R(x[14]+x[10], 9);
+        x[ 6] ^= R(x[ 2]+x[14],13);  x[10] ^= R(x[ 6]+x[ 2],18);
+        x[ 3] ^= R(x[15]+x[11], 7);  x[ 7] ^= R(x[ 3]+x[15], 9);
+        x[11] ^= R(x[ 7]+x[ 3],13);  x[15] ^= R(x[11]+x[ 7],18);
+        x[ 1] ^= R(x[ 0]+x[ 3], 7);  x[ 2] ^= R(x[ 1]+x[ 0], 9);
+        x[ 3] ^= R(x[ 2]+x[ 1],13);  x[ 0] ^= R(x[ 3]+x[ 2],18);
+        x[ 6] ^= R(x[ 5]+x[ 4], 7);  x[ 7] ^= R(x[ 6]+x[ 5], 9);
+        x[ 4] ^= R(x[ 7]+x[ 6],13);  x[ 5] ^= R(x[ 4]+x[ 7],18);
+        x[11] ^= R(x[10]+x[ 9], 7);  x[ 8] ^= R(x[11]+x[10], 9);
+        x[ 9] ^= R(x[ 8]+x[11],13);  x[10] ^= R(x[ 9]+x[ 8],18);
+        x[12] ^= R(x[15]+x[14], 7);  x[13] ^= R(x[12]+x[15], 9);
+        x[14] ^= R(x[13]+x[12],13);  x[15] ^= R(x[14]+x[13],18);
+    }
+    for (i = 0;i < 16;++i)
+        out[i] = x[i] + in[i]; // 输入矩阵经过20轮的计算结果和原始矩阵相加得到最终输出
+}
+```
+
+wp说sub_10000AE14()对flag进行了逐位异或0x80，但是刚打开这个函数完全不知道异或在哪里
+
+```assembly
+__int64 __fastcall sub_10000AE14(__int128 *a1)
+{
+  __int64 v1; // x8
+  __int64 v2; // x20
+  __int64 i; // x21
+  __int128 v5; // [xsp+0h] [xbp-60h]
+  __int128 v6; // [xsp+10h] [xbp-50h] BYREF
+  __int64 v7; // [xsp+20h] [xbp-40h]
+
+  v1 = *((_QWORD *)a1 + 4);
+  v5 = *a1;
+  v6 = a1[1];
+  v7 = v1;
+  v2 = v5;
+  for ( i = v6; i; --i )
+  {
+    ++v2;
+    sub_100008EF4((__int64)&v6 + 8);
+  }
+  sub_10000F4C0((int *)0x2710, 0);
+  if ( *((_QWORD *)&v5 + 1) )
+    j_j__free((void *)v5);
+  return sub_10000B014((__int64 *)&v6 + 1);
+}
+```
+
+查看汇编也找不到"XOR"
+
+```assembly
+__text:000000010000AE14 sub_10000AE14                           ; CODE XREF: sub_100007194+80↑p
+__text:000000010000AE14
+__text:000000010000AE14 var_60          = -0x60
+__text:000000010000AE14 var_50          = -0x50
+__text:000000010000AE14 var_40          = -0x40
+__text:000000010000AE14 var_30          = -0x30
+__text:000000010000AE14 var_20          = -0x20
+__text:000000010000AE14 var_10          = -0x10
+__text:000000010000AE14
+__text:000000010000AE14 ; __unwind { // sub_10002D64C
+__text:000000010000AE14                 SUB             SP, SP, #0x60
+__text:000000010000AE18                 STP             X22, X21, [SP,#0x60+var_30]
+__text:000000010000AE1C                 STP             X20, X19, [SP,#0x60+var_20]
+__text:000000010000AE20                 STP             X29, X30, [SP,#0x60+var_10]
+__text:000000010000AE24                 LDR             X8, [X0,#0x20]
+__text:000000010000AE28                 LDP             Q1, Q0, [X0]
+__text:000000010000AE2C                 STP             Q1, Q0, [SP,#0x60+var_60]
+__text:000000010000AE30                 STR             X8, [SP,#0x60+var_40]
+__text:000000010000AE34                 LDR             X20, [SP,#0x60+var_60]
+__text:000000010000AE38                 LDR             X21, [SP,#0x60+var_50]
+__text:000000010000AE3C                 MOV             X8, SP
+__text:000000010000AE40                 ADD             X19, X8, #0x18
+__text:000000010000AE44
+__text:000000010000AE44 loc_10000AE44                           ; CODE XREF: sub_10000AE14+48↓j
+__text:000000010000AE44                 CBZ             X21, loc_10000AE60
+__text:000000010000AE48                 LDRB            W8, [X20],#1
+__text:000000010000AE4C                 EOR             W1, W8, #0xFFFFFF80
+__text:000000010000AE50                 SUB             X21, X21, #1
+__text:000000010000AE54                 MOV             X0, X19
+__text:000000010000AE58                 BL              sub_100008EF4
+__text:000000010000AE5C                 B               loc_10000AE44
+__text:000000010000AE60 ; ---------------------------------------------------------------------------
+__text:000000010000AE60
+__text:000000010000AE60 loc_10000AE60                           ; CODE XREF: sub_10000AE14:loc_10000AE44↑j
+__text:000000010000AE60                 MOV             W0, #0x2710
+__text:000000010000AE64                 MOV             W1, #0
+__text:000000010000AE68                 BL              sub_10000F4C0
+__text:000000010000AE6C                 LDR             X1, [SP,#0x60+var_60+8]
+__text:000000010000AE70                 CBZ             X1, loc_10000AE80
+__text:000000010000AE74                 LDR             X0, [SP,#0x60+var_60] ; void *
+__text:000000010000AE78                 MOV             W2, #1
+__text:000000010000AE7C                 BL              j_j__free
+__text:000000010000AE80
+__text:000000010000AE80 loc_10000AE80                           ; CODE XREF: sub_10000AE14+5C↑j
+__text:000000010000AE80                 MOV             X0, X19
+__text:000000010000AE84                 BL              sub_10000B014
+__text:000000010000AE88                 MOV             X8, SP
+__text:000000010000AE8C                 LDP             X29, X30, [SP,#0x60+var_10]
+__text:000000010000AE90                 LDP             X20, X19, [SP,#0x60+var_20]
+__text:000000010000AE94                 LDP             X22, X21, [SP,#0x60+var_30]
+__text:000000010000AE98                 ADD             SP, SP, #0x60 ; '`'
+__text:000000010000AE9C                 RET
+__text:000000010000AE9C ; End of function sub_10000AE14
+```
+
+后来对文件做了一些无用操作之后重新打开发现有了异或，然后才知道原来ARM异或的指令是"EOR"。
+
+```assembly
+__int64 __fastcall sub_10000AE14(__int128 *a1)
+{
+  __int64 v1; // x8
+  unsigned __int8 *v2; // x20
+  __int64 i; // x21
+  int v4; // t1
+  __int128 v6; // [xsp+0h] [xbp-60h]
+  __int128 v7; // [xsp+10h] [xbp-50h] BYREF
+  __int64 v8; // [xsp+20h] [xbp-40h]
+
+  v1 = *((_QWORD *)a1 + 4);
+  v6 = *a1;
+  v7 = a1[1];
+  v8 = v1;
+  v2 = (unsigned __int8 *)v6;
+  for ( i = v7; i; --i )
+  {
+    v4 = *v2++;
+    sub_100008EF4((char *)&v7 + 8, v4 ^ 0xFFFFFF80);
+  }
+  sub_10000F4C0(0x2710LL, 0LL);
+  if ( *((_QWORD *)&v6 + 1) )
+    j_j__free((void *)v6);
+  return sub_10000B014((char *)&v7 + 8);
+}
+```
+
+使用findcrypt查找下特征值
+
+```assembly
+__const:000000010003F690 salsa20_10003F690 DCB 0x65, 0x78, 0x70, 0x61, 0x6E, 0x64, 0x20, 0x33, 0x32
+__const:000000010003F690                                         ; DATA XREF: sub_1000047D8+C↑r
+__const:000000010003F690                 DCB 0x2D, 0x62, 0x79, 0x74, 0x65, 0x20, 0x6B
+```
+
+查看交叉引用
+
+```assembly
+long double __usercall sub_1000047D8@<Q0>(__int64 a1@<X0>, __int64 a2@<X1>, __int64 a3@<X8>)
+{
+  long double result; // q0
+  __int128 v4; // q1
+
+  result = *(long double *)a1;
+  v4 = *(_OWORD *)(a1 + 0x10);
+  *(_OWORD *)a3 = salsa20_10003F690;
+  *(long double *)(a3 + 0x10) = result;
+  *(_OWORD *)(a3 + 0x20) = v4;
+  *(_QWORD *)(a3 + 0x30) = 0LL;
+  *(_QWORD *)(a3 + 0x38) = a2;
+  return result;
+}
+```
+
+这个函数很重要，对chacha20密钥流进行初始化，结合本篇前面对chacha20加密过程的了解：
+
+* 0x00~0xff字节：salsa20_10003F690常数
+* 0x10~0x1f字节：result的前0x10字节，也就是a1参数的前0x10字节，chacha20加密密钥的前0x10字节。
+* 0x20~0x2f字节：v4，也就是a1参数的第二个0x10字节，chacha20加密密钥的后0x10字节。
+* 0x30~0x38字节：计数器置0
+* 0x39~0x3f字节：第二个参数的8字节，chacha20加密的nounce随机数。
+
+继续查看交叉引用，寻找密钥和nounce
+
+```assembly
+__int64 __fastcall sub_10000AB4C(__int128 *a1)
+{
+  __int128 v1; // q1
+  unsigned __int8 v2; // w1
+  char v3; // w0
+  unsigned __int8 v4; // w19
+  __int64 v5; // x1
+  char *v6; // x20
+  __int64 v7; // x21
+  __int128 v9; // [xsp+0h] [xbp-150h] BYREF
+  __int128 v10; // [xsp+10h] [xbp-140h] BYREF
+  void *v11; // [xsp+20h] [xbp-130h] BYREF
+  __int64 v12; // [xsp+28h] [xbp-128h]
+  __int64 v13; // [xsp+30h] [xbp-120h]
+  __int64 v14[2]; // [xsp+38h] [xbp-118h] BYREF
+  __int128 v15; // [xsp+48h] [xbp-108h]
+  __int128 v16; // [xsp+58h] [xbp-F8h]
+  __int128 v17; // [xsp+68h] [xbp-E8h]
+  __int128 v18; // [xsp+78h] [xbp-D8h]
+  __int128 v19; // [xsp+88h] [xbp-C8h]
+  __int128 v20; // [xsp+98h] [xbp-B8h]
+  __int128 v21; // [xsp+A8h] [xbp-A8h]
+  __int128 v22; // [xsp+B8h] [xbp-98h]
+  char v23; // [xsp+C8h] [xbp-88h]
+  __int128 v24[4]; // [xsp+D0h] [xbp-80h] BYREF
+
+  v1 = a1[1];
+  v9 = *a1;
+  v10 = v1;
+  v12 = 0LL;
+  v13 = 0LL;
+  v11 = (void *)1;
+  while ( 1 )
+  {
+    sub_100009318((__int64)&v9);
+    if ( (v3 & 1) != 0 )
+      sub_10003D3D4(
+        (__int64)"called `Result::unwrap()` on an `Err` value/Users/HAHAH/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0"
+                 "cd06fb9b8/cipher-0.3.0/src/stream.rssrc/main.rsprintf_llvm_version_printf_cargoY\n"
+                 "N\n"
+                 "LoopError",
+        0x2BLL,
+        (__int64)v24,
+        (__int64)&off_10004CA48,
+        (__int64)&off_10004CA80);
+    v4 = v2;
+    if ( v2 == 0x8A )
+      break;
+    v5 = v13;
+    if ( v12 == v13 )
+    {
+      sub_10003A910((__int64 *)&v11, v13, 1LL);
+      v5 = v13;
+    }
+    *((_BYTE *)v11 + v5) = v4;
+    ++v13;
+  }
+  v6 = (char *)v11;
+  v7 = v13;
+  sub_1000047D8("printf_llvm_version_printf_cargoY\nN\nLoopError", 0x312E315F6E6F6973LL);
+  v15 = v24[0];
+  v16 = v24[1];
+  v17 = v24[2];
+  v18 = v24[3];
+  v19 = 0u;
+  v20 = 0u;
+  v21 = 0u;
+  v22 = 0u;
+  v23 = 0;
+  v14[0] = 0LL;
+  v14[1] = 0x7265765F00000000LL;
+  if ( (unsigned int)sub_100009D8C(v14, v6, v7) )
+    sub_10003D3D4(
+      (__int64)"called `Result::unwrap()` on an `Err` value/Users/HAHAH/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd"
+               "06fb9b8/cipher-0.3.0/src/stream.rssrc/main.rsprintf_llvm_version_printf_cargoY\n"
+               "N\n"
+               "LoopError",
+      0x2BLL,
+      (__int64)v24,
+      (__int64)&off_10004CA08,
+      (__int64)&off_10004CA68);
+  while ( v7 )
+  {
+    ++v6;
+    --v7;
+    sub_100008EF4((__int64)&v10);
+  }
+  sub_10000F4C0((int *)0x2710, 0);
+  if ( v12 )
+    j_j__free(v11);
+  sub_1000098A4(&v9);
+  if ( (_QWORD)v9 == 2LL )
+  {
+    if ( atomic_fetch_add_explicit(*((atomic_ullong *volatile *)&v9 + 1), 0xFFFFFFFFFFFFFFFFLL, memory_order_release) == 1 )
+    {
+      __dmb(9u);
+      sub_100008D18((char *)&v9 + 8);
+    }
+  }
+  else if ( (_QWORD)v9 == 1LL )
+  {
+    if ( atomic_fetch_add_explicit(*((atomic_ullong *volatile *)&v9 + 1), 0xFFFFFFFFFFFFFFFFLL, memory_order_release) == 1 )
+    {
+      __dmb(9u);
+      sub_100008958((char *)&v9 + 8);
+    }
+  }
+  else if ( (_QWORD)v9 )
+  {
+    if ( atomic_fetch_add_explicit(*((atomic_ullong *volatile *)&v9 + 1), 0xFFFFFFFFFFFFFFFFLL, memory_order_release) == 1 )
+    {
+      __dmb(9u);
+      sub_10000870C((char *)&v9 + 8);
+    }
+  }
+  else if ( atomic_fetch_add_explicit(*((atomic_ullong *volatile *)&v9 + 1), 0xFFFFFFFFFFFFFFFFLL, memory_order_release) == 1 )
+  {
+    __dmb(9u);
+    sub_100008C50((char *)&v9 + 8);
+  }
+  return sub_10000B014(&v10);
+}
+```
+
+这是程序的另一个线程，接收异或0x80后的flag，接收到138，也就是回车xor 0x80后，退出接收循环，进入chacha20加密。
+
+看sub_1000047D8()chacha20加密的初始化函数，但是ida识别似乎出现了问题，只有两个参数，但是不影响我们分析：
+
+* 第一个参数为加密密钥："printf_llvm_version_printf_cargo"
+* 第二个参数为随机数：0x312E315F6E6F6973
+
+结合本片最开始看到的一串可疑数字和引用的函数中的代码
+
+```assembly
+if ( *(_QWORD *)v9 ^ *(_QWORD *)v3 | *(_QWORD *)(v9 + 8) ^ *((_QWORD *)v3 + 1) | *(_QWORD *)(v9 + 0x10) ^ *((_QWORD *)v3 + 2) | *(_QWORD *)(v9 + 0x18) ^ *((_QWORD *)v3 + 3) | *(_QWORD *)(v9 + 0x20) ^ *((_QWORD *)v3 + 4) | (unsigned __int16)(*(_WORD *)(v9 + 0x28) ^ *((_WORD *)v3 + 0x14)) )
+{
+    *(_QWORD *)&v14 = &off_10004CAC0;
+    *((_QWORD *)&v14 + 1) = 1LL;
+    v15 = 0LL;
+    v16 = 0LL;
+    v17 = &unk_10003FE78;
+    v18 = 0LL;
+    sub_10000C51C(&v14);
+}
+else
+{
+    *(_QWORD *)&v14 = &off_10004CAB0;
+    *((_QWORD *)&v14 + 1) = 1LL;
+    v15 = 0LL;
+    v16 = 0LL;
+    v17 = &unk_10003FE78;
+    v18 = 0LL;
+    sub_10000C51C(&v14);
+}
+```
+
+if语句将chacha20加密的结果与那串数字进行比较。
+
+google一下rust的[chacha20库](https://docs.rs/chacha20/0.7.3/chacha20/)，得到一个示例，可以用来参考：
+
+```assembly
+use chacha20::{ChaCha20, Key, Nonce};
+use chacha20::cipher::{NewCipher, StreamCipher, StreamCipherSeek};
+
+let mut data = [1, 2, 3, 4, 5, 6, 7];
+
+let key = Key::from_slice(b"an example very very secret key.");
+let nonce = Nonce::from_slice(b"secret nonce");
+
+// create cipher instance
+let mut cipher = ChaCha20::new(&key, &nonce);
+
+// apply keystream (encrypt)
+cipher.apply_keystream(&mut data);
+assert_eq!(data, [73, 98, 234, 202, 73, 143, 0]);
+
+// seek to the keystream beginning and apply it again to the `data` (decrypt)
+cipher.seek(0);
+cipher.apply_keystream(&mut data);
+assert_eq!(data, [1, 2, 3, 4, 5, 6, 7]);
+```
+
+编写逆向脚本：
+
+```assembly
+use chacha20::{ChaCha20, Key, Nonce};
+use chacha20::cipher::{NewCipher, StreamCipher, StreamCipherSeek};
+
+fn main() {
+    let mut data = [249u8, 115, 69, 5, 196, 159, 163, 213, 135, 95, 4, 149, 29, 223, 136, 114, 110, 1, 230, 35, 103, 186, 95, 213, 45, 187, 218, 114, 19, 231, 25, 230, 177, 16, 32, 218, 246, 216, 196, 186, 145, 179];
+    let key = Key::from_slice(b"printf_llvm_version_printf_cargo");
+    let nonce = Nonce::from_slice(b"_version_1.1");
+
+    let mut cipher = ChaCha20::new(&key, &nonce);
+    cipher.apply_keystream(&mut data);
+    let mut flag = Vec::new();
+    for i in data.iter() {
+        flag.push(i ^ 0x80);
+    }
+    println!("{}",String::from_utf8(flag).unwrap());
+}
+```
+
+flag{bc1a533c-74a9-4778-9489-69ae8bb692ea}

