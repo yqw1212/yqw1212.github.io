@@ -1,0 +1,808 @@
+---
+layout: post
+title:  BabySmc
+date:   2021-09-14 00:01:01 +0300
+image:  2021-09-14-woman.jpg
+tags:   [ctf,reverse,smc,羊城杯2021]
+---
+
+ida查看main函数
+
+```assembly
+// positive sp value has been detected, the output may be wrong!
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // rdx
+  __int64 v4; // rcx
+  __int64 v5; // r8
+  __int64 v6; // r9
+  __int64 v8; // [rsp-1A8h] [rbp-370h]
+  __int64 v9; // [rsp-1A0h] [rbp-368h]
+  __int64 v10; // [rsp-198h] [rbp-360h]
+  __int64 v11; // [rsp-190h] [rbp-358h]
+  __int64 v12; // [rsp-188h] [rbp-350h]
+  __int64 v13; // [rsp-180h] [rbp-348h]
+  __int64 v14; // [rsp-178h] [rbp-340h]
+  __int64 v15; // [rsp-170h] [rbp-338h]
+  __int64 v16; // [rsp-168h] [rbp-330h]
+  __int64 v17; // [rsp-160h] [rbp-328h]
+  __int64 v18; // [rsp-158h] [rbp-320h]
+  __int64 v19; // [rsp-150h] [rbp-318h]
+  __int64 v20; // [rsp-148h] [rbp-310h]
+  __int64 v21; // [rsp-140h] [rbp-308h]
+  __int64 v22; // [rsp-138h] [rbp-300h]
+  __int64 v23; // [rsp-130h] [rbp-2F8h]
+  __int64 v24; // [rsp-128h] [rbp-2F0h]
+  __int64 v25; // [rsp-120h] [rbp-2E8h]
+  __int64 v26; // [rsp-118h] [rbp-2E0h]
+  __int64 v27; // [rsp-110h] [rbp-2D8h]
+  __int64 v28; // [rsp-108h] [rbp-2D0h]
+  __int64 v29; // [rsp-100h] [rbp-2C8h]
+  __int64 v30; // [rsp-F8h] [rbp-2C0h]
+  __int64 v31; // [rsp-F0h] [rbp-2B8h]
+  __int64 v32; // [rsp-E8h] [rbp-2B0h]
+  __int64 v33; // [rsp-E0h] [rbp-2A8h]
+  __int64 v34; // [rsp-D8h] [rbp-2A0h]
+  __int64 v35; // [rsp-D0h] [rbp-298h]
+  __int64 v36; // [rsp-C8h] [rbp-290h]
+  __int64 v37; // [rsp-C0h] [rbp-288h]
+  __int64 v38; // [rsp-B8h] [rbp-280h]
+  __int64 v39; // [rsp-B0h] [rbp-278h]
+  __int64 v40; // [rsp-A8h] [rbp-270h]
+  __int64 v41; // [rsp-A0h] [rbp-268h]
+  __int64 v42; // [rsp-98h] [rbp-260h]
+  __int64 v43; // [rsp-90h] [rbp-258h]
+  __int64 v44; // [rsp-88h] [rbp-250h]
+  __int64 v45; // [rsp-80h] [rbp-248h]
+  __int64 v46; // [rsp-78h] [rbp-240h]
+  __int64 v47; // [rsp-70h] [rbp-238h]
+  __int64 v48; // [rsp-68h] [rbp-230h]
+  __int64 v49; // [rsp-60h] [rbp-228h]
+  __int64 v50; // [rsp-58h] [rbp-220h]
+  __int64 v51; // [rsp-50h] [rbp-218h]
+  __int128 v52; // [rsp-48h] [rbp-210h] BYREF
+  __int128 v53; // [rsp-38h] [rbp-200h]
+  __int128 v54; // [rsp-28h] [rbp-1F0h]
+  __int64 v55; // [rsp-18h] [rbp-1E0h]
+  __int64 v56; // [rsp-10h] [rbp-1D8h]
+  __int64 v57; // [rsp-8h] [rbp-1D0h]
+
+  ((void (__fastcall *)(_QWORD, _QWORD, const char **))sub_140001EB0)(0i64, 0i64, envp);
+  v52 = 0i64;
+  v53 = 0i64;
+  v54 = 0i64;
+  ((void (__fastcall *)(const char *))sub_140001D40)("Input Your Flag : ");
+  sub_140001DC0("%46s", (const char *)&v52);
+  lpAddress = byte_140001085;
+  qword_14002AD88 = (__int64)&loc_140001D00;
+  ((void (__stdcall *)(__int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, __int64, _QWORD, _QWORD, _QWORD, _QWORD, _QWORD, _QWORD, __int64, __int64, __int64))sub_140001E30)(
+    v4,
+    v3,
+    v5,
+    v6,
+    v8,
+    v9,
+    v10,
+    v11,
+    v12,
+    v13,
+    v14,
+    v15,
+    v16,
+    v17,
+    v18,
+    v19,
+    v20,
+    v21,
+    v22,
+    v23,
+    v24,
+    v25,
+    v26,
+    v27,
+    v28,
+    v29,
+    v30,
+    v31,
+    v32,
+    v33,
+    v34,
+    v35,
+    v36,
+    v37,
+    v38,
+    v39,
+    v40,
+    v41,
+    v42,
+    v43,
+    v44,
+    v45,
+    v46,
+    v47,
+    v48,
+    v49,
+    v50,
+    v51,
+    v52,
+    *((_QWORD *)&v52 + 1),
+    v53,
+    *((_QWORD *)&v53 + 1),
+    v54,
+    *((_QWORD *)&v54 + 1),
+    v55,
+    v56,
+    v57);
+  JUMPOUT(0x140001085i64);
+}
+```
+
+查看byte_140001085
+
+```assembly
+.text:0000000140001085 byte_140001085  db 17h, 0D2h, 0DAh      ; DATA XREF: main:loc_140001064↑o
+.text:0000000140001088                 dq 0AA4DD4ADAAE1D2D2h, 0F029AA4D53F2F029h, 52F2F029AA4DD3F2h
+.text:0000000140001088                 dq 95CE90F2F229AA4Dh, 44A6FA52AACD79D0h, 0DA446EBA52AAD2DAh
+.text:0000000140001088                 dq 0D2DA44D77A52AAD2h, 0AAD2DA449F3A52AAh, 0AAD2D2DAD0F3F65Ah
+.text:0000000140001088                 dq 0AAD2D2DA50F3B65Ah, 0AAD2D2DAD1F3765Ah, 90D2D2DA51F3365Ah
+.text:0000000140001088                 dq 90D2D2DAD6F376BEh, 0AAE155C5CE905C9Eh, 0AAE1C271AAE1D4ADh
+.text:0000000140001088                 dq 0AA954CAADDCED46Ch, 90549E908A79D437h, 90D2D2429B955CCAh
+.text:0000000140001088                 dq 8787878787878F27h, 90E56D90DC9E9087h, 0AD5C906D9E90649Eh
+.text:0000000140001088                 dq 4BF8D2D28287F6AAh, 4BF8D2D2D2DA179Ch, 0FAA5DC90444BF8D4h
+.text:0000000140001148                 db 0AAh, 0F6h, 44h, 9Ah, 2 dup(0D2h)
+.text:0000000140001148 ; } // starts at 140001064
+.text:000000014000114E ; __unwind { // __GSHandlerCheck
+.text:000000014000114E byte_14000114E  db 90h                  ; DATA XREF: .pdata:000000014002D00C↓o
+.text:000000014000114E                                         ; .pdata:000000014002D018↓o
+.text:000000014000114F                 db 9Eh
+.text:0000000140001150                 dq 93F3F19EB053F330h, 0D4C998D3F3B19EB0h, 0F2B727AAF044C998h
+.text:0000000140001150                 dq 0D8B59EF8D2D2DAD6h, 0B8CAFDCED8C235DCh, 0DEF23627AAF0F5C9h
+.text:0000000140001150                 dq 0AAF2FDDCD8D2D2DAh, 0E0D2D2DAC6F23627h, 0D8D2D2DAD0F3F786h
+.text:0000000140001150                 dq 0D072F196F0E775D6h, 0D8F235DCD8349EF8h, 0C9B8B58AF8AACDCEh
+.text:0000000140001150                 dq 0F786E0C2CDDCD8BDh, 3C9ED8D2D2DAD0B3h, 0CF75D6D8E23DDCD8h
+.text:0000000140001150                 dq 0C9B82BCDCE3C8AF8h, 86E0D872F196F00Ch, 0D6D8D2D2DAD032F7h
+.text:0000000140001150                 dq 0F0C072F196F09F75h, 0D2D2DACEF2F727AAh, 0D8C23DDCD8FD9EF8h
+.text:0000000140001150                 dq 86F0BDC9B8CAF5CEh, 0D6D8D2D2DAD03236h, 0E0C8723096F0B74Dh
+.text:0000000140001150                 dq 0F0D2D2DAD0B3B786h, 0D2D2DAF6F23627AAh, 72B196F0E77DD6D8h
+.text:0000000140001150                 dq 0F2F5DCD83C9EF8F0h, 0F23DDCD8AACDCED8h, 27AAF5C9B8FD8AF8h
+.text:0000000140001150                 dq 0DCD8D2D2DAFEF236h, 0DAD0F3B786E0C2CDh, 35DCD8349ED8D2D2h
+.text:0000000140001150                 dq 348AF8CF7DD6D8E2h, 96F00CC9B82BCDCEh, 0F2B727AAF0F872B1h
+.text:0000000140001150                 dq 32F786E0D2D2DAE6h, 9F75D6D8D2D2DAD0h, 0B59EF8E072F196F0h
+.text:0000000140001150                 dq 0CAFDCED8C235DCD8h, 0D0323686F0F5C9B8h, 0F0B74DD6D8D2D2DAh
+.text:0000000140001150                 dq 0F3F786E0E8723096h, 3627AAF0D2D2DAD0h, 75D6D8D2D2DAEEF2h
+.text:0000000140001150                 dq 9EF89072F196F0E7h, 0CDCED8F2FDDCD834h, 0B58AF8F235DCD8AAh
+.text:0000000140001150                 dq 96F23627AABDC9B8h, 0E0C2CDDCD8D2D2DAh, 0D8D2D2DAD0B3F786h
+.text:0000000140001150                 dq 0D6D8E23DDCD83C9Eh, 2BCDCE3C8AF8CF75h, 9872F196F00CC9B8h
+.text:0000000140001150                 dq 0D2D2DAD032F786E0h, 72F196F09F75D6D8h, 0DA9EF2F727AAF080h
+.text:0000000140001150                 dq 3DDCD8FD9EF8D2D2h, 0BDC9B8CAF5CED8C2h, 0D2D2DAD0323686F0h
+.text:0000000140001150                 dq 723096F0B74DD6D8h, 0D2DAD0B3B786E088h, 0DA86F23627AAF0D2h
+.text:0000000140001150                 dq 96F0E77DD6D8D2D2h, 0DCD83C9EF8B072B1h, 0DCD8AACDCED8F2F5h
+.text:0000000140001150                 dq 0F5C9B8FD8AF8F23Dh, 0D2D2DA8EF23627AAh, 86E056E1C2CDDCD8h
+.text:0000000140001150                 dq 9ED8D2D2DAD0F3B7h, 7DD6D8E235DCD834h, 0B82BCDCE348AF8CFh
+.text:0000000140001150                 dq 0F0B872B196F00CC9h, 0D2D2DAB6F2B727AAh, 0D2D2DAD032F786E0h
+.text:0000000140001150                 dq 0F0D22AAA9F75D6D8h, 0D8B59EF8A072F196h, 0B8CAFDCED8C235DCh
+.text:0000000140001150                 dq 0DAD0323686F0F5C9h, 96F0B74DD6D8D2D2h, 0F786E056E1A87230h
+.text:0000000140001150                 dq 27AAF0D2D2DAD0F3h, 0D6D8D2D2DABEF236h, 0F85072F196F0E775h
+.text:0000000140001150                 dq 0CED8F2FDDCD8349Eh, 8AF8F235DCD8AACDh, 0F23627AABDC9B8B5h
+.text:0000000140001150                 dq 0C2CDDCD8D2D2DAA6h, 0D2D2DAD0B3F786E0h, 0D8E23DDCD83C9ED8h
+.text:0000000140001150                 dq 0CDCE3C8AF8CF75D6h, 72F196F00CC9B82Bh, 0D2DAD032F786E058h
+.text:0000000140001150                 dq 0F196F09F75D6D8D2h
+.text:0000000140001440 qword_140001440 dq 0AEF2F727AAF04072h, 0DCD8FD9EF8D2D2DAh, 0C9B8CAF5CED8C23Dh
+.text:0000000140001440                                         ; DATA XREF: .rdata:0000000140028D98↓o
+.text:0000000140001440                 dq 0D2DAD0323686F0BDh
+.text:0000000140001460 qword_140001460 dq 3096F0B74DD6D8D2h, 0DAD0B3B786E04872h, 56F23627AAF0D2D2h
+.text:0000000140001460                                         ; DATA XREF: .rdata:0000000140028DBC↓o
+.text:0000000140001460                 dq 0F0E77DD6D8D2D2DAh, 0D83C9EF87072B196h, 0D8AACDCED8F2F5DCh
+.text:0000000140001460                 dq 0C9B8FD8AF8F23DDCh, 0D2DA5EF23627AAF5h, 0B786E0C2CDDCD8D2h
+.text:0000000140001460                 dq 349ED8D2D2DAD0F3h, 0CF7DD6D8E235DCD8h, 0C9B82BCDCE348AF8h
+.text:0000000140001460                 dq 0AAF07872B196F00Ch, 0E0D2D2DA46F2B727h, 0D8D2D2DAD032F786h
+.text:0000000140001460                 dq 6072F196F09F75D6h, 0D8C235DCD8B59EF8h, 86F0F5C9B8CAFDCEh
+.text:0000000140001460                 dq 0D6D8D2D2DAD03236h, 0E068723096F0B74Dh, 0F0D2D2DAD0F3F786h
+.text:0000000140001460                 dq 0D2D2DA4EF23627AAh, 72F196F0E775D6D8h, 0F2FDDCD8349EF810h
+.text:0000000140001460                 dq 0F235DCD8AACDCED8h, 27AABDC9B8B58AF8h, 0DCD8D2D2DA76F236h
+.text:0000000140001460                 dq 0DAD0B3F786E0C2CDh, 3DDCD83C9ED8D2D2h, 3C8AF8CF75D6D8E2h
+.text:0000000140001460                 dq 96F00CC9B82BCDCEh, 0D032F786E01872F1h, 0F09F75D6D8D2D2DAh
+.text:0000000140001460                 dq 0F727AAF00072F196h, 0FD9EF8D2D2DA7EF2h, 0CAF5CED8C23DDCD8h
+.text:0000000140001460                 dq 0D0323686F0BDC9B8h, 56B74DD6D8D2D2DAh, 0B786E008723096F0h
+.text:0000000140001460                 dq 27AAF0D2D2DAD0B3h, 0D6D8D2D2DA66F236h, 0F83072B196F0E77Dh
+.text:0000000140001460                 dq 0CED8F2F5DCD83C9Eh, 8AF8F23DDCD8AACDh, 0F23627AAF5C9B8FDh
+.text:0000000140001460                 dq 0C2CDDCD8D2D2DA6Eh, 0D2D2DAD0F3B786E0h, 0D8E235DCD8349ED8h
+.text:0000000140001460                 dq 0CDCE348AF8CF7DD6h, 72B196F00CC9B82Bh, 0DA16F2B727AAF038h
+.text:0000000140001460                 dq 0F786E0D22AAAD2D2h, 75D6D8D2D2DAD032h, 9EF82072F196F09Fh
+.text:0000000140001460                 dq 0FDCED8C235DCD8B5h, 323686F0F5C9B8CAh, 0B74DD6D8D2D2DAD0h
+.text:0000000140001460                 dq 56E128723096F056h, 0D2D2DAD0F3F786E0h, 0D2DA1EF23627AAF0h
+.text:0000000140001460                 dq 0F196F0E775D6D8D2h, 0FDDCD8349EF8D172h, 35DCD8AACDCED8F2h
+.text:0000000140001460                 dq 0AABDC9B8B58AF8F2h, 0D8D2D2DA06F23627h, 0F786E056E1C2CDDCh
+.text:0000000140001460                 dq 3C9ED8D2D2DAD0B3h, 0CF75D6D8E23DDCD8h, 0C9B82BCDCE3C8AF8h
+.text:0000000140001460                 dq 86E0D972F196F00Ch, 0D6D8D2D2DAD032F7h, 0AAC172F196F09F75h
+.text:0000000140001460                 dq 0EF2F727AAF0D22Ah, 0DCD8FD9EF8D2D2DAh, 0C9B8CAF5CED8C23Dh
+.text:0000000140001460                 dq 0DAD0323686F056BDh, 56E1B74DD6D8D2D2h, 0B786E0C9723096F0h
+.text:0000000140001460                 dq 27AAF0D2D2DAD0B3h, 0D6D8D2D2DA36F236h, 0F172B196F056E77Dh
+.text:0000000140001460                 dq 0D8F2F5DCD83C9EF8h, 0F8F23DDCD8AACDCEh, 3627AAF5C9B8FD8Ah
+.text:0000000140001460                 dq 0CDDCD8D2D2DA3EF2h, 0B786E0D2D02AAAC2h, 349ED8D2D2DAD0F3h
+.text:0000000140001460                 dq 0CF7DD6D8E235DCD8h, 0C9B82BCDCE348AF8h, 2AAAF972B196F00Ch
+.text:0000000140001460                 dq 26F2B727AAF0D2D0h, 0D032F786E0D2D2DAh, 0F09F75D6D8D2D2DAh
+.text:0000000140001460                 dq 0D8B59EF8E172F196h, 0B8CAFDCED8C235DCh, 0DAD0323686F0F5C9h
+.text:0000000140001460                 dq 2AAAB74DD6D8D2D2h, 86E0E9723096F0D2h, 0AAF0D2D2DAD0F3F7h
+.text:0000000140001460                 dq 0D8D2D2DA2EF23627h, 96F0D22AAAE775D6h, 0DCD8349EF89172F1h
+.text:0000000140001460                 dq 0DCD8AACDCED8F2FDh, 0BDC9B8B58AF8F235h, 0DAD7F23627AA56E1h
+.text:0000000140001460                 dq 86E0C2CDDCD8D2D2h, 9ED8D2D2DAD0B3F7h, 75D6D8E23DDCD83Ch
+.text:0000000140001460                 dq 0B82BCDCE3C8AF8CFh, 0AA9972F196F00CC9h, 0DAD032F786E0D22Ah
+.text:0000000140001460                 dq 96F09F75D6D8D2D2h, 0F2F727AAF08172F1h, 0D8FD9EF8D2D2DADFh
+.text:0000000140001460                 dq 0B8CAF5CED8C23DDCh, 323686F056E1BDC9h, 0B74DD6D8D2D2DAD0h
+.text:0000000140001460                 dq 86E05689723096F0h, 0AAF0D2D2DAD0B3B7h, 0D8D2D2DAC7F23627h
+.text:0000000140001460                 dq 0B172B196F0E77DD6h, 0D8F2F5DCD83C9EF8h, 0F8F23DDCD8AACDCEh
+.text:0000000140001460                 dq 0D22AAAF5C9B8FD8Ah, 0D2D2DACFF23627AAh, 0F3B786E0C2CDDCD8h
+.text:0000000140001460                 dq 0D8349ED8D2D2DAD0h, 0F8CF7DD6D8E235DCh, 0CC9B82BCDCE348Ah
+.text:0000000140001460                 dq 56E1B972B196F056h, 0D2DAF7F2B727AAF0h, 0D2DAD032F786E0D2h
+.text:0000000140001460                 dq 0F196F09F75D6D8D2h, 35DCD8B59EF8A172h, 0F5C9B8CAFDCED8C2h
+.text:0000000140001460                 dq 0D2D2DAD0323686F0h, 96F056E1B74DD6D8h, 0D0F3F786E0A97230h
+.text:0000000140001460                 dq 0F23627AAF0D2D2DAh, 0E775D6D8D2D2DAFFh, 349EF85172F196F0h
+.text:0000000140001460                 dq 0AACDCED8F2FDDCD8h, 0B8B58AF8F235DCD8h, 0DAE7F23627AABDC9h
+.text:0000000140001460                 dq 86E0C2CDDCD8D2D2h, 9ED8D2D2DAD0B3F7h, 75D6D8E23DDCD83Ch
+.text:0000000140001460                 dq 0B82BCDCE3C8AF8CFh, 0AA5972F196F00CC9h, 0D032F786E0D2D02Ah
+.text:0000000140001460                 dq 0AA9F75D6D8D2D2DAh, 4172F196F0D2D02Ah, 0D2DAEFF2F727AAF0h
+.text:0000000140001460                 dq 0C23DDCD8FD9EF8D2h, 0F0BDC9B8CAF5CED8h, 0D8D2D2DAD0323686h
+.text:0000000140001460                 dq 49723096F0B74DD6h, 0D2D2DAD0B3B786E0h, 0D2DA97F23627AAF0h
+.text:0000000140001460                 dq 0B196F0E77DD6D8D2h, 0F5DCD83C9EF87172h, 3DDCD8AACDCED8F2h
+.text:0000000140001460                 dq 0AAF5C9B8FD8AF8F2h, 0E1D2D2DA9FF23627h, 0D2DAD0F3B786E056h
+.text:0000000140001460                 dq 0B196F0CF7DD6D8D2h, 2BCDCE349ED87972h, 0D8DC2DD8C2CDDCD8h
+.text:0000000140001460                 dq 0F853D4CED8E235DCh, 0C9B8D0C4CED8348Ah, 0D2DAD032B786F00Ch
+.text:0000000140001460                 dq 0F23627AAD22AAAD2h, 0B77DD6D8D2D2DA87h, 0F786E06972B196F0h
+.text:0000000140001460                 dq 0C9ED8D2D2DAD032h, 0B8CACDCEC20DDCD8h, 56E19F75D6D80CC9h
+.text:0000000140001460                 dq 0D2DA8FF2B727AAF0h, 72F196F0F2CDDCD2h, 0D2DAD0323686E061h
+.text:0000000140001460                 dq 3096F0E74DD6D8D2h, 0DDCD88D9EF81172h, 0C8AD8AAFDCED8F2h
+.text:0000000140001460                 dq 27AAF056E10CC990h, 0DCD8D2D2DAB7F2F7h, 0DAD0323686F0C2FDh
+.text:0000000140001460                 dq 0E20DDCCD9EF0D2D2h, 0D88D8AF0CF4DD6D8h, 96F0BDC9B82BF5CEh
+.text:0000000140001460                 dq 0F23627AAF0197230h, 0B33686C0D2D2DABFh, 0D83C9EF8D2D2DAD0h
+.text:0000000140001460                 dq 0C9B89F4DD6C23DDCh, 723096CACDCED8BDh, 0D2DAD0F33686C001h
+.text:0000000140001460                 dq 9723096B74DD6D2h, 0F23627AAD2D02AAAh, 0B3F786E0D2D2DAA7h
+.text:0000000140001460                 dq 0D83C9ED8D2D2DAD0h, 0DCD8AACDCEF2CDDCh, 27AAE775D6D8F23Dh
+.text:0000000140001460                 dq 8AF8D2D2DAAFF2F6h, 0DC2BD5CEFC9ED83Ch, 8AD8E23DDCD8C2CDh
+.text:0000000140001460                 dq 0F00CC9900CC9B83Ch, 32F786E03172F196h, 323686F0D2D2DAD0h
+.text:0000000140001460                 dq 0CF75D6D8D2D2DAD0h, 0D8D2D2DAD0F23686h, 2AAAB74DD69F4DD6h
+.text:0000000140001460                 dq 0F03972F196F0D2D0h, 2972309621723096h, 2D6570C6AAA40BB0h
+.text:0000000140001460                 dq 308E90F2DDDCD82Dh, 0B093F3F18EB053F3h, 0DAD8BED8D3F3B18Eh
+.text:0000000140001460 ; } // starts at 14000114E
+.text:0000000140001B20 ; __unwind { // __GSHandlerCheck
+.text:0000000140001B20 qword_140001B20 dq 0C9B8D0B2BEF0942Dh, 0D2A7CEAAEC0B909Ch, 0D6B2F627AAE0D2D2h
+.text:0000000140001B20                                         ; DATA XREF: .pdata:000000014002D018↓o
+.text:0000000140001B20                                         ; .pdata:000000014002D024↓o
+.text:0000000140001B20                 dq 0DCD8CC9EF8D2D2DAh, 0D2D2D2FE72BEC20Dh, 0CAD5CED80CC9B8D2h
+.text:0000000140001B20                 dq 27AAC0D42D44C990h, 0DCD8D2D2DADEB277h, 0DAD0323686E0F2D5h
+.text:0000000140001B20                 dq 96F0E74DD6D8D2D2h, 0DCD84D9ED8D07230h, 0CC8AF8AAE5CEF20Dh
+.text:0000000140001B20                 dq 0B27627AAE0D4C9B8h, 0CADCCE98D2D2DAC6h, 0D0F23686E0C2E5DCh
+.text:0000000140001B20                 dq 0DCD8549EF8D2D2DAh, 8AD82BC5CED8E215h, 65C990CF4DD6D855h
+.text:0000000140001B20                 dq 0F686F0D8723096F0h, 7786C0D2D2DAD073h, 55D6D8D2D2DAD072h
+.text:0000000140001B20                 dq 0F096F0B765D6D09Fh, 90C8727196D0C072h, 2D2D2D40C6AAEC0Bh
+.text:0000000140001B20                 dq 90948B9029F2BE90h, 7786D0A079DA1DCEh, 5596D0D2D2DAD6F2h
+.text:0000000140001B20                 dq 0D0C215D4CAE5D6D0h, 0F05427AA90F2E5D4h, 5BC037F0E4E467AAh
+.text:0000000140001B20                 dq 72B68673C837F0E4h, 0F2B686E0D2D2DAD0h, 0D8E75DD6D2D2DAD0h
+.text:0000000140001B20                 dq 0F0D037B096CF5DD6h, 0F037F0E4D837B096h, 79C21DCE90198DD2h
+.text:0000000140001B20                 dq 0D2DAD6F27727AAA1h, 0DADEF2B627AAF0D2h, 0F0CAE5CE559ED2D2h
+.text:0000000140001B20                 dq 0DDCED8F2E5DC9C9Eh, 8AC215DCF21DDCAAh, 0D865C990D4C9905Dh
+.text:0000000140001B20                 dq 0D0B27686E0C2DDDCh, 0DAD0F27686D2D2DAh, 86F09F45D6D8D2D2h
+.text:0000000140001B20                 dq 45D6D2D2DAD073F6h, 377096CF55D6D8E7h, 96F0D837F096F0D0h
+.text:0000000140001B20                 dq 73C837F0E4C03770h, 0E4FA8DD2F037F0E4h, 3C7BBE90D2D037F0h
+.text:0000000140001B20                 dq 0D0F331BE90D2DAE4h, 44F6327962036A86h, 0DA6003DA68867271h
+.text:0000000140001B20                 dq 0CE90C2ECCE905279h, 0D44BC57944F6C2E4h, 0FEDA94CED40AFA8Dh
+.text:0000000140001B20                 dq 0D2DAE4DD7ABE90D4h, 90D2DAE4DDBABE90h, 0D2D2D2D09584F0AAh
+.text:0000000140001D00 ; -----------------------------------------------------
+```
+
+可以看到这段代码被加密了，寻找解密函数
+
+sub_140001E30
+
+```assembly
+BOOL sub_140001E30()
+{
+  _BYTE *v0; // r9
+  __int64 v1; // rdx
+  DWORD flOldProtect; // [rsp+20h] [rbp-8h] BYREF
+
+  VirtualProtect(lpAddress, qword_14002AD88 - (_QWORD)lpAddress, 0x40u, &flOldProtect);
+  v0 = lpAddress;
+  v1 = qword_14002AD88;
+  if ( (unsigned __int64)lpAddress < qword_14002AD88 )
+  {
+    do
+    {
+      *v0 = __ROR1__(*v0, 3) ^ 0x5A;
+      ++v0;
+      v1 = qword_14002AD88;
+    }
+    while ( (unsigned __int64)v0 < qword_14002AD88 );
+    v0 = lpAddress;
+  }
+  return VirtualProtect(v0, v1 - (_QWORD)v0, flOldProtect, &flOldProtect);
+}
+```
+
+写一段idac脚本解密
+
+```assembly
+auto start=0x140001085, i,tmp;
+for(i=start; i<0x140001D00; i++){
+    tmp=Byte(i);
+    tmp = (tmp&0x07)<<5 | (tmp&0xf8)>>3;
+    PatchByte(i, tmp ^ 0x5A);
+}
+```
+
+得到解密后的代码
+
+这里有一点要注意！
+
+main函数的结尾应该在0x140001D37的retn处，而不是0x140001D3E处。
+
+```assembly
+.text:0000000140001D00 loc_140001D00:                          ; DATA XREF: main+72↑o
+.text:0000000140001D00                 lea     rcx, aPause     ; "pause"
+.text:0000000140001D07                 call    sub_140006B38
+.text:0000000140001D0C                 mov     rcx, [rsp+arg_1A8]
+.text:0000000140001D14                 mov     [rsp+arg_1A8], 0
+.text:0000000140001D20                 xor     rcx, rsp        ; StackCookie
+.text:0000000140001D23                 cmp     rcx, cs:__security_cookie
+.text:0000000140001D2A                 jnz     short loc_140001D38
+.text:0000000140001D2C                 xor     eax, eax
+.text:0000000140001D2E                 add     rsp, 1B8h
+.text:0000000140001D35                 pop     rdi
+.text:0000000140001D36                 pop     rsi
+.text:0000000140001D37                 retn
+.text:0000000140001D38 ; ---------------------------------------------------------------------------
+.text:0000000140001D38
+.text:0000000140001D38 loc_140001D38:                          ; CODE XREF: main+D2A↑j
+.text:0000000140001D38                 call    __security_check_cookie
+.text:0000000140001D3D                 nop
+.text:0000000140001D3E                 xchg    ax, ax
+.text:0000000140001D3E ; } // starts at 140001B20
+.text:0000000140001D3E main            endp ; sp-analysis failed
+```
+
+将解密后的数据强转为代码，再转为函数，转为函数时如果选择了0x140001D38~0x140001D3E部分的代码则会反编译失败。
+
+F5反编译得到main函数的伪代码
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // rax
+  char v4; // sp
+  char v5; // cl
+  __int64 v6; // rcx
+  __int64 v8; // rax
+  __int64 v9; // rcx
+  unsigned __int128 v10; // rax
+  unsigned __int64 v11; // rdi
+  unsigned __int64 v12; // r9
+  int v13; // eax
+  int v14; // er8
+  int v15; // er10
+  unsigned __int64 v16; // rsi
+  __int64 v17; // rax
+  __int64 v18; // rdx
+  int v19; // er11
+  int v20; // er13
+  int v21; // ebx
+  int v22; // er12
+  __int64 v23; // r13
+  int v24; // er11
+  __int64 v25; // rbx
+  __int64 v26; // r11
+  int v27; // er12
+  __int64 v28; // rbx
+  __int64 v29; // r11
+  int v30; // er12
+  __int64 v31; // r13
+  __int64 v32; // rbx
+  __int64 v33; // r11
+  int v34; // er12
+  __int64 v35; // rbx
+  __int64 v36; // r11
+  int v37; // er12
+  __int64 v38; // r13
+  __int64 v39; // rbx
+  __int64 v40; // r11
+  int v41; // er12
+  __int64 v42; // rbx
+  __int64 v43; // r11
+  int v44; // er12
+  __int64 v45; // r13
+  __int64 v46; // rbx
+  __int64 v47; // r11
+  int v48; // er12
+  __int64 v49; // rbx
+  __int64 v50; // r11
+  int v51; // er12
+  __int64 v52; // r13
+  __int64 v53; // rbx
+  __int64 v54; // r11
+  int v55; // er12
+  __int64 v56; // rbx
+  __int64 v57; // r11
+  int v58; // er12
+  __int64 v59; // r13
+  __int64 v60; // rbx
+  __int64 v61; // r11
+  int v62; // er12
+  __int64 v63; // rbx
+  __int64 v64; // r11
+  int v65; // er12
+  __int64 v66; // r13
+  int v67; // er12
+  __int64 v68; // r12
+  __int64 v69; // r13
+  __int64 v70; // r13
+  unsigned __int64 v71; // rax
+  __int64 i; // r9
+  __int64 v73; // rdx
+  int v74; // esi
+  int v75; // er8
+  int v76; // er10
+  __int64 v77; // rcx
+  char v78; // al
+  char v79; // r9
+  int v80; // er9
+  int v81; // eax
+  char v82; // r10
+  char v83; // r8
+  const char *v84; // rsi
+  char *v85; // rdi
+  bool v86; // cf
+  unsigned __int8 v87; // dl
+  int v88; // eax
+  const char *v89; // rcx
+  __int64 v90; // rcx
+  unsigned __int64 v91; // rcx
+  int result; // eax
+  __int128 v93[4]; // [rsp+0h] [rbp-1C8h] BYREF
+  char v94[256]; // [rsp+40h] [rbp-188h] BYREF
+  __int128 v95[4]; // [rsp+140h] [rbp-88h]
+  __m128i v96; // [rsp+180h] [rbp-48h] BYREF
+  __int128 v97; // [rsp+190h] [rbp-38h]
+  __int128 v98; // [rsp+1A0h] [rbp-28h]
+  __int64 v99; // [rsp+1B0h] [rbp-18h]
+
+  sub_140001EB0(0i64, 0i64, envp);
+  v96 = 0i64;
+  v97 = 0i64;
+  v98 = 0i64;
+  sub_140001D40("Input Your Flag : ");
+  sub_140001DC0("%46s", v96.m128i_i8);
+  lpAddress = &loc_140001085;
+  qword_14002AD88 = (__int64)&loc_140001D00;
+  sub_140001E30();
+  v3 = 0x10i64;
+  do
+  {
+    v93[v3 + 3] = 0i64;
+    v93[v3 + 2] = 0i64;
+    v93[v3 + 1] = 0i64;
+    v93[v3] = 0i64;
+    v3 -= 4i64;
+  }
+  while ( v3 * 0x10 );
+  v95[0] = xmmword_14001E340;
+  v95[1] = xmmword_14001E350;
+  v95[2] = xmmword_14001E360;
+  v95[3] = xmmword_14001E370;
+  v5 = v4 + 0x80;
+  v6 = v5 & 0xF;
+  if ( !_BitScanForward((unsigned int *)&v8, (unsigned int)_mm_movemask_epi8(_mm_cmpeq_epi8((__m128i)0i64, v96)) >> v6) )
+    v8 = sub_140002340(v6, &v96.m128i_i8[v6]);
+  v9 = v8;
+  v10 = 0xAAAAAAAAAAAAAAABui64 * (unsigned __int128)(unsigned __int64)v8;
+  v11 = *((_QWORD *)&v10 + 1) >> 1;
+  if ( *((_QWORD *)&v10 + 1) >> 1 )
+  {
+    LODWORD(v12) = 0;
+    LODWORD(v10) = 1;
+    v14 = 0;
+    v15 = 0;
+    v16 = *((_QWORD *)&v10 + 1) >> 5;
+    if ( *((_QWORD *)&v10 + 1) >> 5 )
+    {
+      do
+      {
+        v17 = v14;
+        v18 = v15;
+        v19 = v96.m128i_i8[v14 + 1];
+        v20 = 0x10 * (v96.m128i_i8[v14] & 3);
+        v21 = v96.m128i_i8[v14 + 2];
+        v94[v15] = *((_BYTE *)v95 + (v96.m128i_i8[v14] >> 2)) ^ 0xA6;
+        v94[v15 + 1] = *((_BYTE *)v95 + ((v19 >> 4) | v20)) ^ 0xA3;
+        v94[v15 + 2] = *((_BYTE *)v95 + ((v21 >> 6) | (4 * (v19 & 0xF)))) ^ 0xA9;
+        v22 = v96.m128i_i8[v14 + 3] & 3;
+        v23 = v96.m128i_i8[v14 + 3] >> 2;
+        v94[v15 + 3] = *((_BYTE *)v95 + (v21 & 0x3F)) ^ 0xAC;
+        v24 = v96.m128i_i8[v14 + 4];
+        v94[v15 + 4] = *((_BYTE *)v95 + v23) ^ 0xA6;
+        LODWORD(v23) = v24;
+        v25 = v96.m128i_i8[v14 + 5] & 0x3F;
+        v26 = (v96.m128i_i8[v14 + 5] >> 6) | (4 * (v24 & 0xF));
+        v94[v15 + 5] = *((_BYTE *)v95 + (((int)v23 >> 4) | (0x10 * v22))) ^ 0xA3;
+        LODWORD(v23) = v96.m128i_i8[v14 + 6];
+        v94[v15 + 6] = *((_BYTE *)v95 + v26) ^ 0xA9;
+        v94[v15 + 7] = *((_BYTE *)v95 + v25) ^ 0xAC;
+        LODWORD(v26) = v96.m128i_i8[v14 + 7];
+        v94[v15 + 8] = *((_BYTE *)v95 + ((int)v23 >> 2)) ^ 0xA6;
+        v27 = v26;
+        v28 = v96.m128i_i8[v14 + 8] & 0x3F;
+        v29 = (int)((v96.m128i_i8[v14 + 8] >> 6) | (4 * (v26 & 0xF)));
+        v94[v15 + 9] = *((_BYTE *)v95 + (int)((v27 >> 4) | (0x10 * (v23 & 3)))) ^ 0xA3;
+        v94[v15 + 0xA] = *((_BYTE *)v95 + v29) ^ 0xA9;
+        v30 = v96.m128i_i8[v14 + 9] & 3;
+        v31 = v96.m128i_i8[v14 + 9] >> 2;
+        v94[v15 + 0xB] = *((_BYTE *)v95 + v28) ^ 0xAC;
+        LODWORD(v29) = v96.m128i_i8[v14 + 0xA];
+        v94[v15 + 0xC] = *((_BYTE *)v95 + v31) ^ 0xA6;
+        LODWORD(v31) = v29;
+        v32 = v96.m128i_i8[v14 + 0xB] & 0x3F;
+        v33 = (int)((v96.m128i_i8[v14 + 0xB] >> 6) | (4 * (v29 & 0xF)));
+        v94[v15 + 0xD] = *((_BYTE *)v95 + (((int)v31 >> 4) | (0x10 * v30))) ^ 0xA3;
+        LODWORD(v31) = v96.m128i_i8[v14 + 0xC];
+        v94[v15 + 0xE] = *((_BYTE *)v95 + v33) ^ 0xA9;
+        v94[v15 + 0xF] = *((_BYTE *)v95 + v32) ^ 0xAC;
+        LODWORD(v33) = v96.m128i_i8[v14 + 0xD];
+        v94[v15 + 0x10] = *((_BYTE *)v95 + ((int)v31 >> 2)) ^ 0xA6;
+        v34 = v33;
+        v35 = v96.m128i_i8[v14 + 0xE] & 0x3F;
+        v36 = (int)((v96.m128i_i8[v14 + 0xE] >> 6) | (4 * (v33 & 0xF)));
+        v94[v15 + 0x11] = *((_BYTE *)v95 + (int)((v34 >> 4) | (0x10 * (v31 & 3)))) ^ 0xA3;
+        v94[v15 + 0x12] = *((_BYTE *)v95 + v36) ^ 0xA9;
+        v37 = v96.m128i_i8[v14 + 0xF] & 3;
+        v38 = v96.m128i_i8[v14 + 0xF] >> 2;
+        v94[v15 + 0x13] = *((_BYTE *)v95 + v35) ^ 0xAC;
+        LODWORD(v36) = *((char *)&v97 + v14);
+        v94[v15 + 0x14] = *((_BYTE *)v95 + v38) ^ 0xA6;
+        LODWORD(v38) = v36;
+        v39 = *((_BYTE *)&v97 + v14 + 1) & 0x3F;
+        v40 = (int)((*((char *)&v97 + v14 + 1) >> 6) | (4 * (v36 & 0xF)));
+        v94[v15 + 0x15] = *((_BYTE *)v95 + (((int)v38 >> 4) | (0x10 * v37))) ^ 0xA3;
+        LODWORD(v38) = *((char *)&v97 + v14 + 2);
+        v94[v15 + 0x16] = *((_BYTE *)v95 + v40) ^ 0xA9;
+        v94[v15 + 0x17] = *((_BYTE *)v95 + v39) ^ 0xAC;
+        LODWORD(v40) = *((char *)&v97 + v14 + 3);
+        v94[v15 + 0x18] = *((_BYTE *)v95 + ((int)v38 >> 2)) ^ 0xA6;
+        v41 = v40;
+        v42 = *((_BYTE *)&v97 + v14 + 4) & 0x3F;
+        v43 = (int)((*((char *)&v97 + v14 + 4) >> 6) | (4 * (v40 & 0xF)));
+        v94[v15 + 0x19] = *((_BYTE *)v95 + (int)((v41 >> 4) | (0x10 * (v38 & 3)))) ^ 0xA3;
+        v94[v15 + 0x1A] = *((_BYTE *)v95 + v43) ^ 0xA9;
+        v44 = *((_BYTE *)&v97 + v14 + 5) & 3;
+        v45 = *((char *)&v97 + v14 + 5) >> 2;
+        v94[v15 + 0x1B] = *((_BYTE *)v95 + v42) ^ 0xAC;
+        LODWORD(v43) = *((char *)&v97 + v14 + 6);
+        v94[v15 + 0x1C] = *((_BYTE *)v95 + v45) ^ 0xA6;
+        LODWORD(v45) = v43;
+        v46 = *((_BYTE *)&v97 + v14 + 7) & 0x3F;
+        v47 = (int)((*((char *)&v97 + v14 + 7) >> 6) | (4 * (v43 & 0xF)));
+        v94[v15 + 0x1D] = *((_BYTE *)v95 + (((int)v45 >> 4) | (0x10 * v44))) ^ 0xA3;
+        LODWORD(v45) = *((char *)&v97 + v14 + 8);
+        v94[v15 + 0x1E] = *((_BYTE *)v95 + v47) ^ 0xA9;
+        v94[v15 + 0x1F] = *((_BYTE *)v95 + v46) ^ 0xAC;
+        LODWORD(v47) = *((char *)&v97 + v14 + 9);
+        v94[v15 + 0x20] = *((_BYTE *)v95 + ((int)v45 >> 2)) ^ 0xA6;
+        v48 = v47;
+        v49 = *((_BYTE *)&v97 + v14 + 0xA) & 0x3F;
+        v50 = (int)((*((char *)&v97 + v14 + 0xA) >> 6) | (4 * (v47 & 0xF)));
+        v94[v15 + 0x21] = *((_BYTE *)v95 + (int)((v48 >> 4) | (0x10 * (v45 & 3)))) ^ 0xA3;
+        v94[v15 + 0x22] = *((_BYTE *)v95 + v50) ^ 0xA9;
+        v51 = *((_BYTE *)&v97 + v14 + 0xB) & 3;
+        v52 = *((char *)&v97 + v14 + 0xB) >> 2;
+        v94[v15 + 0x23] = *((_BYTE *)v95 + v49) ^ 0xAC;
+        LODWORD(v50) = *((char *)&v97 + v14 + 0xC);
+        v94[v15 + 0x24] = *((_BYTE *)v95 + v52) ^ 0xA6;
+        LODWORD(v52) = v50;
+        v53 = *((_BYTE *)&v97 + v14 + 0xD) & 0x3F;
+        v54 = (int)((*((char *)&v97 + v14 + 0xD) >> 6) | (4 * (v50 & 0xF)));
+        v94[v15 + 0x25] = *((_BYTE *)v95 + (((int)v52 >> 4) | (0x10 * v51))) ^ 0xA3;
+        LODWORD(v52) = *((char *)&v97 + v14 + 0xE);
+        v94[v15 + 0x26] = *((_BYTE *)v95 + v54) ^ 0xA9;
+        v94[v15 + 0x27] = *((_BYTE *)v95 + v53) ^ 0xAC;
+        LODWORD(v54) = *((char *)&v97 + v14 + 0xF);
+        v94[v15 + 0x28] = *((_BYTE *)v95 + ((int)v52 >> 2)) ^ 0xA6;
+        v55 = v54;
+        v56 = *((_BYTE *)&v98 + v14) & 0x3F;
+        v57 = (int)((*((char *)&v98 + v14) >> 6) | (4 * (v54 & 0xF)));
+        v94[v15 + 0x29] = *((_BYTE *)v95 + (int)((v55 >> 4) | (0x10 * (v52 & 3)))) ^ 0xA3;
+        v94[v15 + 0x2A] = *((_BYTE *)v95 + v57) ^ 0xA9;
+        v58 = *((_BYTE *)&v98 + v14 + 1) & 3;
+        v59 = *((char *)&v98 + v14 + 1) >> 2;
+        v94[v15 + 0x2B] = *((_BYTE *)v95 + v56) ^ 0xAC;
+        LODWORD(v57) = *((char *)&v98 + v14 + 2);
+        v94[v15 + 0x2C] = *((_BYTE *)v95 + v59) ^ 0xA6;
+        LODWORD(v59) = v57;
+        v60 = *((_BYTE *)&v98 + v14 + 3) & 0x3F;
+        v61 = (int)((*((char *)&v98 + v14 + 3) >> 6) | (4 * (v57 & 0xF)));
+        v94[v15 + 0x2D] = *((_BYTE *)v95 + (((int)v59 >> 4) | (0x10 * v58))) ^ 0xA3;
+        LODWORD(v59) = *((char *)&v98 + v14 + 4);
+        v94[v15 + 0x2E] = *((_BYTE *)v95 + v61) ^ 0xA9;
+        v94[v15 + 0x2F] = *((_BYTE *)v95 + v60) ^ 0xAC;
+        LODWORD(v61) = *((char *)&v98 + v14 + 5);
+        v94[v15 + 0x30] = *((_BYTE *)v95 + ((int)v59 >> 2)) ^ 0xA6;
+        v62 = v61;
+        v63 = *((_BYTE *)&v98 + v14 + 6) & 0x3F;
+        v64 = (int)((*((char *)&v98 + v14 + 6) >> 6) | (4 * (v61 & 0xF)));
+        v94[v15 + 0x31] = *((_BYTE *)v95 + (int)((v62 >> 4) | (0x10 * (v59 & 3)))) ^ 0xA3;
+        v94[v15 + 0x32] = *((_BYTE *)v95 + v64) ^ 0xA9;
+        v65 = *((_BYTE *)&v98 + v14 + 7) & 3;
+        v66 = *((char *)&v98 + v14 + 7) >> 2;
+        v94[v15 + 0x33] = *((_BYTE *)v95 + v63) ^ 0xAC;
+        LODWORD(v64) = *((char *)&v98 + v14 + 8);
+        v94[v15 + 0x34] = *((_BYTE *)v95 + v66) ^ 0xA6;
+        LODWORD(v63) = *((char *)&v98 + v14 + 9);
+        v94[v15 + 0x35] = *((_BYTE *)v95 + (((int)v64 >> 4) | (0x10 * v65))) ^ 0xA3;
+        v67 = v63;
+        v12 = (unsigned int)(v12 + 1);
+        v14 += 0x30;
+        v15 += 0x40;
+        LOBYTE(v66) = *((_BYTE *)v95 + (v63 & 0x3F));
+        LODWORD(v63) = *((char *)&v98 + v17 + 0xA);
+        v94[v18 + 0x37] = v66 ^ 0xAC;
+        LODWORD(v66) = *((char *)&v98 + v17 + 0xB);
+        v94[v18 + 0x36] = *((_BYTE *)v95 + (int)((v67 >> 6) | (4 * (v64 & 0xF)))) ^ 0xA9;
+        v94[v18 + 0x38] = *((_BYTE *)v95 + ((int)v63 >> 2)) ^ 0xA6;
+        LODWORD(v64) = (int)v66 >> 4;
+        v68 = *((_BYTE *)&v98 + v17 + 0xC) & 0x3F;
+        v69 = (int)((*((char *)&v98 + v17 + 0xC) >> 6) | (4 * (v66 & 0xF)));
+        v94[v18 + 0x39] = *((_BYTE *)v95 + (int)(v64 | (0x10 * (v63 & 3)))) ^ 0xA3;
+        LOBYTE(v63) = *((_BYTE *)v95 + v69);
+        v70 = *((char *)&v98 + v17 + 0xD) >> 2;
+        LODWORD(v64) = *((_BYTE *)&v98 + v17 + 0xD) & 3;
+        v94[v18 + 0x3A] = v63 ^ 0xA9;
+        v94[v18 + 0x3B] = *((_BYTE *)v95 + v68) ^ 0xAC;
+        LOBYTE(v68) = *((_BYTE *)v95 + v70);
+        LODWORD(v70) = *((char *)&v98 + v17 + 0xE);
+        LODWORD(v63) = v70 & 0xF;
+        LODWORD(v64) = ((int)v70 >> 4) | (0x10 * v64);
+        LODWORD(v70) = *((char *)&v98 + v17 + 0xF);
+        v94[v18 + 0x3C] = v68 ^ 0xA6;
+        LOBYTE(v68) = *((_BYTE *)v95 + (int)v64) ^ 0xA3;
+        LOBYTE(v64) = *((_BYTE *)v95 + (((int)v70 >> 6) | (4 * (int)v63))) ^ 0xA9;
+        LOBYTE(v63) = *((_BYTE *)v95 + (v70 & 0x3F)) ^ 0xAC;
+        v94[v18 + 0x3D] = v68;
+        v94[v18 + 0x3E] = v64;
+        v94[v18 + 0x3F] = v63;
+      }
+      while ( v12 < v16 );
+      v13 = 0x10 * v12 + 1;
+    }
+    v71 = (unsigned int)(v13 - 1);
+    for ( i = 3 * (int)v71; v71 < v11; v94[v73 + 3] = v74 )
+    {
+      v73 = 4 * (int)v71;
+      v71 = (unsigned int)(v71 + 1);
+      v74 = v96.m128i_i8[i + 1];
+      v75 = 0x10 * (v96.m128i_i8[i] & 3);
+      v94[v73] = *((_BYTE *)v95 + (v96.m128i_i8[i] >> 2)) ^ 0xA6;
+      v76 = v96.m128i_i8[i + 2];
+      i += 3i64;
+      v94[v73 + 1] = *((_BYTE *)v95 + ((v74 >> 4) | v75)) ^ 0xA3;
+      LOBYTE(v75) = *((_BYTE *)v95 + ((v76 >> 6) | (4 * (v74 & 0xF)))) ^ 0xA9;
+      LOBYTE(v74) = *((_BYTE *)v95 + (v76 & 0x3F)) ^ 0xAC;
+      v94[v73 + 2] = v75;
+    }
+  }
+  v77 = v9 - 3 * v11;
+  if ( v77 == 1 )
+  {
+    v78 = v96.m128i_i8[3 * v11];
+    v94[4 * v11 + 2] = 0x31;
+    v94[4 * v11 + 3] = 0x34;
+    v79 = *((_BYTE *)v95 + (unsigned __int8)(0x10 * (v78 & 3))) ^ 0xA3;
+    v94[4 * v11] = *((_BYTE *)v95 + (v78 >> 2)) ^ 0xA6;
+    v94[4 * v11 + 1] = v79;
+    v94[4 * v11 + 4] = 0;
+  }
+  else if ( v77 == 2 )
+  {
+    v80 = v96.m128i_i8[3 * v11 + 1];
+    v81 = v96.m128i_i8[3 * v11];
+    v82 = *((_BYTE *)v95 + 4 * (v80 & 0xFu)) ^ 0xA9;
+    v83 = *((_BYTE *)v95 + ((v80 >> 4) | (0x10 * (v81 & 3)))) ^ 0xA3;
+    v94[4 * v11] = *((_BYTE *)v95 + (v81 >> 2)) ^ 0xA6;
+    v94[4 * v11 + 1] = v83;
+    v94[4 * v11 + 2] = v82;
+    v94[4 * v11 + 3] = 0x34;
+    v94[4 * v11 + 4] = 0;
+  }
+  else
+  {
+    v94[4 * v11] = 0;
+  }
+  v84 = "H>oQn6aqLr{DH6odhdm0dMe`MBo?lRglHtGPOdobDlknejmGI|ghDb<4";
+  v85 = v94;
+  while ( 1 )
+  {
+    v86 = (unsigned __int8)*v85 < (unsigned int)*v84;
+    if ( *v85 != *v84 )
+      break;
+    if ( !*v85 )
+      goto LABEL_21;
+    v87 = v85[1];
+    v86 = v87 < (unsigned int)v84[1];
+    if ( v87 != v84[1] )
+      break;
+    v85 += 2;
+    v84 += 2;
+    if ( !v87 )
+    {
+LABEL_21:
+      v88 = 0;
+      goto LABEL_23;
+    }
+  }
+  v88 = v86 ? 0xFFFFFFFF : 1;
+LABEL_23:
+  v89 = "No.\r\n";
+  if ( !v88 )
+    v89 = "Yes.\r\n";
+  sub_140001D40(v89);
+  sub_140006B38("pause");
+  v90 = v99;
+  v99 = 0i64;
+  v91 = (unsigned __int64)v93 ^ v90;
+  if ( v91 == _security_cookie )
+    result = 0;
+  else
+    result = sub_140001D40(v91);
+  return result;
+}
+```
+
+ 可以发现加密的算法是base64，与以往不同，平常的base64加密算法都是使用循环，总共代码不会超过10行，但是这个程序中是对于输入的字符逐个加密，所以代码有很长，让人无法第一时间看出是Base64加密。而且仔细观察会发现，每次将明文替换为Base64表中的密文后，会进行异或操作，而且异或操作是循环进行的。
+
+编写解密脚本：
+
+```assembly
+#include <stdio.h>
+
+int main(){
+    unsigned char ida_chars[] ={228, 196, 231, 199, 230, 198, 225, 193, 224, 192,
+                                227, 195, 226, 194, 237, 205, 236, 204, 239, 207,
+                                238, 206, 233, 201, 232, 200, 235, 203, 234, 202,
+                                245, 213, 244, 212, 247, 215, 246, 214, 241, 209,
+                                240, 208, 243, 211, 242, 210, 253, 221, 252, 220,
+                                255, 223, 149, 156, 157, 146, 147, 144, 145, 150,
+                                151, 148, 138, 142};
+    unsigned char result[56] = {"H>oQn6aqLr{DH6odhdm0dMe`MBo?lRglHtGPOdobDlknejmGI|ghDb<4"};
+    char xor[4] = {0xA6, 0xA3, 0xA9, 0xAC};
+    for(int i=0; i<56; i++){
+        result[i] ^= xor[i%4];
+    }
+
+    char right[65] = {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+    int flag[56] = {}, point=0;
+
+    for(int i=0; i<56; i++){
+        for(int j=0; j<64; j++){
+            if(ida_chars[j] == result[i]){
+                flag[point++] = right[j];
+                break;
+            }
+        }
+    }
+    /*
+    for(int i=0; i<56; i++){
+        printf("%d ", result[i]);
+    }
+    */
+    for(int i=0; i<56; i++){
+        printf("%c", flag[i]);
+    }
+    return 0;
+}
+```
+
+输出：
+
+U2FuZ0ZvcntYU0FZVDB1NURRaGF4dmVJUjUwWDFVMTNNLXBaSzVBMH0
+
+通过上面的脚本我们将加密后的数据还原为了正常Base64加密后的数据
+
+base64解密得到flag
+
+SangFor{XSAYT0u5DQhaxveIR50X1U13M-pZK5A0}
+
