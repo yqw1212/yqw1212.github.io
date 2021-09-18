@@ -1,0 +1,1416 @@
+---
+layout: post
+title:  DeltX
+date:   2021-09-18 00:01:01 +0300
+image:  2021-09-18-shepherd.jpg
+tags:   [ctf,reverse,羊城杯2021,z3]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  __int64 v3; // rdx
+  __int64 v4; // r8
+  int v5; // edi
+  __int64 v6; // rdx
+  int v7; // ecx
+  int v8; // edi
+  int v9; // edi
+  char v10; // r8
+  int v11; // ebx
+  __int64 v12; // rdx
+  int v13; // ecx
+  int v14; // ebx
+  int v15; // ebx
+  char v16; // r9
+  char v17; // r9
+  int v18; // er12
+  __int64 v19; // rdx
+  int v20; // ecx
+  int v21; // er12
+  int v22; // er12
+  int v23; // er15
+  __int64 v24; // rdx
+  int v25; // ecx
+  int v26; // er15
+  int v27; // er15
+  char v28; // al
+  char v29; // r9
+  int v30; // er8
+  __int64 v31; // rdx
+  int v32; // ecx
+  int v33; // er8
+  int v34; // er13
+  __int64 v35; // rdx
+  int v36; // ecx
+  int v37; // er13
+  int v38; // er13
+  char v39; // al
+  unsigned __int8 v40; // r9
+  int v41; // er10
+  __int64 v42; // rdx
+  int v43; // ecx
+  int v44; // er10
+  int v45; // ecx
+  int v46; // er8
+  char v47; // al
+  unsigned int v48; // er9
+  int v49; // esi
+  int i; // er14
+  int v51; // er10
+  unsigned int v52; // er11
+  unsigned int v53; // edx
+  int v54; // ecx
+  unsigned int v55; // er8
+  char v56; // al
+  int v57; // eax
+  int v58; // er10
+  bool v59; // zf
+  int v60; // er9
+  int v61; // ebx
+  int v62; // er10
+  unsigned int v63; // edx
+  int v64; // ecx
+  unsigned int v65; // er8
+  char v66; // al
+  int v67; // eax
+  int v68; // er9
+  int v69; // er9
+  unsigned int v70; // edx
+  int v71; // ecx
+  unsigned int v72; // er8
+  char v73; // al
+  int v74; // eax
+  int v75; // er10
+  int v76; // ebx
+  int v77; // edi
+  bool v78; // si
+  unsigned int v79; // er9
+  bool j; // si
+  int v81; // er10
+  unsigned int v82; // er11
+  unsigned int v83; // edx
+  int v84; // ecx
+  unsigned int v85; // er8
+  char v86; // al
+  int v87; // eax
+  int v88; // er10
+  bool v89; // r11
+  int v90; // er10
+  int v91; // er15
+  int v92; // er9
+  unsigned int v93; // edx
+  int v94; // ecx
+  unsigned int v95; // er8
+  char v96; // al
+  int v97; // eax
+  int v98; // er10
+  int v99; // er10
+  unsigned int v100; // edx
+  int v101; // ecx
+  unsigned int v102; // er8
+  char v103; // al
+  int v104; // eax
+  int v105; // er9
+  int v106; // er14
+  int v107; // ebx
+  int v108; // edi
+  unsigned int v109; // er9
+  bool k; // si
+  int v111; // er10
+  unsigned int v112; // er11
+  unsigned int v113; // edx
+  int v114; // ecx
+  unsigned int v115; // er8
+  char v116; // al
+  int v117; // eax
+  int v118; // er10
+  bool v119; // r11
+  int v120; // er15
+  int v121; // er10
+  int v122; // er13
+  int v123; // er9
+  unsigned int v124; // edx
+  int v125; // ecx
+  unsigned int v126; // er8
+  char v127; // al
+  int v128; // eax
+  int v129; // er10
+  int v130; // er10
+  unsigned int v131; // edx
+  int v132; // ecx
+  unsigned int v133; // er8
+  char v134; // al
+  int v135; // eax
+  int v136; // er9
+  unsigned int v137; // er12
+  int v138; // ebx
+  int v139; // edi
+  unsigned __int8 v140; // si
+  unsigned int l; // er9
+  int v142; // er10
+  unsigned int v143; // er11
+  unsigned int v144; // er8
+  int v145; // ecx
+  unsigned int v146; // eax
+  char v147; // dl
+  int v148; // edx
+  int v149; // er10
+  unsigned __int8 v150; // r11
+  int v151; // er14
+  unsigned int v152; // er9
+  unsigned int v153; // edx
+  int v154; // ecx
+  unsigned int v155; // er8
+  char v156; // al
+  int v157; // eax
+  int v158; // er15
+  unsigned int v159; // er10
+  int v160; // ecx
+  char v161; // al
+  int v162; // eax
+  int v163; // er9
+  const char *v164; // rcx
+  int v166; // [rsp+20h] [rbp-39h]
+  int v167; // [rsp+24h] [rbp-35h]
+  int v168; // [rsp+28h] [rbp-31h]
+  __int128 input; // [rsp+50h] [rbp-9h] BYREF
+  __int128 v170; // [rsp+60h] [rbp+7h]
+  __int128 v171; // [rsp+70h] [rbp+17h]
+
+  input = 0i64;
+  v170 = 0i64;
+  v171 = 0i64;
+  sub_140001020("Input your flag here:\r\n", argv, envp);
+  sub_140001080("%46s", (const char *)&input);
+  if ( (_BYTE)input != 'S'
+    || *(_WORD *)((char *)&input + 1) != 'na'
+    || *(_DWORD *)((char *)&input + 3) != 'roFg'
+    || BYTE7(input) != '{'
+    || BYTE8(v171) != '}' )
+  {
+    goto LABEL_155;
+  }
+  v5 = 0;
+  v6 = 0i64;
+  while ( 1 )
+  {
+    v7 = *((char *)&input + v6 + 8);
+    if ( (unsigned __int8)(*((_BYTE *)&input + v6 + 8) - 0x30) > 9u )
+      break;
+    v8 = v5 - 0x30;
+LABEL_11:
+    ++v6;
+    v5 = 0x10 * (v7 + v8);
+    if ( v6 >= 4 )
+    {
+      v9 = v5 >> 4;
+      v10 = 1;
+      goto LABEL_14;
+    }
+  }
+  if ( (unsigned __int8)(v7 - 0x41) <= 5u )
+  {
+    v8 = v5 - 0x37;
+    goto LABEL_11;
+  }
+  v9 = 0;
+  v10 = 0;
+LABEL_14:
+  v11 = 0;
+  v12 = 0i64;
+  while ( 2 )
+  {
+    v13 = *((char *)&input + v12 + 0xC);
+    if ( (unsigned __int8)(*((_BYTE *)&input + v12 + 0xC) - 0x30) <= 9u )
+    {
+      v14 = v11 - 0x30;
+      goto LABEL_19;
+    }
+    if ( (unsigned __int8)(v13 - 0x41) <= 5u )
+    {
+      v14 = v11 - 0x37;
+LABEL_19:
+      ++v12;
+      v11 = 0x10 * (v13 + v14);
+      if ( v12 >= 4 )
+      {
+        v15 = v11 >> 4;
+        v16 = 1;
+        goto LABEL_22;
+      }
+      continue;
+    }
+    break;
+  }
+  v15 = 0;
+  v16 = 0;
+LABEL_22:
+  v17 = v10 & v16;
+  v18 = 0;
+  v19 = 0i64;
+  while ( 2 )
+  {
+    v20 = *((char *)&v170 + v19);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v19) - 0x30) <= 9u )
+    {
+      v21 = v18 - 0x30;
+      goto LABEL_27;
+    }
+    if ( (unsigned __int8)(v20 - 0x41) <= 5u )
+    {
+      v21 = v18 - 0x37;
+LABEL_27:
+      ++v19;
+      v18 = 0x10 * (v20 + v21);
+      if ( v19 >= 4 )
+      {
+        v22 = v18 >> 4;
+        goto LABEL_30;
+      }
+      continue;
+    }
+    break;
+  }
+  v22 = 0;
+  v17 = 0;
+LABEL_30:
+  v23 = 0;
+  v24 = 0i64;
+  while ( 2 )
+  {
+    v25 = *((char *)&v170 + v24 + 4);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v24 + 4) - 0x30) <= 9u )
+    {
+      v26 = v23 - 0x30;
+      goto LABEL_35;
+    }
+    if ( (unsigned __int8)(v25 - 0x61) <= 5u )
+    {
+      v26 = v23 - 0x57;
+LABEL_35:
+      ++v24;
+      v23 = 0x10 * (v25 + v26);
+      if ( v24 >= 4 )
+      {
+        v27 = v23 >> 4;
+        v28 = 1;
+        goto LABEL_38;
+      }
+      continue;
+    }
+    break;
+  }
+  v27 = 0;
+  v28 = 0;
+LABEL_38:
+  v29 = v28 & v17;
+  v30 = 0;
+  v31 = 0i64;
+  while ( 2 )
+  {
+    v32 = *((char *)&v170 + v31 + 8);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v31 + 8) - 0x30) <= 9u )
+    {
+      v33 = v30 - 0x30;
+      goto LABEL_43;
+    }
+    if ( (unsigned __int8)(v32 - 0x41) <= 5u )
+    {
+      v33 = v30 - 0x37;
+LABEL_43:
+      ++v31;
+      v30 = 0x10 * (v32 + v33);
+      if ( v31 >= 4 )
+      {
+        v166 = v30 >> 4;
+        goto LABEL_46;
+      }
+      continue;
+    }
+    break;
+  }
+  v29 = 0;
+  v166 = 0;
+LABEL_46:
+  v34 = 0;
+  v35 = 0i64;
+  while ( 2 )
+  {
+    v36 = *((char *)&v170 + v35 + 0xC);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v35 + 0xC) - 0x30) <= 9u )
+    {
+      v37 = v34 - 0x30;
+      goto LABEL_51;
+    }
+    if ( (unsigned __int8)(v36 - 0x41) <= 5u )
+    {
+      v37 = v34 - 0x37;
+LABEL_51:
+      ++v35;
+      v34 = 0x10 * (v36 + v37);
+      if ( v35 >= 4 )
+      {
+        v38 = v34 >> 4;
+        v39 = 1;
+        goto LABEL_54;
+      }
+      continue;
+    }
+    break;
+  }
+  v38 = 0;
+  v39 = 0;
+LABEL_54:
+  v40 = v39 & v29;
+  v41 = 0;
+  v42 = 0i64;
+  while ( 2 )
+  {
+    v43 = *((char *)&v171 + v42);
+    if ( (unsigned __int8)(*((_BYTE *)&v171 + v42) - 0x30) <= 9u )
+    {
+      v44 = v41 - 0x30;
+      goto LABEL_59;
+    }
+    if ( (unsigned __int8)(v43 - 0x41) <= 5u )
+    {
+      v44 = v41 - 0x37;
+LABEL_59:
+      ++v42;
+      v41 = 0x10 * (v43 + v44);
+      if ( v42 >= 4 )
+      {
+        v168 = v41 >> 4;
+        goto LABEL_62;
+      }
+      continue;
+    }
+    break;
+  }
+  v40 = 0;
+  v168 = 0;
+LABEL_62:
+  v4 = 0i64;
+  v3 = 0i64;
+  while ( 2 )
+  {
+    v45 = *((char *)&v171 + v3 + 4);
+    if ( (unsigned __int8)(*((_BYTE *)&v171 + v3 + 4) - 0x30) <= 9u )
+    {
+      v46 = v4 - 0x30;
+      goto LABEL_67;
+    }
+    if ( (unsigned __int8)(v45 - 0x41) <= 5u )
+    {
+      v46 = v4 - 0x37;
+LABEL_67:
+      ++v3;
+      v4 = (unsigned int)(0x10 * (v45 + v46));
+      if ( v3 >= 4 )
+      {
+        v4 = (unsigned int)((int)v4 >> 4);
+        v47 = 1;
+        v167 = v4;
+        goto LABEL_70;
+      }
+      continue;
+    }
+    break;
+  }
+  v47 = 0;
+  v167 = 0;
+LABEL_70:
+  if ( (v40 & (unsigned __int8)v47) == 0 )
+    goto LABEL_155;
+  v48 = 0;
+  v49 = v15;
+  for ( i = v9; v49; v49 >>= 1 )
+  {
+    if ( (v49 & 1) != 0 )
+    {
+      v51 = i;
+      v52 = v48;
+      do
+      {
+        v48 = 0;
+        v53 = v51;
+        v54 = 0;
+        v55 = v52;
+        while ( v55 || v53 )
+        {
+          v56 = v55 + v53;
+          v55 >>= 1;
+          v57 = (v56 & 1) << v54++;
+          v48 |= v57;
+          v53 >>= 1;
+        }
+        v58 = v52 & v51;
+        v52 = v48;
+        v51 = 2 * v58;
+      }
+      while ( v51 );
+    }
+    i *= 2;
+  }
+  v59 = v48 == 0x249E15C5;
+  v60 = 1;
+  v61 = ~v15;
+  do
+  {
+    v62 = 0;
+    v63 = v60;
+    v64 = 0;
+    v65 = v61;
+    while ( v65 || v63 )
+    {
+      v66 = v65 + v63;
+      v65 >>= 1;
+      v67 = (v66 & 1) << v64++;
+      v62 |= v67;
+      v63 >>= 1;
+    }
+    v68 = v61 & v60;
+    v61 = v62;
+    v60 = 2 * v68;
+  }
+  while ( v60 );
+  do
+  {
+    v69 = 0;
+    v70 = v62;
+    v71 = 0;
+    v72 = v9;
+    while ( v72 || v70 )
+    {
+      v73 = v72 + v70;
+      v72 >>= 1;
+      v74 = (v73 & 1) << v71++;
+      v69 |= v74;
+      v70 >>= 1;
+    }
+    v75 = v9 & v62;
+    v9 = v69;
+    v62 = 2 * v75;
+  }
+  while ( v62 );
+  v76 = v27;
+  v77 = v22;
+  v78 = v69 == 0xFFFF59BC;
+  v79 = 0;
+  for ( j = v59 && v78; v76; v76 >>= 1 )
+  {
+    if ( (v76 & 1) != 0 )
+    {
+      v81 = v77;
+      v82 = v79;
+      do
+      {
+        v79 = 0;
+        v83 = v81;
+        v84 = 0;
+        v85 = v82;
+        while ( v85 || v83 )
+        {
+          v86 = v85 + v83;
+          v85 >>= 1;
+          v87 = (v86 & 1) << v84++;
+          v79 |= v87;
+          v83 >>= 1;
+        }
+        v88 = v82 & v81;
+        v82 = v79;
+        v81 = 2 * v88;
+      }
+      while ( v81 );
+    }
+    v77 *= 2;
+  }
+  v89 = 0;
+  v90 = 1;
+  v91 = ~v27;
+  if ( v79 == 0x34C7EAE2 )
+    v89 = j;
+  do
+  {
+    v92 = 0;
+    v93 = v90;
+    v94 = 0;
+    v95 = v91;
+    while ( v95 || v93 )
+    {
+      v96 = v95 + v93;
+      v95 >>= 1;
+      v97 = (v96 & 1) << v94++;
+      v92 |= v97;
+      v93 >>= 1;
+    }
+    v98 = v91 & v90;
+    v91 = v92;
+    v90 = 2 * v98;
+  }
+  while ( v90 );
+  do
+  {
+    v99 = 0;
+    v100 = v92;
+    v101 = 0;
+    v102 = v22;
+    while ( v102 || v100 )
+    {
+      v103 = v102 + v100;
+      v102 >>= 1;
+      v104 = (v103 & 1) << v101++;
+      v99 |= v104;
+      v100 >>= 1;
+    }
+    v105 = v22 & v92;
+    v22 = v99;
+    v92 = 2 * v105;
+  }
+  while ( v92 );
+  v106 = v166;
+  v107 = v38;
+  v108 = v166;
+  v109 = 0;
+  for ( k = v89 && v99 == 0x216B; v107; v107 >>= 1 )
+  {
+    if ( (v107 & 1) != 0 )
+    {
+      v111 = v108;
+      v112 = v109;
+      do
+      {
+        v109 = 0;
+        v113 = v111;
+        v114 = 0;
+        v115 = v112;
+        while ( v115 || v113 )
+        {
+          v116 = v115 + v113;
+          v115 >>= 1;
+          v117 = (v116 & 1) << v114++;
+          v109 |= v117;
+          v113 >>= 1;
+        }
+        v118 = v112 & v111;
+        v112 = v109;
+        v111 = 2 * v118;
+      }
+      while ( v111 );
+    }
+    v108 *= 2;
+  }
+  v119 = 0;
+  v120 = 1;
+  v121 = 1;
+  v122 = ~v38;
+  if ( v109 == 0x637973BA )
+    v119 = k;
+  do
+  {
+    v123 = 0;
+    v124 = v121;
+    v125 = 0;
+    v126 = v122;
+    while ( v126 || v124 )
+    {
+      v127 = v126 + v124;
+      v126 >>= 1;
+      v128 = (v127 & 1) << v125++;
+      v123 |= v128;
+      v124 >>= 1;
+    }
+    v129 = v122 & v121;
+    v122 = v123;
+    v121 = 2 * v129;
+  }
+  while ( v121 );
+  do
+  {
+    v130 = 0;
+    v131 = v123;
+    v132 = 0;
+    v133 = v106;
+    while ( v133 || v131 )
+    {
+      v134 = v133 + v131;
+      v133 >>= 1;
+      v135 = (v134 & 1) << v132++;
+      v130 |= v135;
+      v131 >>= 1;
+    }
+    v136 = v106 & v123;
+    v106 = v130;
+    v123 = 2 * v136;
+  }
+  while ( v123 );
+  v137 = v168;
+  v138 = v167;
+  v139 = v168;
+  v140 = v119 && v130 == 0x819D;
+  for ( l = 0; v138; v138 >>= 1 )
+  {
+    if ( (v138 & 1) != 0 )
+    {
+      v142 = v139;
+      v143 = l;
+      do
+      {
+        l = 0;
+        v144 = v142;
+        v145 = 0;
+        v146 = v143;
+        while ( v146 || v144 )
+        {
+          v147 = v146 + v144;
+          v146 >>= 1;
+          v148 = (v147 & 1) << v145++;
+          l |= v148;
+          v144 >>= 1;
+        }
+        v149 = v143 & v142;
+        v143 = l;
+        v142 = 2 * v149;
+      }
+      while ( v142 );
+    }
+    v139 *= 2;
+  }
+  v150 = 0;
+  v151 = ~v167;
+  if ( l == 0xE5FD104 )
+    v150 = v140;
+  do
+  {
+    v152 = 0;
+    v153 = v120;
+    v154 = 0;
+    v155 = v151;
+    while ( v155 || v153 )
+    {
+      v156 = v155 + v153;
+      v155 >>= 1;
+      v157 = (v156 & 1) << v154++;
+      v152 |= v157;
+      v153 >>= 1;
+    }
+    v158 = v151 & v120;
+    v151 = v152;
+    v120 = 2 * v158;
+  }
+  while ( v120 );
+  do
+  {
+    v159 = 0;
+    v3 = v152;
+    v160 = 0;
+    v4 = v137;
+    while ( (_DWORD)v4 || (_DWORD)v3 )
+    {
+      v161 = v4 + v3;
+      v4 = (unsigned int)v4 >> 1;
+      v162 = (v161 & 1) << v160++;
+      v159 |= v162;
+      v3 = (unsigned int)v3 >> 1;
+    }
+    v163 = v137 & v152;
+    v137 = v159;
+    v152 = 2 * v163;
+  }
+  while ( v152 );
+  v164 = "Success.\r\n";
+  if ( ((v159 == 0x9393) & v150) == 0 )
+LABEL_155:
+    v164 = "Fail.\r\n";
+  sub_140001020(v164, v3, v4);
+  return 0;
+}
+```
+
+代码很长，第一眼看上去有一种劝退的感觉，但是一定不要被表面现象所迷惑，认真研究一下就会发现其实并没有想象中那么难。
+
+首先判断输入的长度，查看汇编代码
+
+```assembly
+.text:00007FF7C8F51122                 cmp     byte ptr [rbp+57h+input], 53h ; 'S'
+.text:00007FF7C8F51126                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F5112C                 cmp     byte ptr [rbp+57h+input+1], 61h ; 'a'
+.text:00007FF7C8F51130                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F51136                 cmp     byte ptr [rbp+57h+input+2], 6Eh ; 'n'
+.text:00007FF7C8F5113A                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F51140                 cmp     byte ptr [rbp+57h+input+3], 67h ; 'g'
+.text:00007FF7C8F51144                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F5114A                 cmp     byte ptr [rbp+57h+input+4], 46h ; 'F'
+.text:00007FF7C8F5114E                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F51154                 cmp     byte ptr [rbp+57h+input+5], 6Fh ; 'o'
+.text:00007FF7C8F51158                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F5115E                 cmp     byte ptr [rbp+57h+input+6], 72h ; 'r'
+.text:00007FF7C8F51162                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F51168                 cmp     byte ptr [rbp+57h+input+7], 7Bh ; '{'
+.text:00007FF7C8F5116C                 jnz     loc_7FF7C8F517EF
+.text:00007FF7C8F51172                 cmp     byte ptr [rbp+57h+var_40+8], 7Dh ; '}'
+.text:00007FF7C8F51176                 jnz     loc_7FF7C8F517EF
+```
+
+在这里需要知道var_40的值从而确定输入的长度，所以通过动态调试去查看该值。
+
+输入`SangFor{1234567890123456789012345678901234567}`
+
+栈中的值
+
+```assembly
+Stack[00007F28]:0000002AB3B4F9B0 db  53h ; S
+Stack[00007F28]:0000002AB3B4F9B1 db  61h ; a
+Stack[00007F28]:0000002AB3B4F9B2 db  6Eh ; n
+Stack[00007F28]:0000002AB3B4F9B3 db  67h ; g
+Stack[00007F28]:0000002AB3B4F9B4 db  46h ; F
+Stack[00007F28]:0000002AB3B4F9B5 db  6Fh ; o
+Stack[00007F28]:0000002AB3B4F9B6 db  72h ; r
+Stack[00007F28]:0000002AB3B4F9B7 db  7Bh ; {
+Stack[00007F28]:0000002AB3B4F9B8 db  31h ; 1
+Stack[00007F28]:0000002AB3B4F9B9 db  32h ; 2
+Stack[00007F28]:0000002AB3B4F9BA db  33h ; 3
+Stack[00007F28]:0000002AB3B4F9BB db  34h ; 4
+Stack[00007F28]:0000002AB3B4F9BC db  35h ; 5
+Stack[00007F28]:0000002AB3B4F9BD db  36h ; 6
+Stack[00007F28]:0000002AB3B4F9BE db  37h ; 7
+Stack[00007F28]:0000002AB3B4F9BF db  38h ; 8
+Stack[00007F28]:0000002AB3B4F9C0 db  39h ; 9
+Stack[00007F28]:0000002AB3B4F9C1 db  30h ; 0
+Stack[00007F28]:0000002AB3B4F9C2 db  31h ; 1
+Stack[00007F28]:0000002AB3B4F9C3 db  32h ; 2
+Stack[00007F28]:0000002AB3B4F9C4 db  33h ; 3
+Stack[00007F28]:0000002AB3B4F9C5 db  34h ; 4
+Stack[00007F28]:0000002AB3B4F9C6 db  35h ; 5
+Stack[00007F28]:0000002AB3B4F9C7 db  36h ; 6
+Stack[00007F28]:0000002AB3B4F9C8 db  37h ; 7
+Stack[00007F28]:0000002AB3B4F9C9 db  38h ; 8
+Stack[00007F28]:0000002AB3B4F9CA db  39h ; 9
+Stack[00007F28]:0000002AB3B4F9CB db  30h ; 0
+Stack[00007F28]:0000002AB3B4F9CC db  31h ; 1
+Stack[00007F28]:0000002AB3B4F9CD db  32h ; 2
+Stack[00007F28]:0000002AB3B4F9CE db  33h ; 3
+Stack[00007F28]:0000002AB3B4F9CF db  34h ; 4
+Stack[00007F28]:0000002AB3B4F9D0 db  35h ; 5
+Stack[00007F28]:0000002AB3B4F9D1 db  36h ; 6
+Stack[00007F28]:0000002AB3B4F9D2 db  37h ; 7
+Stack[00007F28]:0000002AB3B4F9D3 db  38h ; 8
+Stack[00007F28]:0000002AB3B4F9D4 db  39h ; 9
+Stack[00007F28]:0000002AB3B4F9D5 db  30h ; 0
+Stack[00007F28]:0000002AB3B4F9D6 db  31h ; 1
+Stack[00007F28]:0000002AB3B4F9D7 db  32h ; 2
+Stack[00007F28]:0000002AB3B4F9D8 db  33h ; 3
+Stack[00007F28]:0000002AB3B4F9D9 db  34h ; 4
+Stack[00007F28]:0000002AB3B4F9DA db  35h ; 5
+Stack[00007F28]:0000002AB3B4F9DB db  36h ; 6
+Stack[00007F28]:0000002AB3B4F9DC db  37h ; 7
+Stack[00007F28]:0000002AB3B4F9DD db  7Dh ; }
+```
+
+var_40此时指向0x0000002AB3B4F9D8
+
+所以得到输入的长度为41，SangFor{}括号中的内容长度为32。
+
+接下来的代码十分冗长，但是仔细观察会发现有8段形式十分相似的代码。
+
+```assembly
+v5 = 0;
+  v6 = 0i64;
+  while ( 1 )
+  {
+    v7 = *((char *)&input + v6 + 8);
+    if ( (unsigned __int8)(*((_BYTE *)&input + v6 + 8) - 0x30) > 9u )
+      break;
+    v8 = v5 - 0x30;
+LABEL_11:
+    ++v6;
+    v5 = 0x10 * (v7 + v8);
+    if ( v6 >= 4 )
+    {
+      v9 = v5 >> 4;
+      v10 = 1;
+      goto LABEL_14;
+    }
+  }
+  if ( (unsigned __int8)(v7 - 0x41) <= 5u )
+  {
+    v8 = v5 - 0x37;
+    goto LABEL_11;
+  }
+  v9 = 0;
+  v10 = 0;
+LABEL_14:
+  v11 = 0;
+  v12 = 0i64;
+  while ( 2 )
+  {
+    v13 = *((char *)&input + v12 + 0xC);
+    if ( (unsigned __int8)(*((_BYTE *)&input + v12 + 0xC) - 0x30) <= 9u )
+    {
+      v14 = v11 - 0x30;
+      goto LABEL_19;
+    }
+    if ( (unsigned __int8)(v13 - 0x41) <= 5u )
+    {
+      v14 = v11 - 0x37;
+LABEL_19:
+      ++v12;
+      v11 = 0x10 * (v13 + v14);
+      if ( v12 >= 4 )
+      {
+        v15 = v11 >> 4;
+        v16 = 1;
+        goto LABEL_22;
+      }
+      continue;
+    }
+    break;
+  }
+  v15 = 0;
+  v16 = 0;
+LABEL_22:
+  v17 = v10 & v16;
+  v18 = 0;
+  v19 = 0i64;
+  while ( 2 )
+  {
+    v20 = *((char *)&v170 + v19);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v19) - 0x30) <= 9u )
+    {
+      v21 = v18 - 0x30;
+      goto LABEL_27;
+    }
+    if ( (unsigned __int8)(v20 - 0x41) <= 5u )
+    {
+      v21 = v18 - 0x37;
+LABEL_27:
+      ++v19;
+      v18 = 0x10 * (v20 + v21);
+      if ( v19 >= 4 )
+      {
+        v22 = v18 >> 4;
+        goto LABEL_30;
+      }
+      continue;
+    }
+    break;
+  }
+  v22 = 0;
+  v17 = 0;
+LABEL_30:
+  v23 = 0;
+  v24 = 0i64;
+  while ( 2 )
+  {
+    v25 = *((char *)&v170 + v24 + 4);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v24 + 4) - 0x30) <= 9u )
+    {
+      v26 = v23 - 0x30;
+      goto LABEL_35;
+    }
+    if ( (unsigned __int8)(v25 - 0x61) <= 5u )
+    {
+      v26 = v23 - 0x57;
+LABEL_35:
+      ++v24;
+      v23 = 0x10 * (v25 + v26);
+      if ( v24 >= 4 )
+      {
+        v27 = v23 >> 4;
+        v28 = 1;
+        goto LABEL_38;
+      }
+      continue;
+    }
+    break;
+  }
+  v27 = 0;
+  v28 = 0;
+LABEL_38:
+  v29 = v28 & v17;
+  v30 = 0;
+  v31 = 0i64;
+  while ( 2 )
+  {
+    v32 = *((char *)&v170 + v31 + 8);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v31 + 8) - 0x30) <= 9u )
+    {
+      v33 = v30 - 0x30;
+      goto LABEL_43;
+    }
+    if ( (unsigned __int8)(v32 - 0x41) <= 5u )
+    {
+      v33 = v30 - 0x37;
+LABEL_43:
+      ++v31;
+      v30 = 0x10 * (v32 + v33);
+      if ( v31 >= 4 )
+      {
+        v166 = v30 >> 4;
+        goto LABEL_46;
+      }
+      continue;
+    }
+    break;
+  }
+  v29 = 0;
+  v166 = 0;
+LABEL_46:
+  v34 = 0;
+  v35 = 0i64;
+  while ( 2 )
+  {
+    v36 = *((char *)&v170 + v35 + 0xC);
+    if ( (unsigned __int8)(*((_BYTE *)&v170 + v35 + 0xC) - 0x30) <= 9u )
+    {
+      v37 = v34 - 0x30;
+      goto LABEL_51;
+    }
+    if ( (unsigned __int8)(v36 - 0x41) <= 5u )
+    {
+      v37 = v34 - 0x37;
+LABEL_51:
+      ++v35;
+      v34 = 0x10 * (v36 + v37);
+      if ( v35 >= 4 )
+      {
+        v38 = v34 >> 4;
+        v39 = 1;
+        goto LABEL_54;
+      }
+      continue;
+    }
+    break;
+  }
+  v38 = 0;
+  v39 = 0;
+LABEL_54:
+  v40 = v39 & v29;
+  v41 = 0;
+  v42 = 0i64;
+  while ( 2 )
+  {
+    v43 = *((char *)&v171 + v42);
+    if ( (unsigned __int8)(*((_BYTE *)&v171 + v42) - 0x30) <= 9u )
+    {
+      v44 = v41 - 0x30;
+      goto LABEL_59;
+    }
+    if ( (unsigned __int8)(v43 - 0x41) <= 5u )
+    {
+      v44 = v41 - 0x37;
+LABEL_59:
+      ++v42;
+      v41 = 0x10 * (v43 + v44);
+      if ( v42 >= 4 )
+      {
+        v168 = v41 >> 4;
+        goto LABEL_62;
+      }
+      continue;
+    }
+    break;
+  }
+  v40 = 0;
+  v168 = 0;
+LABEL_62:
+  v4 = 0i64;
+  v3 = 0i64;
+  while ( 2 )
+  {
+    v45 = *((char *)&v171 + v3 + 4);
+    if ( (unsigned __int8)(*((_BYTE *)&v171 + v3 + 4) - 0x30) <= 9u )
+    {
+      v46 = v4 - 0x30;
+      goto LABEL_67;
+    }
+    if ( (unsigned __int8)(v45 - 0x41) <= 5u )
+    {
+      v46 = v4 - 0x37;
+LABEL_67:
+      ++v3;
+      v4 = (unsigned int)(0x10 * (v45 + v46));
+      if ( v3 >= 4 )
+      {
+        v4 = (unsigned int)((int)v4 >> 4);
+        v47 = 1;
+        v167 = v4;
+        goto LABEL_70;
+      }
+      continue;
+    }
+    break;
+  }
+```
+
+这段代码都是在对input进行操作，且都是先给一个字符减去0x30，然后比较是否小于等于9，0x30其实就是数字'0'的ASCII码，接下来还有减去0x41，而0x41就是字母'A'的ASCII码，然后比较是否小于等于5。所以猜测这段代码首先要求我们的输入为"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"。然后将我们输入的字符char变为了int。可以通过动态调试查看这段代码工作。
+
+输入`SangFor{00010002000300040005000600070008}`
+
+可以发现v8，v14，v22，v27，v33，v38，v41，v4的值分别为1，2，3，4，5，6，7，8。所以这段代码的作用是把32的字符分为8份，每份4个字符，并将其转为8个数字。
+
+接下来继续动态调试
+
+```
+for ( i = v9; v49; v49 >>= 1 )
+  {
+    if ( (v49 & 1) != 0 )
+    {
+      v51 = i;
+      v52 = v48;
+      do
+      {
+        v48 = 0;
+        v53 = v51;
+        v54 = 0;
+        v55 = v52;
+        while ( v55 || v53 )
+        {
+          v56 = v55 + v53;
+          v55 >>= 1;
+          v57 = (v56 & 1) << v54++;
+          v48 |= v57;
+          v53 >>= 1;
+        }
+        v58 = v52 & v51;
+        v52 = v48;
+        v51 = 2 * v58;
+      }
+      while ( v51 );
+    }
+    i *= 2;
+  }
+  v59 = v48 == 0x249E15C5;
+```
+
+v9=1，v49=2，代码执行完v48=2，所以猜测这段代码的作用是v9*v49
+
+```assembly
+  v60 = 1;
+  v61 = ~v15;
+  do
+  {
+    v62 = 0;
+    v63 = v60;
+    v64 = 0;
+    v65 = v61;
+    while ( v65 || v63 )
+    {
+      v66 = v65 + v63;
+      v65 >>= 1;
+      v67 = (v66 & 1) << v64++;
+      v62 |= v67;
+      v63 >>= 1;
+    }
+    v68 = v61 & v60;
+    v61 = v62;
+    v60 = 2 * v68;
+  }
+  while ( v60 );
+  do
+  {
+    v69 = 0;
+    v70 = v62;
+    v71 = 0;
+    v72 = v9;
+    while ( v72 || v70 )
+    {
+      v73 = v72 + v70;
+      v72 >>= 1;
+      v74 = (v73 & 1) << v71++;
+      v69 |= v74;
+      v70 >>= 1;
+    }
+    v75 = v9 & v62;
+    v9 = v69;
+    v62 = 2 * v75;
+  }
+  while ( v62 );
+  v76 = v27;
+  v77 = v22;
+  v78 = v69 == 0xFFFF59BC;
+```
+
+代码执行完之后v69=0xFFFFFFFF，所以猜测这段代码的作用是"减"
+
+```assembly
+  v79 = 0;
+  for ( j = v59 && v78; v76; v76 >>= 1 )
+  {
+    if ( (v76 & 1) != 0 )
+    {
+      v81 = v77;
+      v82 = v79;
+      do
+      {
+        v79 = 0;
+        v83 = v81;
+        v84 = 0;
+        v85 = v82;
+        while ( v85 || v83 )
+        {
+          v86 = v85 + v83;
+          v85 >>= 1;
+          v87 = (v86 & 1) << v84++;
+          v79 |= v87;
+          v83 >>= 1;
+        }
+        v88 = v82 & v81;
+        v82 = v79;
+        v81 = 2 * v88;
+      }
+      while ( v81 );
+    }
+    v77 *= 2;
+  }
+  v89 = 0;
+  v90 = 1;
+  v91 = ~v27;
+  if ( v79 == 0x34C7EAE2 )
+    v89 = j;
+  do
+  {
+    v92 = 0;
+    v93 = v90;
+    v94 = 0;
+    v95 = v91;
+    while ( v95 || v93 )
+    {
+      v96 = v95 + v93;
+      v95 >>= 1;
+      v97 = (v96 & 1) << v94++;
+      v92 |= v97;
+      v93 >>= 1;
+    }
+    v98 = v91 & v90;
+    v91 = v92;
+    v90 = 2 * v98;
+  }
+  while ( v90 );
+  do
+  {
+    v99 = 0;
+    v100 = v92;
+    v101 = 0;
+    v102 = v22;
+    while ( v102 || v100 )
+    {
+      v103 = v102 + v100;
+      v102 >>= 1;
+      v104 = (v103 & 1) << v101++;
+      v99 |= v104;
+      v100 >>= 1;
+    }
+    v105 = v22 & v92;
+    v22 = v99;
+    v92 = 2 * v105;
+  }
+  while ( v92 );
+  v106 = v166;
+  v107 = v38;
+  v108 = v166;
+  v109 = 0;
+  for ( k = v89 && v99 == 0x216B; v107; v107 >>= 1 )
+  {
+    if ( (v107 & 1) != 0 )
+    {
+      v111 = v108;
+      v112 = v109;
+      do
+      {
+        v109 = 0;
+        v113 = v111;
+        v114 = 0;
+        v115 = v112;
+        while ( v115 || v113 )
+        {
+          v116 = v115 + v113;
+          v115 >>= 1;
+          v117 = (v116 & 1) << v114++;
+          v109 |= v117;
+          v113 >>= 1;
+        }
+        v118 = v112 & v111;
+        v112 = v109;
+        v111 = 2 * v118;
+      }
+      while ( v111 );
+    }
+    v108 *= 2;
+  }
+  v119 = 0;
+  v120 = 1;
+  v121 = 1;
+  v122 = ~v38;
+  if ( v109 == 0x637973BA )
+    v119 = k;
+```
+
+代码执行完之后v109=0x1E，所以猜测这段代码的作用是"乘"。
+
+```assembly
+  do
+  {
+    v123 = 0;
+    v124 = v121;
+    v125 = 0;
+    v126 = v122;
+    while ( v126 || v124 )
+    {
+      v127 = v126 + v124;
+      v126 >>= 1;
+      v128 = (v127 & 1) << v125++;
+      v123 |= v128;
+      v124 >>= 1;
+    }
+    v129 = v122 & v121;
+    v122 = v123;
+    v121 = 2 * v129;
+  }
+  while ( v121 );
+  do
+  {
+    v130 = 0;
+    v131 = v123;
+    v132 = 0;
+    v133 = v106;
+    while ( v133 || v131 )
+    {
+      v134 = v133 + v131;
+      v133 >>= 1;
+      v135 = (v134 & 1) << v132++;
+      v130 |= v135;
+      v131 >>= 1;
+    }
+    v136 = v106 & v123;
+    v106 = v130;
+    v123 = 2 * v136;
+  }
+  while ( v123 );
+  v137 = v168;
+  v138 = v167;
+  v139 = v168;
+  v140 = v119 && v130 == 0x819D;
+  for ( l = 0; v138; v138 >>= 1 )
+  {
+    if ( (v138 & 1) != 0 )
+    {
+      v142 = v139;
+      v143 = l;
+      do
+      {
+        l = 0;
+        v144 = v142;
+        v145 = 0;
+        v146 = v143;
+        while ( v146 || v144 )
+        {
+          v147 = v146 + v144;
+          v146 >>= 1;
+          v148 = (v147 & 1) << v145++;
+          l |= v148;
+          v144 >>= 1;
+        }
+        v149 = v143 & v142;
+        v143 = l;
+        v142 = 2 * v149;
+      }
+      while ( v142 );
+    }
+    v139 *= 2;
+  }
+  v150 = 0;
+  v151 = ~v167;
+  if ( l == 0xE5FD104 )
+    v150 = v140;
+```
+
+代码执行完之后l=0x38（56），所以猜测这段代码的作用是"乘"。
+
+其实在上面的代码中还有很多值都是0xFFFFFFFF，是因为代码同样做了"减"的功能，但是由于我们构造的输入的字符串的原因，并不能很好的判断究竟是8个中的哪两个数字相减。
+
+重新构造
+
+SangFor{0001000200040007000B00100016001D}
+
+动态调试得到约束
+
+v1*v2==0x249E15C5
+
+v1-v2==0xFFFF59BC（0xA644）
+
+v3*v4==0x34C7EAE2
+
+v3-v4==0x216B
+
+v5*v6==0x637973BA
+
+v5-v6==0x819D
+
+v7*v8==0xE5FD104
+
+v7-v8==0x9393
+
+编写脚本
+
+```assembly
+from z3 import *
+
+condition = []
+
+v1,v2,v3,v4,v5,v6,v7,v8=Ints('v1 v2 v3 v4 v5 v6 v7 v8')
+s=Solver()
+s.add(v1*v2==0x249E15C5)
+s.add(v2-v1==0xA644)
+s.add(v3*v4==0x34C7EAE2)
+s.add(v3-v4==0x216B)
+s.add(v5*v6==0x637973BA)
+s.add(v5-v6==0x819D)
+s.add(v7*v8==0xE5FD104)
+s.add(v7-v8==0x9393)
+print(s.check())
+print(s.model())
+
+
+# for i in range(0, 0xffff):
+#     for j in range(0, 0xffff):
+
+#         if i*j==0x249E15C5 and i-j==0xA644:
+#             print("v1:", j)
+#             print("v2:", i)
+
+#         if i*j==0x34C7EAE2 and i-j==0x216B:
+#             print("v3:", i)
+#             print("v4:", j)
+
+#         if i*j==0x637973BA and i-j==0x819D:
+#             print("v5:", i)
+#             print("v6:", j)
+
+#         if i*j==0xE5FD104 and i-j==0x9393:
+#             print("v7:", i)
+#             print("v8:", j)
+```
+
+sat
+[v8 = -43343,
+ v7 = -5564,
+ v6 = -60683,
+ v5 = -27502,
+ v4 = 25786,
+ v3 = 34341,
+ v2 = 53951,
+ v1 = 11387]
+
+```assembly
+flag = [11387, 53951, 34341, 25786, 60683, 27502, 43343, 5564]
+result = ""
+for i in flag:
+    result += str(hex(i))[2:]
+print(result.upper())
+```
+
+SangFor{2C7BD2BF862564baED0B6B6EA94F15BC}
