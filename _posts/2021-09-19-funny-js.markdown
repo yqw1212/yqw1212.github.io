@@ -1,0 +1,2269 @@
+---
+layout: post
+title:  funnyjs
+date:   2021-09-19 00:01:01 +0300
+image:  2021-09-19-woman.jpg
+tags:   [ctf,reverse,QuickJS,长城杯]
+---
+
+给了一个.js文件，记事本打开发现发现elf字样，ida打开，查看main函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  unsigned int v3; // eax
+  __int64 v4; // rax
+  __int64 v5; // rbx
+  __m128i v6; // xmm0
+  _DWORD *v7; // rdi
+  __int64 v8; // rcx
+  __int64 v9; // rax
+  const char *v10; // r14
+  int v11; // ebx
+  int v12; // ecx
+  unsigned int v13; // er13
+  int v14; // eax
+  size_t v15; // r12
+  __int64 v16; // rax
+  __int64 v17; // r15
+  __int64 *v18; // rbx
+  __int64 v19; // rax
+  __int64 v20; // rdx
+  int v21; // eax
+  __int64 v22; // rcx
+  __int64 v23; // rax
+  __int64 v24; // rcx
+  __int64 v25; // rdx
+  __int64 v26; // r12
+  __int64 v27; // rax
+  __int64 v28; // rdx
+  _DWORD *v29; // rax
+  __int64 v30; // rdx
+  __int64 v31; // rcx
+  __int64 v32; // rdx
+  _QWORD *v33; // r12
+  void **v34; // r13
+  __int64 *v35; // r15
+  __int64 v36; // rdx
+  __int64 v37; // rax
+  __int64 v38; // rdx
+  __int64 v39; // r14
+  __int64 v40; // r12
+  int v41; // eax
+  int v42; // edx
+  int v43; // eax
+  int v44; // edx
+  _QWORD *v45; // r12
+  __int64 v46; // rax
+  __int64 v47; // rdx
+  __int64 v48; // rax
+  __int64 v49; // rsi
+  __int64 v50; // rax
+  __int64 v51; // rdx
+  __int64 v52; // r13
+  __int64 v53; // rdx
+  __int64 v54; // r14
+  __int64 v55; // rax
+  __int64 v56; // rdx
+  __int64 v57; // rax
+  __int64 v58; // rdx
+  __int64 v59; // rax
+  __int64 v60; // rdx
+  __int64 v61; // rax
+  __int64 v62; // rdx
+  _DWORD *v63; // rax
+  __int64 v64; // rdx
+  __int64 v65; // r12
+  __int64 v66; // r13
+  __int64 v67; // rdx
+  __int64 v68; // r14
+  __int64 v69; // r15
+  __int64 v70; // rax
+  __int64 v71; // rcx
+  __int64 v72; // rdx
+  __int64 v73; // rax
+  __int64 v74; // rdx
+  __int64 v75; // rax
+  __int64 v76; // rdx
+  int v77; // eax
+  int v78; // edx
+  const char *v79; // r14
+  int v80; // er13
+  int v81; // er12
+  __int64 v82; // rax
+  __int64 v83; // r12
+  __int64 v84; // rdx
+  __int64 v85; // rsi
+  __int64 v86; // rdx
+  __int64 v87; // rdx
+  _QWORD *v88; // r12
+  _DWORD *v89; // rdi
+  __int64 v90; // rcx
+  __int64 v91; // rdx
+  __int64 v92; // rax
+  __int64 v93; // rdx
+  _QWORD *v94; // r12
+  __int64 v95; // rdx
+  _QWORD *v96; // r12
+  __int64 v97; // rax
+  __int64 v98; // rdx
+  __int64 v99; // rax
+  __int64 v100; // rdx
+  __int64 v101; // rax
+  __int64 v102; // rdx
+  __int64 v103; // r12
+  __int64 v104; // rdx
+  __suseconds_t v105; // rax
+  __int64 v106; // rsi
+  __int64 v107; // rdx
+  _QWORD *v108; // r12
+  __int64 v109; // rdx
+  unsigned int v110; // er12
+  __int64 v111; // rax
+  __int64 v112; // rdx
+  int v113; // er13
+  const char *v114; // r14
+  char *v115; // rax
+  __int64 v116; // rsi
+  int v117; // eax
+  int v118; // edx
+  __int64 v119; // r12
+  __int64 v120; // rdx
+  __int64 v121; // r12
+  __int64 v122; // rax
+  __int64 v123; // rdx
+  __int64 v124; // r13
+  __int64 v125; // rdx
+  __int64 v126; // r12
+  _DWORD *v127; // rax
+  __int64 v128; // rdx
+  __int64 v129; // r9
+  _DWORD *v130; // r8
+  _QWORD *v131; // rax
+  _QWORD *v132; // r12
+  __int64 v133; // rsi
+  __int64 v134; // rdx
+  __int64 v135; // rdx
+  __int64 v136; // r13
+  __int64 v137; // rdx
+  __int64 v138; // r12
+  __int64 v139; // r15
+  int *v140; // r12
+  __int64 v141; // rax
+  __int64 v142; // rdx
+  __int64 v143; // r13
+  __int64 v144; // r14
+  __int64 v145; // rax
+  __int64 v146; // rdx
+  _DWORD *v147; // rsi
+  __int64 v148; // rax
+  __int64 v149; // rdx
+  __int64 v150; // rcx
+  __int64 v151; // rdi
+  __int64 v152; // r13
+  __int64 v153; // r8
+  __int64 v154; // r15
+  __int64 v155; // rax
+  __int64 v156; // rcx
+  __int64 v157; // rdx
+  __int64 v158; // rax
+  __int64 v159; // rdx
+  __int64 v160; // rax
+  __int64 v161; // rdx
+  __int64 v162; // rdx
+  int v163; // eax
+  bool v164; // zf
+  __int64 v165; // rcx
+  _DWORD *v166; // rdi
+  unsigned int v167; // er12
+  __int64 v168; // rax
+  __int64 v169; // rsi
+  __int64 v170; // r14
+  __int64 v171; // rdx
+  __int64 v172; // r13
+  __time_t v173; // rdx
+  __int64 v174; // rdi
+  __int64 v175; // r15
+  unsigned int v176; // er12
+  __int64 v177; // rax
+  int *v179; // rax
+  __int64 v180; // rdx
+  __int64 v181; // rdi
+  int v182; // ecx
+  __int64 *v183; // r13
+  __int64 v184; // rdx
+  _QWORD *v185; // rax
+  __int64 *v186; // r14
+  __int64 v187; // rsi
+  _DWORD *v188; // rax
+  __int64 v189; // rdx
+  __int64 v190; // rbx
+  __int64 v191; // r8
+  __int64 *v192; // r12
+  int v193; // er15
+  __int64 v194; // rdx
+  _DWORD *v195; // rsi
+  int v196; // edi
+  int v197; // ecx
+  __int64 *v198; // rbx
+  __int64 v199; // r13
+  int v200; // eax
+  __int64 v201; // rax
+  int v202; // eax
+  _QWORD *v203; // r13
+  __int64 v204; // r15
+  unsigned int v205; // er14
+  _QWORD *v206; // r12
+  _QWORD *v207; // rax
+  _DWORD *v208; // rdx
+  unsigned int v209; // eax
+  int v210; // ebx
+  __int64 v211; // r14
+  __int64 v212; // r15
+  __int64 v213; // rax
+  int v214; // ecx
+  __int64 v215; // rdx
+  unsigned __int64 v216; // rcx
+  __int64 v217; // rax
+  __int64 v218; // [rsp+8h] [rbp-1A0h]
+  unsigned int v221; // [rsp+1Ch] [rbp-18Ch]
+  __int64 v222; // [rsp+28h] [rbp-180h]
+  __int64 v223; // [rsp+38h] [rbp-170h]
+  __suseconds_t v224; // [rsp+40h] [rbp-168h]
+  __int64 v225; // [rsp+48h] [rbp-160h]
+  __int64 v226; // [rsp+48h] [rbp-160h]
+  __int64 v227; // [rsp+50h] [rbp-158h]
+  __int64 v228; // [rsp+58h] [rbp-150h]
+  __int64 v229; // [rsp+60h] [rbp-148h]
+  int v230; // [rsp+60h] [rbp-148h]
+  __int64 v231; // [rsp+60h] [rbp-148h]
+  __int64 *v232; // [rsp+60h] [rbp-148h]
+  int v233; // [rsp+68h] [rbp-140h]
+  int v234; // [rsp+68h] [rbp-140h]
+  int v235; // [rsp+68h] [rbp-140h]
+  _DWORD *v236; // [rsp+68h] [rbp-140h]
+  int v237; // [rsp+68h] [rbp-140h]
+  _QWORD v238[2]; // [rsp+70h] [rbp-138h] BYREF
+  __m128i v239; // [rsp+80h] [rbp-128h] BYREF
+  __m128i v240; // [rsp+90h] [rbp-118h] BYREF
+  struct timeval v241; // [rsp+A0h] [rbp-108h] BYREF
+  __int128 v242; // [rsp+B0h] [rbp-F8h]
+  __int64 v243; // [rsp+C0h] [rbp-E8h] BYREF
+  __int64 v244; // [rsp+C8h] [rbp-E0h]
+  int v245; // [rsp+D0h] [rbp-D8h]
+  int v246; // [rsp+D4h] [rbp-D4h]
+  int v247; // [rsp+D8h] [rbp-D0h]
+  _OWORD v248[2]; // [rsp+E0h] [rbp-C8h] BYREF
+  __int64 v249; // [rsp+100h] [rbp-A8h]
+  int v250; // [rsp+108h] [rbp-A0h]
+  _BYTE v251[88]; // [rsp+110h] [rbp-98h] BYREF
+  unsigned __int64 v252; // [rsp+168h] [rbp-40h]
+  __int64 v253; // [rsp+1A0h] [rbp-8h] BYREF
+
+  v252 = __readfsqword(0x28u);
+  v249 = 0LL;
+  v248[0] = 0LL;
+  v250 = 0;
+  v248[1] = 0LL;
+  __printf_chk(1LL, "Please input the Flag:", envp);
+  gets(v248);
+  v3 = strlen((const char *)v248);
+  if ( v3 > 0x24 )
+  {
+    puts("Input Error!");
+    return 0;
+  }
+  __memcpy_chk(&unk_26305A, v248, (int)v3, 0x452LL);
+  v240 = (__m128i)0xFFFFFFFFFFFFFFFFLL;
+  v239 = 0LL;
+  v4 = js_def_malloc(&v239, 0x250LL);
+  v5 = v4;
+  v228 = v4;
+  if ( v4 )
+  {
+    *(_QWORD *)(v4 + 0x248) = 0LL;
+    v6 = _mm_load_si128(&def_malloc_funcs);
+    memset(
+      (void *)((v4 + 8) & 0xFFFFFFFFFFFFFFF8LL),
+      0,
+      8LL * (((unsigned int)v4 - (((_DWORD)v4 + 8) & 0xFFFFFFF8) + 0x250) >> 3));
+    *(__m128i *)v4 = v6;
+    v7 = (_DWORD *)(v4 + 0x128);
+    v8 = 0x1ELL;
+    *(_QWORD *)(v4 + 0xC0) = 0x40000LL;
+    *(__m128i *)(v4 + 0x10) = _mm_load_si128(&stru_262C10);
+    *(__m128i *)(v4 + 0x20) = _mm_load_si128(&v239);
+    *(__m128i *)(v4 + 0x30) = _mm_load_si128(&v240);
+    while ( v8 )
+    {
+      *v7++ = 0;
+      --v8;
+    }
+    *(_QWORD *)(v4 + 0x130) = js_bf_realloc;
+    *(_QWORD *)(v4 + 0x1A0) = invalid_to_string;
+    *(_QWORD *)(v4 + 0x1A8) = invalid_from_string;
+    *(_QWORD *)(v4 + 0x1B0) = invalid_unary_arith;
+    *(_QWORD *)(v4 + 0x1B8) = invalid_binary_arith;
+    *(_QWORD *)(v4 + 0x1C8) = invalid_mul_pow10_to_float64;
+    *(_QWORD *)(v4 + 0x1D0) = invalid_mul_pow10;
+    *(_QWORD *)(v4 + 0x1D8) = invalid_to_string;
+    *(_QWORD *)(v4 + 0x1E0) = invalid_from_string;
+    *(_QWORD *)(v4 + 0x1E8) = invalid_unary_arith;
+    *(_QWORD *)(v4 + 0x1F0) = invalid_binary_arith;
+    *(_QWORD *)(v4 + 0x200) = invalid_mul_pow10_to_float64;
+    *(_QWORD *)(v4 + 0x208) = invalid_mul_pow10;
+    *(_QWORD *)(v4 + 0x210) = invalid_to_string;
+    *(_QWORD *)(v4 + 0x218) = invalid_from_string;
+    *(_QWORD *)(v4 + 0x220) = invalid_unary_arith;
+    *(_QWORD *)(v4 + 0x228) = invalid_binary_arith;
+    *(_QWORD *)(v4 + 0x238) = invalid_mul_pow10_to_float64;
+    *(_QWORD *)(v4 + 0x240) = invalid_mul_pow10;
+    *(_QWORD *)(v4 + 0x128) = v4;
+    v229 = v4 + 0x78;
+    *(_QWORD *)(v4 + 0x78) = v4 + 0x78;
+    *(_QWORD *)(v4 + 0x80) = v4 + 0x78;
+    *(_BYTE *)(v4 + 0xB8) = 0;
+    *(_QWORD *)(v4 + 0x58) = 0LL;
+    *(_QWORD *)(v4 + 0x88) = v4 + 0x88;
+    *(_QWORD *)(v4 + 0x90) = v4 + 0x88;
+    *(_QWORD *)(v4 + 0x48) = 0LL;
+    *(_DWORD *)(v4 + 0x50) = 0;
+    *(_QWORD *)(v4 + 0x98) = v4 + 0x98;
+    *(_QWORD *)(v4 + 0xA0) = v4 + 0x98;
+    *(_DWORD *)(v4 + 0x68) = 0;
+    *(_QWORD *)(v4 + 0xE8) = v4 + 0xE8;
+    *(_QWORD *)(v4 + 0xF0) = v4 + 0xE8;
+    if ( !(unsigned int)JS_ResizeAtomHash(v4, 0x100LL) )
+    {
+      v9 = v5 + 0x20;
+      v10 = "null";
+      v11 = 1;
+      v227 = v9;
+      while ( 1 )
+      {
+        v13 = v11 == 0xD0 ? 4 : 2 * (v11 >= 0xD1) + 1;
+        v14 = strlen(v10);
+        v15 = v14;
+        v233 = v14;
+        v16 = (*(__int64 (__fastcall **)(__int64, __int64))v228)(v227, v14 + 0x11LL);
+        v17 = v16;
+        if ( !v16 )
+          break;
+        *(_BYTE *)(v16 + 7) &= 0x7Fu;
+        *(_DWORD *)v16 = 1;
+        v12 = *(_DWORD *)(v16 + 4);
+        *(_BYTE *)(v16 + 0xB) &= 0x3Fu;
+        *(_DWORD *)(v16 + 0xC) = 0;
+        *(_DWORD *)(v16 + 8) &= 0xC0000000;
+        *(_DWORD *)(v16 + 4) = v233 & 0x7FFFFFFF | v12 & 0x80000000;
+        memcpy((void *)(v16 + 0x10), v10, v15);
+        *(_BYTE *)(v17 + v15 + 0x10) = 0;
+        if ( !(unsigned int)_JS_NewAtom_lto_priv_115(v228, v17, v13) )
+          break;
+        ++v11;
+        v10 += v15 + 1;
+        if ( v11 == 0xDF )
+        {
+          v203 = &js_std_class_def;
+          v226 = 5LL;
+          v204 = v228;
+          v205 = 0;
+          do
+          {
+            ++v205;
+            v241 = 0LL;
+            v243 = 0LL;
+            v242 = 0LL;
+            v224 = v203[1];
+            v241.tv_usec = v224;
+            v223 = v203[2];
+            *(_QWORD *)&v242 = v223;
+            v237 = *(_DWORD *)v203;
+            v209 = *(_DWORD *)(v204 + 0x6C);
+            if ( v205 < v209 )
+            {
+              v206 = *(_QWORD **)(v204 + 0x70);
+              if ( LODWORD(v206[v226]) )
+                goto LABEL_13;
+            }
+            else
+            {
+              v210 = (int)(3 * v209) / 2;
+              if ( v210 < (int)(v205 + 1) || v210 <= 0x39 )
+              {
+                v222 = 0x3ALL;
+                v210 = 0x3A;
+              }
+              else
+              {
+                v222 = v210;
+              }
+              if ( v229 != *(_QWORD *)(v204 + 0x80) )
+              {
+                v221 = v205;
+                v211 = v204;
+                v212 = *(_QWORD *)(v204 + 0x80);
+                while ( 1 )
+                {
+                  v213 = (*(__int64 (__fastcall **)(__int64, _QWORD, __int64))(v211 + 0x10))(
+                           v227,
+                           *(_QWORD *)(v212 + 0x48),
+                           0x10 * v222);
+                  if ( !v213 )
+                    goto LABEL_13;
+                  v214 = *(_DWORD *)(v211 + 0x6C);
+                  if ( v210 > v214 )
+                  {
+                    v215 = v213 + 0x10LL * v214;
+                    v216 = v213 + 0x10 * (v214 + (unsigned __int64)(unsigned int)(v210 + ~v214)) + 0x10;
+                    do
+                    {
+                      v215 += 0x10LL;
+                      *(_OWORD *)(v215 - 0x10) = 0LL;
+                      *(_QWORD *)(v215 - 8) = 2LL;
+                    }
+                    while ( v216 != v215 );
+                  }
+                  *(_QWORD *)(v212 + 0x48) = v213;
+                  v212 = *(_QWORD *)(v212 + 8);
+                  if ( v229 == v212 )
+                  {
+                    v204 = v211;
+                    v205 = v221;
+                    break;
+                  }
+                }
+              }
+              v206 = (_QWORD *)(*(__int64 (__fastcall **)(__int64, _QWORD, __int64))(v204 + 0x10))(
+                                 v227,
+                                 *(_QWORD *)(v204 + 0x70),
+                                 0x28 * v222);
+              if ( !v206 )
+                goto LABEL_13;
+              memset(&v206[5 * *(int *)(v204 + 0x6C)], 0, 0x28LL * (v210 - *(_DWORD *)(v204 + 0x6C)));
+              *(_QWORD *)(v204 + 0x70) = v206;
+              *(_DWORD *)(v204 + 0x6C) = v210;
+            }
+            v207 = &v206[v226];
+            LODWORD(v206[v226]) = v205;
+            if ( v237 > 0xDE )
+            {
+              v208 = *(_DWORD **)(*(_QWORD *)(v204 + 0x60) + 8LL * (unsigned int)v237);
+              ++*v208;
+            }
+            v203 += 3;
+            v226 += 5LL;
+            v207[3] = 0LL;
+            v207[4] = 0LL;
+            *((_DWORD *)v207 + 1) = v237;
+            v207[1] = v224;
+            v207[2] = v223;
+          }
+          while ( v205 != 0x2F );
+          v206[0x2C] = &js_arguments_exotic_methods;
+          v206[0x1D] = &js_string_exotic_methods;
+          v206[0x3B] = &js_module_ns_exotic_methods;
+          v206[0x3F] = js_call_c_function_lto_priv_271;
+          v206[0x4E] = js_c_function_data_call;
+          v206[0x49] = js_call_bound_function_lto_priv_272;
+          v206[0x53] = js_generator_function_call_lto_priv_273;
+          *(_QWORD *)(v228 + 0x114) = 0x1000000004LL;
+          *(_DWORD *)(v228 + 0x11C) = 0;
+          v217 = js_mallocz_rt(v228, 0x80LL);
+          *(_QWORD *)(v228 + 0x120) = v217;
+          if ( v217 )
+            goto LABEL_14;
+          break;
+        }
+      }
+    }
+LABEL_13:
+    JS_FreeRuntime(v228);
+    v228 = 0LL;
+  }
+LABEL_14:
+  v18 = (__int64 *)js_mallocz_rt(v228, 0x1D0LL);
+  if ( !v18 )
+  {
+LABEL_67:
+    *(_QWORD *)(v228 + 0x100) = js_module_loader;
+    *(_QWORD *)(v228 + 0xF8) = 0LL;
+    *(_QWORD *)(v228 + 0x108) = 0LL;
+    JS_NewCFunction3_lto_priv_200(0LL, js_throw_type_error_lto_priv_260, 0LL, 0LL, 0LL, 0LL, 0x40LL, 0x1F8LL);
+    BUG();
+  }
+  v19 = (*(__int64 (__fastcall **)(__int64, __int64))v228)(v228 + 0x20, 0x10LL * *(int *)(v228 + 0x6C));
+  v18[0xA] = v19;
+  if ( !v19 )
+  {
+    (*(void (__fastcall **)(__int64, __int64 *))(v228 + 8))(v228 + 0x20, v18);
+    goto LABEL_67;
+  }
+  v20 = *(_QWORD *)(v228 + 0x78);
+  *v18 = v228;
+  *(_QWORD *)(v20 + 8) = v18 + 1;
+  v18[1] = v20;
+  v18[2] = v228 + 0x78;
+  *(_QWORD *)(v228 + 0x78) = v18 + 1;
+  *(_OWORD *)(v18 + 5) = 0LL;
+  v18[0x30] = v228 + 0x128;
+  v21 = *(_DWORD *)(v228 + 0x6C);
+  v18[3] = (__int64)&v253;
+  v18[4] = 0x40000LL;
+  v18[6] = 2LL;
+  v18[0x31] = 0x71LL;
+  *((_DWORD *)v18 + 0x64) = 0x5C8;
+  if ( v21 > 0 )
+  {
+    v22 = (unsigned int)(v21 - 1);
+    v23 = 0LL;
+    v24 = 0x10 * (v22 + 1);
+    do
+    {
+      v25 = v23 + v18[0xA];
+      v23 += 0x10LL;
+      *(_OWORD *)v25 = 0LL;
+      *(_QWORD *)(v25 + 8) = 2LL;
+    }
+    while ( v24 != v23 );
+  }
+  v26 = v18[0xA];
+  v18[0x35] = (__int64)(v18 + 0x35);
+  *(_OWORD *)(v18 + 0xF) = 0LL;
+  v18[0x36] = (__int64)(v18 + 0x35);
+  v18[0x10] = 2LL;
+  *(_OWORD *)(v18 + 0x11) = 0LL;
+  v18[0x12] = 2LL;
+  v27 = JS_NewObjectProtoClass(v18, 0LL, 2LL, 1LL);
+  *(_QWORD *)(v26 + 0x18) = v28;
+  *(_QWORD *)(v26 + 0x10) = v27;
+  v29 = (_DWORD *)JS_NewCFunction3_lto_priv_200(
+                    v18,
+                    js_function_proto_lto_priv_270,
+                    "",
+                    0LL,
+                    0LL,
+                    0LL,
+                    *(_QWORD *)(v18[0xA] + 0x10),
+                    *(_QWORD *)(v18[0xA] + 0x18));
+  v18[0xC] = v30;
+  v18[0xB] = (__int64)v29;
+  v31 = v18[0xC];
+  v32 = v18[0xA];
+  if ( (unsigned int)v31 > 0xFFFFFFF4 )
+    ++*v29;
+  *(_QWORD *)(v32 + 0xD8) = v31;
+  *(_QWORD *)(v32 + 0xD0) = v29;
+  v33 = (_QWORD *)v18[0xA];
+  v34 = &native_error_name;
+  v35 = v18 + 0x13;
+  v33[6] = JS_NewObjectProtoClass(v18, v33[2], v33[3], 1LL);
+  v33[7] = v36;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x30),
+    *(_QWORD *)(v18[0xA] + 0x38),
+    &js_error_proto_funcs,
+    3LL);
+  do
+  {
+    ++v34;
+    v35 += 2;
+    v37 = JS_NewObjectProtoClass(v18, *(_QWORD *)(v18[0xA] + 0x30), *(_QWORD *)(v18[0xA] + 0x38), 1LL);
+    v39 = v38;
+    v40 = v37;
+    v41 = JS_NewAtomString(v18, v34[0xFFFFFFFF]);
+    JS_DefinePropertyValue((_DWORD)v18, v40, v39, 0x35, v41, v42, 3);
+    v43 = _JS_AtomToValue_lto_priv_88(v18, 0x2FLL, 1LL);
+    JS_DefinePropertyValue((_DWORD)v18, v40, v39, 0x33, v43, v44, 3);
+    v35[0xFFFFFFFE] = v40;
+    v35[0xFFFFFFFF] = v39;
+  }
+  while ( v18 + 0x21 != v35 );
+  v45 = (_QWORD *)v18[0xA];
+  v46 = JS_NewObjectProtoClass(v18, v45[2], v45[3], 2LL);
+  v45[5] = v47;
+  v45[4] = v46;
+  v48 = v18[0xA];
+  v49 = *(_QWORD *)(v48 + 0x20);
+  if ( *(_DWORD *)(v48 + 0x28) != 0xFFFFFFFF )
+    v49 = 0LL;
+  v18[8] = js_new_shape2_constprop_51(v18, v49, 1LL);
+  add_shape_property_lto_priv_249(v18, v18 + 8, 0LL, 0x30LL, 0xALL);
+  *(_QWORD *)(v228 + 0x100) = js_module_loader;
+  *(_QWORD *)(v228 + 0xF8) = 0LL;
+  *(_QWORD *)(v228 + 0x108) = 0LL;
+  v50 = JS_NewCFunction3_lto_priv_200(v18, js_throw_type_error_lto_priv_260, 0LL, 0LL, 0LL, 0LL, v18[0xB], v18[0xC]);
+  v18[0x28] = v51;
+  v18[0x27] = v50;
+  v52 = JS_NewCFunction3_lto_priv_200(
+          v18,
+          js_function_proto_caller_lto_priv_261,
+          0LL,
+          0LL,
+          0LL,
+          0LL,
+          v18[0xB],
+          v18[0xC]);
+  v54 = v53;
+  JS_DefineProperty((_DWORD)v18, v18[0xB], v18[0xC], 0x4E, 0, 3, v52, v53, v18[0x27], v18[0x28], 0x1901);
+  JS_DefineProperty((_DWORD)v18, v18[0xB], v18[0xC], 0x4C, 0, 3, v52, v54, v18[0x27], v18[0x28], 0x1901);
+  JS_FreeValue_isra_135_lto_priv_73(v18, v52, v54);
+  v55 = js_object_seal_lto_priv_294(v18, 0LL, 3LL, 1LL, v18 + 0x27, 1LL);
+  JS_FreeValue_isra_135_lto_priv_73(v18, v55, v56);
+  v57 = JS_NewObjectProtoClass(v18, *(_QWORD *)(v18[0xA] + 0x10), *(_QWORD *)(v18[0xA] + 0x18), 1LL);
+  v18[0x2C] = v58;
+  v18[0x2B] = v57;
+  v18[0x2D] = JS_NewObjectProtoClass(v18, 0LL, 2LL, 1LL);
+  v59 = v18[0xA];
+  v18[0x2E] = v60;
+  v61 = JS_NewGlobalCConstructor_lto_priv_435(
+          v18,
+          "Object",
+          js_object_constructor_lto_priv_262,
+          1LL,
+          *(_QWORD *)(v59 + 0x10),
+          *(_QWORD *)(v59 + 0x18));
+  JS_SetPropertyFunctionList(v18, v61, v62, &js_object_funcs, 0x16LL);
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x10),
+    *(_QWORD *)(v18[0xA] + 0x18),
+    &js_object_proto_funcs,
+    0xBLL);
+  JS_SetPropertyFunctionList(v18, v18[0xB], v18[0xC], &js_function_proto_funcs, 7LL);
+  v63 = (_DWORD *)JS_NewCFunction3_lto_priv_200(
+                    v18,
+                    js_function_constructor_lto_priv_263,
+                    "Function",
+                    1LL,
+                    5LL,
+                    0LL,
+                    v18[0xB],
+                    v18[0xC]);
+  v18[0xD] = (__int64)v63;
+  v18[0xE] = v64;
+  if ( (unsigned int)v64 > 0xFFFFFFF4 )
+    ++*v63;
+  v65 = 0LL;
+  JS_NewGlobalCConstructor2_lto_priv_433(v18, v63, v64, "Function", v18[0xB], v18[0xC]);
+  v66 = JS_NewCFunction3_lto_priv_200(
+          v18,
+          js_error_constructor_lto_priv_264,
+          "Error",
+          1LL,
+          5LL,
+          0xFFFFFFFFLL,
+          v18[0xB],
+          v18[0xC]);
+  v68 = v67;
+  JS_NewGlobalCConstructor2_lto_priv_433(
+    v18,
+    v66,
+    v67,
+    "Error",
+    *(_QWORD *)(v18[0xA] + 0x30),
+    *(_QWORD *)(v18[0xA] + 0x38));
+  do
+  {
+    v69 = (__int64)*(&native_error_name + v65);
+    v70 = JS_NewCFunction3_lto_priv_200(
+            v18,
+            js_error_constructor_lto_priv_264,
+            v69,
+            1LL,
+            5LL,
+            (unsigned int)v65,
+            v66,
+            v68);
+    v71 = (int)v65++ + 9LL;
+    JS_NewGlobalCConstructor2_lto_priv_433(v18, v70, v72, v69, v18[2 * v71 + 1], v18[2 * v71 + 2]);
+  }
+  while ( v65 != 7 );
+  v73 = JS_NewObjectProtoClass(v18, *(_QWORD *)(v18[0xA] + 0x10), *(_QWORD *)(v18[0xA] + 0x18), 1LL);
+  v18[0x21] = v73;
+  v18[0x22] = v74;
+  JS_SetPropertyFunctionList(v18, v73, v74, &js_iterator_proto_funcs, 1LL);
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x20),
+    *(_QWORD *)(v18[0xA] + 0x28),
+    &js_array_proto_funcs,
+    0x21LL);
+  v75 = JS_NewGlobalCConstructor_lto_priv_435(
+          v18,
+          "Array",
+          js_array_constructor_lto_priv_265,
+          1LL,
+          *(_QWORD *)(v18[0xA] + 0x20),
+          *(_QWORD *)(v18[0xA] + 0x28));
+  JS_SetPropertyFunctionList(v18, v75, v76, &js_array_funcs, 4LL);
+  qmemcpy(v251, "copyWithin", 0x4AuLL);
+  v77 = JS_NewObjectProtoClass(v18, 0LL, 2LL, 1LL);
+  v234 = v77;
+  v230 = v78;
+  if ( v251[0] )
+  {
+    v79 = v251;
+    v80 = v78;
+    v81 = v77;
+    do
+    {
+      JS_DefinePropertyValueStr((_DWORD)v18, v81, v80, (_DWORD)v79, 1, 1, 7);
+      v79 += strlen(v79) + 1;
+    }
+    while ( *v79 );
+  }
+  JS_DefinePropertyValue((_DWORD)v18, *(_QWORD *)(v18[0xA] + 0x20), *(_QWORD *)(v18[0xA] + 0x28), 0xDC, v234, v230, 1);
+  v82 = JS_GetPropertyInternal(
+          v18,
+          *(_QWORD *)(v18[0xA] + 0x20),
+          *(_QWORD *)(v18[0xA] + 0x28),
+          0x69LL,
+          *(_QWORD *)(v18[0xA] + 0x20));
+  v83 = v18[0xA];
+  v18[0x26] = v84;
+  v85 = v18[0x21];
+  v86 = v18[0x22];
+  v18[0x25] = v82;
+  *(_QWORD *)(v83 + 0x2C0) = JS_NewObjectProtoClass(v18, v85, v86, 1LL);
+  *(_QWORD *)(v83 + 0x2C8) = v87;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x2C0),
+    *(_QWORD *)(v18[0xA] + 0x2C8),
+    &js_array_iterator_proto_funcs,
+    2LL);
+  v88 = (_QWORD *)v18[0xA];
+  v89 = v238;
+  v88[8] = JS_NewObjectProtoClass(v18, v88[2], v88[3], 4LL);
+  v90 = 3LL;
+  v88[9] = v91;
+  while ( v90 )
+  {
+    *v89++ = 0;
+    --v90;
+  }
+  JS_SetObjectData_lto_priv_167(v18, *(_QWORD *)(v18[0xA] + 0x40), *(_QWORD *)(v18[0xA] + 0x48), 0LL, v238[1] << 0x20);
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x40),
+    *(_QWORD *)(v18[0xA] + 0x48),
+    &js_number_proto_funcs,
+    6LL);
+  v92 = JS_NewGlobalCConstructor_lto_priv_435(
+          v18,
+          "Number",
+          js_number_constructor_lto_priv_266,
+          1LL,
+          *(_QWORD *)(v18[0xA] + 0x40),
+          *(_QWORD *)(v18[0xA] + 0x48));
+  JS_SetPropertyFunctionList(v18, v92, v93, &js_number_funcs, 0xELL);
+  v94 = (_QWORD *)v18[0xA];
+  v94[0xC] = JS_NewObjectProtoClass(v18, v94[2], v94[3], 6LL);
+  v94[0xD] = v95;
+  JS_SetObjectData_lto_priv_167(v18, *(_QWORD *)(v18[0xA] + 0x60), *(_QWORD *)(v18[0xA] + 0x68), 0LL, 1LL);
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x60),
+    *(_QWORD *)(v18[0xA] + 0x68),
+    &js_boolean_proto_funcs,
+    2LL);
+  JS_NewGlobalCConstructor_lto_priv_435(
+    v18,
+    "Boolean",
+    js_boolean_constructor_lto_priv_267,
+    1LL,
+    *(_QWORD *)(v18[0xA] + 0x60),
+    *(_QWORD *)(v18[0xA] + 0x68));
+  v96 = (_QWORD *)v18[0xA];
+  v97 = JS_NewObjectProtoClass(v18, v96[2], v96[3], 5LL);
+  v96[0xB] = v98;
+  v96[0xA] = v97;
+  v99 = _JS_AtomToValue_lto_priv_88(v18, 0x2FLL, 1LL);
+  JS_SetObjectData_lto_priv_167(v18, *(_QWORD *)(v18[0xA] + 0x50), *(_QWORD *)(v18[0xA] + 0x58), v99, v100);
+  v101 = JS_NewGlobalCConstructor_lto_priv_435(
+           v18,
+           "String",
+           js_string_constructor_lto_priv_137,
+           1LL,
+           *(_QWORD *)(v18[0xA] + 0x50),
+           *(_QWORD *)(v18[0xA] + 0x58));
+  JS_SetPropertyFunctionList(v18, v101, v102, &js_string_funcs, 3LL);
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x50),
+    *(_QWORD *)(v18[0xA] + 0x58),
+    &js_string_proto_funcs,
+    0x31LL);
+  v103 = v18[0xA];
+  *(_QWORD *)(v103 + 0x2D0) = JS_NewObjectProtoClass(v18, v18[0x21], v18[0x22], 1LL);
+  *(_QWORD *)(v103 + 0x2D8) = v104;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x2D0),
+    *(_QWORD *)(v18[0xA] + 0x2D8),
+    &js_string_iterator_proto_funcs,
+    2LL);
+  gettimeofday(&v241, 0LL);
+  v105 = v241.tv_usec + 0xF4240 * v241.tv_sec;
+  if ( !v105 )
+    v105 = 1LL;
+  v106 = v18[0x2B];
+  v107 = v18[0x2C];
+  v18[0x2F] = v105;
+  JS_SetPropertyFunctionList(v18, v106, v107, &js_math_obj, 1LL);
+  JS_SetPropertyFunctionList(v18, v18[0x2B], v18[0x2C], &js_reflect_obj, 1LL);
+  v108 = (_QWORD *)v18[0xA];
+  v108[0xE] = JS_NewObjectProtoClass(v18, v108[2], v108[3], 1LL);
+  v108[0xF] = v109;
+  v110 = 0xD1;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x70),
+    *(_QWORD *)(v18[0xA] + 0x78),
+    &js_symbol_proto_funcs,
+    5LL);
+  v111 = JS_NewGlobalCConstructor_lto_priv_435(
+           v18,
+           "Symbol",
+           js_symbol_constructor_lto_priv_268,
+           0LL,
+           *(_QWORD *)(v18[0xA] + 0x70),
+           *(_QWORD *)(v18[0xA] + 0x78));
+  v113 = v112;
+  v235 = v111;
+  JS_SetPropertyFunctionList(v18, v111, v112, &js_symbol_funcs, 2LL);
+  do
+  {
+    v114 = (const char *)JS_AtomGetStrRT_isra_92_constprop_70(*v18 + 0x50, *v18 + 0x60, v251, v110);
+    v115 = strchr(v114, 0x2E);
+    v116 = v110;
+    if ( v115 )
+      LODWORD(v114) = (_DWORD)v115 + 1;
+    ++v110;
+    v117 = _JS_AtomToValue_lto_priv_88(v18, v116, 0LL);
+    JS_DefinePropertyValueStr((_DWORD)v18, v235, v113, (_DWORD)v114, v117, v118, 0);
+  }
+  while ( v110 != 0xDF );
+  v119 = v18[0xA];
+  *(_QWORD *)(v119 + 0x2F0) = JS_NewObjectProtoClass(v18, v18[0x21], v18[0x22], 1LL);
+  *(_QWORD *)(v119 + 0x2F8) = v120;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x2F0),
+    *(_QWORD *)(v18[0xA] + 0x2F8),
+    &js_generator_proto_funcs,
+    4LL);
+  v121 = v18[0xA];
+  v122 = JS_NewObjectProtoClass(v18, v18[0xB], v18[0xC], 1LL);
+  *(_QWORD *)(v121 + 0x108) = v123;
+  *(_QWORD *)(v121 + 0x100) = v122;
+  v124 = JS_NewCFunction3_lto_priv_200(
+           v18,
+           js_function_constructor_lto_priv_263,
+           &unk_52850,
+           1LL,
+           5LL,
+           1LL,
+           v18[0xB],
+           v18[0xC]);
+  v126 = v125;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x100),
+    *(_QWORD *)(v18[0xA] + 0x108),
+    &js_generator_function_proto_funcs,
+    1LL);
+  JS_SetConstructor2_lto_priv_434(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x100),
+    *(_QWORD *)(v18[0xA] + 0x108),
+    *(_QWORD *)(v18[0xA] + 0x2F0),
+    *(_QWORD *)(v18[0xA] + 0x2F8),
+    1LL,
+    1);
+  JS_SetConstructor2_lto_priv_434(v18, v124, v126, *(_QWORD *)(v18[0xA] + 0x100), *(_QWORD *)(v18[0xA] + 0x108), 0LL, 1);
+  JS_FreeValue_isra_135_lto_priv_73(v18, v124, v126);
+  v127 = (_DWORD *)JS_NewCFunction3_lto_priv_200(
+                     v18,
+                     js_global_eval_lto_priv_269,
+                     "eval",
+                     1LL,
+                     0LL,
+                     0LL,
+                     v18[0xB],
+                     v18[0xC]);
+  v18[0x29] = (__int64)v127;
+  v18[0x2A] = v128;
+  if ( (unsigned int)v128 > 0xFFFFFFF4 )
+    ++*v127;
+  JS_DefinePropertyValue((_DWORD)v18, v18[0x2B], v18[0x2C], 0x39, (_DWORD)v127, v128, 3);
+  JS_SetPropertyFunctionList(v18, v18[0x2B], v18[0x2C], &js_global_funcs, 0xELL);
+  v129 = v18[0x2C];
+  v130 = (_DWORD *)v18[0x2B];
+  if ( (unsigned int)v129 > 0xFFFFFFF4 )
+    ++*v130;
+  JS_DefinePropertyValue((_DWORD)v18, v18[0x2B], v18[0x2C], 0x88, (_DWORD)v130, v129, 3);
+  v131 = (_QWORD *)*v18;
+  v132 = (_QWORD *)v18[0xA];
+  v131[0x34] = js_bigint_to_string_lto_priv_254;
+  v133 = v132[2];
+  v134 = v132[3];
+  v131[0x35] = js_string_to_bigint_lto_priv_255;
+  v131[0x36] = js_unary_arith_bigint_lto_priv_256;
+  v131[0x37] = js_binary_arith_bigint_lto_priv_257;
+  v131[0x38] = js_compare_bigfloat_lto_priv_258;
+  v132[0x42] = JS_NewObjectProtoClass(v18, v133, v134, 1LL);
+  v132[0x43] = v135;
+  JS_SetPropertyFunctionList(
+    v18,
+    *(_QWORD *)(v18[0xA] + 0x210),
+    *(_QWORD *)(v18[0xA] + 0x218),
+    &js_bigint_proto_funcs,
+    3LL);
+  v136 = JS_NewCFunction3_lto_priv_200(
+           v18,
+           js_bigint_constructor_lto_priv_259,
+           "BigInt",
+           1LL,
+           0LL,
+           0LL,
+           v18[0xB],
+           v18[0xC]);
+  v138 = v137;
+  JS_NewGlobalCConstructor2_lto_priv_433(
+    v18,
+    v136,
+    v137,
+    "BigInt",
+    *(_QWORD *)(v18[0xA] + 0x210),
+    *(_QWORD *)(v18[0xA] + 0x218));
+  JS_SetPropertyFunctionList(v18, v136, v138, &js_bigint_funcs, 0xELL);
+  v139 = v18[0x2C];
+  v140 = (int *)v18[0x2B];
+  if ( (unsigned int)v139 > 0xFFFFFFF4 )
+    ++*v140;
+  v141 = JS_NewObjectProtoClass(v18, *(_QWORD *)(v18[0xA] + 0x10), *(_QWORD *)(v18[0xA] + 0x18), 1LL);
+  v143 = v142;
+  v144 = v141;
+  v145 = JS_NewCFunction3_lto_priv_200(v18, js_print_lto_priv_252, "log", 1LL, 0LL, 0LL, v18[0xB], v18[0xC]);
+  JS_SetPropertyStr(v18, v144, v143, "log", v145, v146);
+  JS_SetPropertyStr(v18, v140, v139, "console", v144, v143);
+  v147 = (_DWORD *)v18[8];
+  ++*v147;
+  v148 = JS_NewObjectFromShape_lto_priv_105(v18, v147, 2LL);
+  v150 = (unsigned int)argc;
+  v151 = v148;
+  v231 = v148;
+  v152 = v149;
+  v153 = v218;
+  if ( argc > 0 )
+  {
+    v225 = v139;
+    v154 = 0LL;
+    do
+    {
+      v155 = JS_NewString(v18, argv[v154], v149, v150, v153);
+      v156 = (unsigned int)v154++;
+      JS_SetPropertyUint32(v18, v151, v152, v156, v155, v157);
+    }
+    while ( (unsigned int)(argc - 1) + 1LL != v154 );
+    v139 = v225;
+  }
+  JS_SetPropertyStr(v18, v140, v139, "scriptArgs", v231, v152);
+  v158 = JS_NewCFunction3_lto_priv_200(v18, js_print_lto_priv_252, "print", 1LL, 0LL, 0LL, v18[0xB], v18[0xC]);
+  JS_SetPropertyStr(v18, v140, v139, "print", v158, v159);
+  v160 = JS_NewCFunction3_lto_priv_200(
+           v18,
+           js_loadScript_lto_priv_253,
+           "__loadScript",
+           1LL,
+           0LL,
+           0LL,
+           v18[0xB],
+           v18[0xC]);
+  JS_SetPropertyStr(v18, v140, v139, "__loadScript", v160, v161);
+  if ( (unsigned int)v139 > 0xFFFFFFF4 )
+  {
+    v163 = *v140 - 1;
+    v164 = *v140 == 1;
+    *v140 = v163;
+    if ( v163 < 0 || v164 )
+      _JS_FreeValueRT(*v18, v140, v139);
+  }
+  v165 = 7LL;
+  ++*((_WORD *)v18 + 0x1D);
+  *((_DWORD *)v18 + 0xF) += 0x48C;
+  os_rw_handlers = &os_rw_handlers;
+  off_2634D8 = &os_rw_handlers;
+  os_signal_handlers = &os_signal_handlers;
+  off_2634C8 = &os_signal_handlers;
+  os_timers = &os_timers;
+  off_2634B8 = &os_timers;
+  v166 = (_DWORD *)&v243 + 1;
+  while ( v165 )
+  {
+    *v166++ = 0;
+    --v165;
+  }
+  v241.tv_sec = (__time_t)v18;
+  v246 = 1;
+  LODWORD(v243) = 0xDF;
+  v241.tv_usec = (__suseconds_t)&qjsc_s;
+  *((_QWORD *)&v242 + 1) = &qjsc_s + 0x48C;
+  *(_QWORD *)&v242 = &qjsc_s + 1;
+  if ( qjsc_s == 2 )
+  {
+    v167 = bc_get_leb128_lto_priv_432(&v241, (char *)&v243 + 4, v162, 0LL);
+    if ( !v167 )
+    {
+      if ( !HIDWORD(v243) )
+        goto LABEL_60;
+      v244 = js_mallocz(v241.tv_sec, 4LL * HIDWORD(v243));
+      if ( v244 )
+      {
+        v199 = 0LL;
+        if ( !HIDWORD(v243) )
+        {
+LABEL_60:
+          v168 = JS_ReadObjectRec_lto_priv_430(&v241);
+          v169 = v244;
+          v170 = v168;
+          v172 = v171;
+          if ( !v244 )
+            goto LABEL_71;
+          goto LABEL_61;
+        }
+        while ( 1 )
+        {
+          v201 = JS_ReadString_lto_priv_431(&v241);
+          if ( !v201 )
+            break;
+          v200 = JS_NewAtomStr_isra_119_lto_priv_424(*(_QWORD *)v241.tv_sec, v201);
+          if ( !v200 )
+            goto LABEL_108;
+          *(_DWORD *)(v244 + v199) = v200;
+          if ( v247 && v200 != v167 + (_DWORD)v243 )
+            v247 = 0;
+          ++v167;
+          v199 += 4LL;
+          if ( v167 >= HIDWORD(v243) )
+            goto LABEL_60;
+        }
+      }
+      else
+      {
+LABEL_108:
+        v245 = 0xFFFFFFFF;
+      }
+    }
+  }
+  else
+  {
+    JS_ThrowSyntaxError(v18, "invalid version (%d expected=%d)", (unsigned __int8)qjsc_s, 2LL);
+  }
+  v169 = v244;
+  v170 = 0LL;
+  if ( !v244 )
+    goto LABEL_112;
+  v172 = 6LL;
+LABEL_61:
+  v173 = v241.tv_sec;
+  v174 = *(_QWORD *)v241.tv_sec;
+  if ( HIDWORD(v243) )
+  {
+    v175 = 0LL;
+    v176 = 0;
+    v177 = v169;
+    do
+    {
+      if ( *(int *)(v177 + v175) > 0xDE )
+      {
+        _JS_FreeAtom_lto_priv_87(v174);
+        v173 = v241.tv_sec;
+        v177 = v244;
+        v174 = *(_QWORD *)v241.tv_sec;
+      }
+      ++v176;
+      v175 += 4LL;
+    }
+    while ( HIDWORD(v243) > v176 );
+  }
+  (*(void (__fastcall **)(__int64))(*(_QWORD *)v173 + 8LL))(*(_QWORD *)v173 + 0x20LL);
+LABEL_71:
+  if ( (_DWORD)v172 == 6 )
+    goto LABEL_112;
+  if ( (_DWORD)v172 == 0xFFFFFFFD )
+  {
+    if ( *(_BYTE *)(v170 + 0x80) || (int)js_resolve_module_part_211_lto_priv_232(v18, v170) >= 0 )
+    {
+      js_module_set_import_meta(v18, v170, v172, 0LL, 1LL);
+      goto LABEL_73;
+    }
+    js_free_modules_lto_priv_83(v18, 1LL);
+    v202 = *(_DWORD *)v170 - 1;
+    v164 = *(_DWORD *)v170 == 1;
+    *(_DWORD *)v170 = v202;
+    if ( v202 < 0 || v164 )
+      _JS_FreeValueRT(*v18, v170, v172);
+LABEL_112:
+    js_std_dump_error(v18);
+    exit(1);
+  }
+LABEL_73:
+  v179 = (int *)JS_EvalFunctionInternal_constprop_57(v18, v170, v172, v18[0x2B], v18[0x2C]);
+  if ( (_DWORD)v180 == 6 )
+    goto LABEL_112;
+  v181 = *v18;
+  if ( (unsigned int)v180 > 0xFFFFFFF4 && (v182 = *v179 - 1, v164 = *v179 == 1, *v179 = v182, v182 < 0 || v164) )
+  {
+    _JS_FreeValueRT(v181, v179, v180);
+    v181 = *v18;
+    v232 = v18;
+  }
+  else
+  {
+    v232 = v18;
+  }
+  while ( 1 )
+  {
+    v183 = *(__int64 **)(v181 + 0xF0);
+    if ( v183 == (__int64 *)(v181 + 0xE8) )
+      break;
+    v184 = *v183;
+    v185 = (_QWORD *)v183[1];
+    v186 = (__int64 *)v183[2];
+    v187 = *((unsigned int *)v183 + 8);
+    *(_QWORD *)(v184 + 8) = v185;
+    *v185 = v184;
+    *v183 = 0LL;
+    v183[1] = 0LL;
+    v188 = (_DWORD *)((__int64 (__fastcall *)(__int64 *, __int64, __int64 *))v183[3])(v186, v187, v183 + 5);
+    v190 = v189;
+    v191 = *v186;
+    if ( *((int *)v183 + 8) > 0 )
+    {
+      v192 = v183 + 6;
+      v193 = 0;
+      do
+      {
+        v194 = *v192;
+        if ( (unsigned int)*v192 > 0xFFFFFFF4 )
+        {
+          v195 = (_DWORD *)v192[0xFFFFFFFF];
+          v196 = (*v195)--;
+          if ( v196 - 1 <= 0 )
+          {
+            v236 = v188;
+            _JS_FreeValueRT(v191, v195, v194);
+            v191 = *v186;
+            v188 = v236;
+          }
+        }
+        ++v193;
+        v192 += 2;
+      }
+      while ( v193 < *((_DWORD *)v183 + 8) );
+    }
+    if ( (_DWORD)v190 == 6 )
+    {
+      v198 = v232;
+      (*(void (__fastcall **)(__int64, __int64 *))(v191 + 8))(v191 + 0x20, v183);
+      js_std_dump_error(v186);
+      goto LABEL_90;
+    }
+    if ( (unsigned int)v190 > 0xFFFFFFF4 )
+    {
+      v197 = (*v188)--;
+      if ( v197 - 1 <= 0 )
+      {
+        _JS_FreeValueRT(v191, v188, v190);
+        v191 = *v186;
+      }
+    }
+    (*(void (__fastcall **)(__int64, __int64 *))(v191 + 8))(v191 + 0x20, v183);
+    v181 = *v232;
+  }
+  v198 = v232;
+LABEL_90:
+  JS_FreeContext(v198);
+  JS_FreeRuntime(v228);
+  return 0;
+}
+```
+
+这些像是JS_NewObjectFromShape的符号非常扎眼，搜索一下发现它是QuickJS中的。这个项目将JavaScript的代码和JS引擎一起打包在一起从而成为一个可执行文件。
+
+make之后项目中有一个hello.c文件
+
+```assembly
+/* File generated automatically by the QuickJS compiler. */
+
+#include "quickjs-libc.h"
+
+const uint32_t qjsc_hello_size = 87;
+
+const uint8_t qjsc_hello[87] = {
+ 0x02, 0x04, 0x0e, 0x63, 0x6f, 0x6e, 0x73, 0x6f,
+ 0x6c, 0x65, 0x06, 0x6c, 0x6f, 0x67, 0x16, 0x48,
+ 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72,
+ 0x6c, 0x64, 0x22, 0x65, 0x78, 0x61, 0x6d, 0x70,
+ 0x6c, 0x65, 0x73, 0x2f, 0x68, 0x65, 0x6c, 0x6c,
+ 0x6f, 0x2e, 0x6a, 0x73, 0x0e, 0x00, 0x06, 0x00,
+ 0xa0, 0x01, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00,
+ 0x14, 0x01, 0xa2, 0x01, 0x00, 0x00, 0x00, 0x38,
+ 0xe1, 0x00, 0x00, 0x00, 0x42, 0xe2, 0x00, 0x00,
+ 0x00, 0x04, 0xe3, 0x00, 0x00, 0x00, 0x24, 0x01,
+ 0x00, 0xcd, 0x28, 0xc8, 0x03, 0x01, 0x00,
+};
+
+static JSContext *JS_NewCustomContext(JSRuntime *rt)
+{
+  JSContext *ctx = JS_NewContextRaw(rt);
+  if (!ctx)
+    return NULL;
+  JS_AddIntrinsicBaseObjects(ctx);
+  return ctx;
+}
+
+int main(int argc, char **argv)
+{
+  JSRuntime *rt;
+  JSContext *ctx;
+  rt = JS_NewRuntime();
+  js_std_set_worker_new_context_func(JS_NewCustomContext);
+  js_std_init_handlers(rt);
+  ctx = JS_NewCustomContext(rt);
+  js_std_add_helpers(ctx, argc, argv);
+  js_std_eval_binary(ctx, qjsc_hello, qjsc_hello_size, 0);
+  js_std_loop(ctx);
+  JS_FreeContext(ctx);
+  JS_FreeRuntime(rt);
+  return 0;
+}
+```
+
+其中87字节的数组为要执行的JavaScript代码的字节码，编译该文件相当于将JavaScript的字节码编译为二进制可执行程序。
+
+从funnyjs.js文件中提取出JavaScript的字节码，代替原来87字节的数组。
+
+```assembly
+/* File generated automatically by the QuickJS compiler. */
+
+#include "quickjs-libc.h"
+
+const uint32_t qjsc_hello_size = 1164;
+
+const uint8_t qjsc_hello[1164] = {
+  0x02, 0x1B, 0x06, 0x72, 0x63, 0x34, 0x04, 0x73, 0x6E, 0x02, 
+  0x69, 0x02, 0x6A, 0x02, 0x6B, 0x02, 0x6C, 0x02, 0x6D, 0x02, 
+  0x6E, 0x04, 0x75, 0x6E, 0x06, 0x61, 0x72, 0x72, 0x0C, 0x63, 
+  0x69, 0x70, 0x68, 0x65, 0x72, 0x2A, 0x32, 0x30, 0x32, 0x31, 
+  0x71, 0x75, 0x69, 0x63, 0x6B, 0x6A, 0x73, 0x5F, 0x68, 0x61, 
+  0x70, 0x70, 0x79, 0x67, 0x61, 0x6D, 0x65, 0x48, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x02, 0x73, 0x18, 0x66, 0x72, 0x6F, 
+  0x6D, 0x43, 0x68, 0x61, 0x72, 0x43, 0x6F, 0x64, 0x65, 0x0A, 
+  0x70, 0x72, 0x69, 0x6E, 0x74, 0x12, 0x73, 0x6F, 0x75, 0x72, 
+  0x63, 0x65, 0x2E, 0x6A, 0x73, 0x08, 0x64, 0x61, 0x74, 0x61, 
+  0x06, 0x6B, 0x65, 0x79, 0x06, 0x62, 0x6F, 0x78, 0x02, 0x78, 
+  0x08, 0x74, 0x65, 0x6D, 0x70, 0x02, 0x79, 0x06, 0x6F, 0x75, 
+  0x74, 0x08, 0x63, 0x6F, 0x64, 0x65, 0x14, 0x63, 0x68, 0x61, 
+  0x72, 0x43, 0x6F, 0x64, 0x65, 0x41, 0x74, 0x08, 0x70, 0x75, 
+  0x73, 0x68, 0x0E, 0x00, 0x06, 0x00, 0x9E, 0x01, 0x00, 0x01, 
+  0x00, 0x20, 0x00, 0x08, 0xEB, 0x04, 0x01, 0xA0, 0x01, 0x00, 
+  0x00, 0x00, 0x40, 0xDF, 0x00, 0x00, 0x00, 0x40, 0x40, 0xE0, 
+  0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 0x00, 0x00, 0x00, 0x00, 
+  0x40, 0xE2, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE3, 0x00, 0x00, 
+  0x00, 0x00, 0x40, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE5, 
+  0x00, 0x00, 0x00, 0x00, 0x40, 0xE6, 0x00, 0x00, 0x00, 0x00, 
+  0x40, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE8, 0x00, 0x00, 
+  0x00, 0x00, 0x40, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 
+  0x00, 0x00, 0x00, 0x00, 0xC2, 0x00, 0x41, 0xDF, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE1, 
+  0x00, 0x00, 0x00, 0x00, 0x3F, 0xE2, 0x00, 0x00, 0x00, 0x00, 
+  0x3F, 0xE3, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE4, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE5, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE6, 
+  0x00, 0x00, 0x00, 0x00, 0x3F, 0xE7, 0x00, 0x00, 0x00, 0x00, 
+  0x3F, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE9, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x04, 0xEA, 
+  0x00, 0x00, 0x00, 0x11, 0x3A, 0xE7, 0x00, 0x00, 0x00, 0x0E, 
+  0x04, 0xEB, 0x00, 0x00, 0x00, 0x11, 0x3A, 0xE0, 0x00, 0x00, 
+  0x00, 0xCB, 0xC0, 0x96, 0x00, 0xC0, 0xE0, 0x00, 0xC0, 0xF4, 
+  0x00, 0xBF, 0x44, 0xBF, 0x3D, 0xBF, 0x7D, 0xBF, 0x08, 0xC0, 
+  0xEF, 0x00, 0xC0, 0xCB, 0x00, 0xC0, 0xFE, 0x00, 0xC0, 0xF1, 
+  0x00, 0xBF, 0x71, 0xC0, 0xD5, 0x00, 0xC0, 0xB0, 0x00, 0xBF, 
+  0x40, 0xBF, 0x6A, 0xBF, 0x67, 0xC0, 0xA6, 0x00, 0xC0, 0xB9, 
+  0x00, 0xC0, 0x9F, 0x00, 0xC0, 0x9E, 0x00, 0xC0, 0xAC, 0x00, 
+  0xBF, 0x09, 0xC0, 0xD5, 0x00, 0xC0, 0xEF, 0x00, 0xBF, 0x0C, 
+  0xBF, 0x64, 0xC0, 0xB9, 0x00, 0xBF, 0x5A, 0xC0, 0xAE, 0x00, 
+  0xBF, 0x6B, 0xC0, 0x83, 0x00, 0x26, 0x20, 0x00, 0xC0, 0xDF, 
+  0x00, 0x4D, 0x20, 0x00, 0x00, 0x80, 0xBF, 0x7A, 0x4D, 0x21, 
+  0x00, 0x00, 0x80, 0xC0, 0xE5, 0x00, 0x4D, 0x22, 0x00, 0x00, 
+  0x80, 0xC0, 0x9D, 0x00, 0x4D, 0x23, 0x00, 0x00, 0x80, 0x11, 
+  0x3A, 0xE8, 0x00, 0x00, 0x00, 0x0E, 0xC1, 0x01, 0x11, 0x3A, 
+  0xE5, 0x00, 0x00, 0x00, 0xCB, 0xC1, 0x02, 0x11, 0x3A, 0xE6, 
+  0x00, 0x00, 0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE4, 0x00, 0x00, 
+  0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE3, 0x00, 0x00, 0x00, 0xCB, 
+  0x39, 0xDF, 0x00, 0x00, 0x00, 0x39, 0xE0, 0x00, 0x00, 0x00, 
+  0x39, 0xE7, 0x00, 0x00, 0x00, 0xF2, 0x11, 0x3A, 0xE9, 0x00, 
+  0x00, 0x00, 0x0E, 0x06, 0xCB, 0xB7, 0x11, 0x3A, 0xE1, 0x00, 
+  0x00, 0x00, 0x0E, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x39, 0xE9, 
+  0x00, 0x00, 0x00, 0xEB, 0xA5, 0xEC, 0x6E, 0x39, 0xE9, 0x00, 
+  0x00, 0x00, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x48, 0x11, 0x3A, 
+  0xE2, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE2, 0x00, 0x00, 0x00, 
+  0xBF, 0x38, 0xBF, 0x11, 0xA0, 0xB0, 0x11, 0x3A, 0xE4, 0x00, 
+  0x00, 0x00, 0xCB, 0x06, 0xCB, 0x39, 0xE4, 0x00, 0x00, 0x00, 
+  0x39, 0xE8, 0x00, 0x00, 0x00, 0x39, 0xE3, 0x00, 0x00, 0x00, 
+  0x48, 0xAB, 0xEC, 0x0F, 0x39, 0xE5, 0x00, 0x00, 0x00, 0x93, 
+  0x3A, 0xE5, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0x0D, 0x39, 0xE6, 
+  0x00, 0x00, 0x00, 0x93, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 
+  0x39, 0xE3, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE3, 0x00, 0x00, 
+  0x00, 0xCB, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE1, 
+  0x00, 0x00, 0x00, 0x0E, 0xEE, 0x86, 0x06, 0xCB, 0x39, 0xE5, 
+  0x00, 0x00, 0x00, 0x39, 0xE9, 0x00, 0x00, 0x00, 0xEB, 0xAB, 
+  0xEC, 0x15, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xB7, 0xAB, 0xEC, 
+  0x0C, 0xC1, 0x03, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 
+  0xEE, 0x0A, 0xC1, 0x04, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 
+  0xCB, 0xC3, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 0xCB, 0x06, 
+  0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x05, 0xA7, 0xEC, 
+  0x3A, 0x39, 0xEC, 0x00, 0x00, 0x00, 0x39, 0x97, 0x00, 0x00, 
+  0x00, 0x43, 0xED, 0x00, 0x00, 0x00, 0x39, 0x96, 0x00, 0x00, 
+  0x00, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x06, 0x9E, 0xF1, 
+  0x24, 0x01, 0x00, 0x9F, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 
+  0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x07, 0x9D, 0x11, 
+  0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0xBE, 0x39, 0xEE, 
+  0x00, 0x00, 0x00, 0x39, 0xEC, 0x00, 0x00, 0x00, 0xF1, 0xCF, 
+  0x28, 0xDE, 0x03, 0x01, 0x20, 0x00, 0x48, 0x01, 0x00, 0x4A, 
+  0x52, 0x3F, 0x40, 0x00, 0x7C, 0x04, 0x30, 0x30, 0x2B, 0x2B, 
+  0x77, 0x7B, 0x5D, 0x5D, 0x6C, 0x3F, 0x0E, 0x40, 0x3F, 0x4A, 
+  0xB7, 0x30, 0x2B, 0x3F, 0xCB, 0x4E, 0x0D, 0x0E, 0x43, 0x06, 
+  0x00, 0xBE, 0x03, 0x02, 0x08, 0x02, 0x05, 0x00, 0x00, 0xBB, 
+  0x01, 0x0A, 0xE0, 0x03, 0x00, 0x01, 0x00, 0xE2, 0x03, 0x00, 
+  0x01, 0x00, 0xE4, 0x03, 0x00, 0x00, 0x00, 0xC2, 0x03, 0x00, 
+  0x01, 0x00, 0xE6, 0x03, 0x00, 0x02, 0x00, 0xE8, 0x03, 0x00, 
+  0x03, 0x00, 0xEA, 0x03, 0x00, 0x04, 0x00, 0xEC, 0x03, 0x00, 
+  0x05, 0x00, 0xEE, 0x03, 0x00, 0x06, 0x00, 0xC6, 0x03, 0x00, 
+  0x07, 0x00, 0x39, 0x94, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x01, 
+  0xF1, 0xCB, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 
+  0x09, 0xC7, 0xC8, 0xC8, 0x4A, 0x95, 0x01, 0xEE, 0xF2, 0xB7, 
+  0xCD, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 0x2C, 
+  0xC9, 0xC7, 0xC8, 0x48, 0x9F, 0xD4, 0x43, 0xF8, 0x00, 0x00, 
+  0x00, 0xC8, 0xD4, 0xEB, 0x9E, 0x24, 0x01, 0x00, 0x9F, 0xC0, 
+  0x00, 0x01, 0x9E, 0xCD, 0xC7, 0xC8, 0x48, 0xCE, 0xC7, 0xC8, 
+  0x72, 0xC7, 0xC9, 0x48, 0x4A, 0xC7, 0xC9, 0xCA, 0x4A, 0x95, 
+  0x01, 0xEE, 0xCF, 0xB7, 0xCD, 0xB7, 0xC5, 0x04, 0x26, 0x00, 
+  0x00, 0xC5, 0x05, 0xB7, 0xCC, 0xC8, 0xD3, 0xEB, 0xA5, 0xEC, 
+  0x56, 0xD3, 0x43, 0xF8, 0x00, 0x00, 0x00, 0xC8, 0x24, 0x01, 
+  0x00, 0xC5, 0x06, 0xC9, 0xB8, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 
+  0xCD, 0xC4, 0x04, 0xC7, 0xC9, 0x48, 0x9F, 0xC0, 0x00, 0x01, 
+  0x9E, 0xC5, 0x04, 0xC7, 0xC9, 0x48, 0xCE, 0xC7, 0xC9, 0x72, 
+  0xC7, 0xC4, 0x04, 0x48, 0x4A, 0xC7, 0xC4, 0x04, 0xCA, 0x4A, 
+  0xC7, 0xC9, 0x48, 0xC7, 0xC4, 0x04, 0x48, 0x9F, 0xC0, 0x00, 
+  0x01, 0x9E, 0xC5, 0x07, 0xC4, 0x05, 0x43, 0xF9, 0x00, 0x00, 
+  0x00, 0xC4, 0x06, 0xC7, 0xC4, 0x07, 0x48, 0xB0, 0x24, 0x01, 
+  0x00, 0x0E, 0x95, 0x01, 0xEE, 0xA6, 0xC4, 0x05, 0x28, 0xDE, 
+  0x03, 0x03, 0x19, 0x04, 0x35, 0x30, 0x17, 0x18, 0x0D, 0x30, 
+  0x7B, 0x17, 0x26, 0x17, 0x19, 0x0D, 0x12, 0x1C, 0x2C, 0x40, 
+  0x2B, 0x3F, 0x17, 0x2B, 0x1D, 0x4A, 0x5D, 0x17, 0x0A, 0x00, 
+  0x0A, 0x00, 0x0A, 0xE8, 0x01, 0x07, 0x44, 0xB8, 0x90, 0xB5, 
+  0x6B, 0x67, 0x80, 0x0A, 0xE8, 0x01, 0x07, 0x34, 0xA7, 0xB8, 
+  0x48, 0x7F, 0x8D, 0xAF, 0x0A, 0x00, 0x0A, 0x28, 0x01, 0xFE, 
+  0x0A, 0x28, 0x01, 0xFE,
+};
+
+static JSContext *JS_NewCustomContext(JSRuntime *rt)
+{
+  JSContext *ctx = JS_NewContextRaw(rt);
+  if (!ctx)
+    return NULL;
+  JS_AddIntrinsicBaseObjects(ctx);
+  return ctx;
+}
+
+int main(int argc, char **argv)
+{
+  JSRuntime *rt;
+  JSContext *ctx;
+  rt = JS_NewRuntime();
+  js_std_set_worker_new_context_func(JS_NewCustomContext);
+  js_std_init_handlers(rt);
+  ctx = JS_NewCustomContext(rt);
+  js_std_add_helpers(ctx, argc, argv);
+  js_std_eval_binary(ctx, qjsc_hello, qjsc_hello_size, 0);
+  js_std_loop(ctx);
+  JS_FreeContext(ctx);
+  JS_FreeRuntime(rt);
+  return 0;
+}
+```
+
+gcc编译
+
+```assembly
+gcc -ggdb hello.c libquickjs.a -lm -ldl
+```
+
+报错
+
+```assembly
+/usr/bin/ld: libquickjs.a(quickjs-libc.nolto.o): in function `js_worker_ctor':
+/home/kali/Documents/tools/QuickJS-20210327/quickjs-libc.c:3405: undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+```
+
+加入选项，重新编译，编译成功。
+
+```assembly
+gcc -ggdb ccb.c libquickjs.a -lm -ldl -lpthread
+```
+
+运行a.out文件，报了个错
+
+
+
+```assembly
+└─$ ./a.out
+SyntaxError: invalid atom index (pos=811)
+```
+
+考虑是否是版本不匹配，尝试其他版本，直到20200119版本。
+
+```assembly
+/* File generated automatically by the QuickJS compiler. */
+
+#include "quickjs-libc.h"
+
+const uint32_t qjsc_hello_size = 1164;
+
+const uint8_t qjsc_hello[1164] = {
+  0x02, 0x1B, 0x06, 0x72, 0x63, 0x34, 0x04, 0x73, 0x6E, 0x02, 
+  0x69, 0x02, 0x6A, 0x02, 0x6B, 0x02, 0x6C, 0x02, 0x6D, 0x02, 
+  0x6E, 0x04, 0x75, 0x6E, 0x06, 0x61, 0x72, 0x72, 0x0C, 0x63, 
+  0x69, 0x70, 0x68, 0x65, 0x72, 0x2A, 0x32, 0x30, 0x32, 0x31, 
+  0x71, 0x75, 0x69, 0x63, 0x6B, 0x6A, 0x73, 0x5F, 0x68, 0x61, 
+  0x70, 0x70, 0x79, 0x67, 0x61, 0x6D, 0x65, 0x48, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 
+  0x2A, 0x2A, 0x2A, 0x2A, 0x02, 0x73, 0x18, 0x66, 0x72, 0x6F, 
+  0x6D, 0x43, 0x68, 0x61, 0x72, 0x43, 0x6F, 0x64, 0x65, 0x0A, 
+  0x70, 0x72, 0x69, 0x6E, 0x74, 0x12, 0x73, 0x6F, 0x75, 0x72, 
+  0x63, 0x65, 0x2E, 0x6A, 0x73, 0x08, 0x64, 0x61, 0x74, 0x61, 
+  0x06, 0x6B, 0x65, 0x79, 0x06, 0x62, 0x6F, 0x78, 0x02, 0x78, 
+  0x08, 0x74, 0x65, 0x6D, 0x70, 0x02, 0x79, 0x06, 0x6F, 0x75, 
+  0x74, 0x08, 0x63, 0x6F, 0x64, 0x65, 0x14, 0x63, 0x68, 0x61, 
+  0x72, 0x43, 0x6F, 0x64, 0x65, 0x41, 0x74, 0x08, 0x70, 0x75, 
+  0x73, 0x68, 0x0E, 0x00, 0x06, 0x00, 0x9E, 0x01, 0x00, 0x01, 
+  0x00, 0x20, 0x00, 0x08, 0xEB, 0x04, 0x01, 0xA0, 0x01, 0x00, 
+  0x00, 0x00, 0x40, 0xDF, 0x00, 0x00, 0x00, 0x40, 0x40, 0xE0, 
+  0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 0x00, 0x00, 0x00, 0x00, 
+  0x40, 0xE2, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE3, 0x00, 0x00, 
+  0x00, 0x00, 0x40, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE5, 
+  0x00, 0x00, 0x00, 0x00, 0x40, 0xE6, 0x00, 0x00, 0x00, 0x00, 
+  0x40, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE8, 0x00, 0x00, 
+  0x00, 0x00, 0x40, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 
+  0x00, 0x00, 0x00, 0x00, 0xC2, 0x00, 0x41, 0xDF, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE1, 
+  0x00, 0x00, 0x00, 0x00, 0x3F, 0xE2, 0x00, 0x00, 0x00, 0x00, 
+  0x3F, 0xE3, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE4, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE5, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE6, 
+  0x00, 0x00, 0x00, 0x00, 0x3F, 0xE7, 0x00, 0x00, 0x00, 0x00, 
+  0x3F, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE9, 0x00, 0x00, 
+  0x00, 0x00, 0x3F, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x04, 0xEA, 
+  0x00, 0x00, 0x00, 0x11, 0x3A, 0xE7, 0x00, 0x00, 0x00, 0x0E, 
+  0x04, 0xEB, 0x00, 0x00, 0x00, 0x11, 0x3A, 0xE0, 0x00, 0x00, 
+  0x00, 0xCB, 0xC0, 0x96, 0x00, 0xC0, 0xE0, 0x00, 0xC0, 0xF4, 
+  0x00, 0xBF, 0x44, 0xBF, 0x3D, 0xBF, 0x7D, 0xBF, 0x08, 0xC0, 
+  0xEF, 0x00, 0xC0, 0xCB, 0x00, 0xC0, 0xFE, 0x00, 0xC0, 0xF1, 
+  0x00, 0xBF, 0x71, 0xC0, 0xD5, 0x00, 0xC0, 0xB0, 0x00, 0xBF, 
+  0x40, 0xBF, 0x6A, 0xBF, 0x67, 0xC0, 0xA6, 0x00, 0xC0, 0xB9, 
+  0x00, 0xC0, 0x9F, 0x00, 0xC0, 0x9E, 0x00, 0xC0, 0xAC, 0x00, 
+  0xBF, 0x09, 0xC0, 0xD5, 0x00, 0xC0, 0xEF, 0x00, 0xBF, 0x0C, 
+  0xBF, 0x64, 0xC0, 0xB9, 0x00, 0xBF, 0x5A, 0xC0, 0xAE, 0x00, 
+  0xBF, 0x6B, 0xC0, 0x83, 0x00, 0x26, 0x20, 0x00, 0xC0, 0xDF, 
+  0x00, 0x4D, 0x20, 0x00, 0x00, 0x80, 0xBF, 0x7A, 0x4D, 0x21, 
+  0x00, 0x00, 0x80, 0xC0, 0xE5, 0x00, 0x4D, 0x22, 0x00, 0x00, 
+  0x80, 0xC0, 0x9D, 0x00, 0x4D, 0x23, 0x00, 0x00, 0x80, 0x11, 
+  0x3A, 0xE8, 0x00, 0x00, 0x00, 0x0E, 0xC1, 0x01, 0x11, 0x3A, 
+  0xE5, 0x00, 0x00, 0x00, 0xCB, 0xC1, 0x02, 0x11, 0x3A, 0xE6, 
+  0x00, 0x00, 0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE4, 0x00, 0x00, 
+  0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE3, 0x00, 0x00, 0x00, 0xCB, 
+  0x39, 0xDF, 0x00, 0x00, 0x00, 0x39, 0xE0, 0x00, 0x00, 0x00, 
+  0x39, 0xE7, 0x00, 0x00, 0x00, 0xF2, 0x11, 0x3A, 0xE9, 0x00, 
+  0x00, 0x00, 0x0E, 0x06, 0xCB, 0xB7, 0x11, 0x3A, 0xE1, 0x00, 
+  0x00, 0x00, 0x0E, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x39, 0xE9, 
+  0x00, 0x00, 0x00, 0xEB, 0xA5, 0xEC, 0x6E, 0x39, 0xE9, 0x00, 
+  0x00, 0x00, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x48, 0x11, 0x3A, 
+  0xE2, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE2, 0x00, 0x00, 0x00, 
+  0xBF, 0x38, 0xBF, 0x11, 0xA0, 0xB0, 0x11, 0x3A, 0xE4, 0x00, 
+  0x00, 0x00, 0xCB, 0x06, 0xCB, 0x39, 0xE4, 0x00, 0x00, 0x00, 
+  0x39, 0xE8, 0x00, 0x00, 0x00, 0x39, 0xE3, 0x00, 0x00, 0x00, 
+  0x48, 0xAB, 0xEC, 0x0F, 0x39, 0xE5, 0x00, 0x00, 0x00, 0x93, 
+  0x3A, 0xE5, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0x0D, 0x39, 0xE6, 
+  0x00, 0x00, 0x00, 0x93, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 
+  0x39, 0xE3, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE3, 0x00, 0x00, 
+  0x00, 0xCB, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE1, 
+  0x00, 0x00, 0x00, 0x0E, 0xEE, 0x86, 0x06, 0xCB, 0x39, 0xE5, 
+  0x00, 0x00, 0x00, 0x39, 0xE9, 0x00, 0x00, 0x00, 0xEB, 0xAB, 
+  0xEC, 0x15, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xB7, 0xAB, 0xEC, 
+  0x0C, 0xC1, 0x03, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 
+  0xEE, 0x0A, 0xC1, 0x04, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 
+  0xCB, 0xC3, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 0xCB, 0x06, 
+  0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x05, 0xA7, 0xEC, 
+  0x3A, 0x39, 0xEC, 0x00, 0x00, 0x00, 0x39, 0x97, 0x00, 0x00, 
+  0x00, 0x43, 0xED, 0x00, 0x00, 0x00, 0x39, 0x96, 0x00, 0x00, 
+  0x00, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x06, 0x9E, 0xF1, 
+  0x24, 0x01, 0x00, 0x9F, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 
+  0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x07, 0x9D, 0x11, 
+  0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0xBE, 0x39, 0xEE, 
+  0x00, 0x00, 0x00, 0x39, 0xEC, 0x00, 0x00, 0x00, 0xF1, 0xCF, 
+  0x28, 0xDE, 0x03, 0x01, 0x20, 0x00, 0x48, 0x01, 0x00, 0x4A, 
+  0x52, 0x3F, 0x40, 0x00, 0x7C, 0x04, 0x30, 0x30, 0x2B, 0x2B, 
+  0x77, 0x7B, 0x5D, 0x5D, 0x6C, 0x3F, 0x0E, 0x40, 0x3F, 0x4A, 
+  0xB7, 0x30, 0x2B, 0x3F, 0xCB, 0x4E, 0x0D, 0x0E, 0x43, 0x06, 
+  0x00, 0xBE, 0x03, 0x02, 0x08, 0x02, 0x05, 0x00, 0x00, 0xBB, 
+  0x01, 0x0A, 0xE0, 0x03, 0x00, 0x01, 0x00, 0xE2, 0x03, 0x00, 
+  0x01, 0x00, 0xE4, 0x03, 0x00, 0x00, 0x00, 0xC2, 0x03, 0x00, 
+  0x01, 0x00, 0xE6, 0x03, 0x00, 0x02, 0x00, 0xE8, 0x03, 0x00, 
+  0x03, 0x00, 0xEA, 0x03, 0x00, 0x04, 0x00, 0xEC, 0x03, 0x00, 
+  0x05, 0x00, 0xEE, 0x03, 0x00, 0x06, 0x00, 0xC6, 0x03, 0x00, 
+  0x07, 0x00, 0x39, 0x94, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x01, 
+  0xF1, 0xCB, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 
+  0x09, 0xC7, 0xC8, 0xC8, 0x4A, 0x95, 0x01, 0xEE, 0xF2, 0xB7, 
+  0xCD, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 0x2C, 
+  0xC9, 0xC7, 0xC8, 0x48, 0x9F, 0xD4, 0x43, 0xF8, 0x00, 0x00, 
+  0x00, 0xC8, 0xD4, 0xEB, 0x9E, 0x24, 0x01, 0x00, 0x9F, 0xC0, 
+  0x00, 0x01, 0x9E, 0xCD, 0xC7, 0xC8, 0x48, 0xCE, 0xC7, 0xC8, 
+  0x72, 0xC7, 0xC9, 0x48, 0x4A, 0xC7, 0xC9, 0xCA, 0x4A, 0x95, 
+  0x01, 0xEE, 0xCF, 0xB7, 0xCD, 0xB7, 0xC5, 0x04, 0x26, 0x00, 
+  0x00, 0xC5, 0x05, 0xB7, 0xCC, 0xC8, 0xD3, 0xEB, 0xA5, 0xEC, 
+  0x56, 0xD3, 0x43, 0xF8, 0x00, 0x00, 0x00, 0xC8, 0x24, 0x01, 
+  0x00, 0xC5, 0x06, 0xC9, 0xB8, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 
+  0xCD, 0xC4, 0x04, 0xC7, 0xC9, 0x48, 0x9F, 0xC0, 0x00, 0x01, 
+  0x9E, 0xC5, 0x04, 0xC7, 0xC9, 0x48, 0xCE, 0xC7, 0xC9, 0x72, 
+  0xC7, 0xC4, 0x04, 0x48, 0x4A, 0xC7, 0xC4, 0x04, 0xCA, 0x4A, 
+  0xC7, 0xC9, 0x48, 0xC7, 0xC4, 0x04, 0x48, 0x9F, 0xC0, 0x00, 
+  0x01, 0x9E, 0xC5, 0x07, 0xC4, 0x05, 0x43, 0xF9, 0x00, 0x00, 
+  0x00, 0xC4, 0x06, 0xC7, 0xC4, 0x07, 0x48, 0xB0, 0x24, 0x01, 
+  0x00, 0x0E, 0x95, 0x01, 0xEE, 0xA6, 0xC4, 0x05, 0x28, 0xDE, 
+  0x03, 0x03, 0x19, 0x04, 0x35, 0x30, 0x17, 0x18, 0x0D, 0x30, 
+  0x7B, 0x17, 0x26, 0x17, 0x19, 0x0D, 0x12, 0x1C, 0x2C, 0x40, 
+  0x2B, 0x3F, 0x17, 0x2B, 0x1D, 0x4A, 0x5D, 0x17, 0x0A, 0x00, 
+  0x0A, 0x00, 0x0A, 0xE8, 0x01, 0x07, 0x44, 0xB8, 0x90, 0xB5, 
+  0x6B, 0x67, 0x80, 0x0A, 0xE8, 0x01, 0x07, 0x34, 0xA7, 0xB8, 
+  0x48, 0x7F, 0x8D, 0xAF, 0x0A, 0x00, 0x0A, 0x28, 0x01, 0xFE, 
+  0x0A, 0x28, 0x01, 0xFE,
+};
+
+int main(int argc, char **argv)
+{
+  JSRuntime *rt;
+  JSContext *ctx;
+  rt = JS_NewRuntime();
+  ctx = JS_NewContextRaw(rt);
+  JS_AddIntrinsicBaseObjects(ctx);
+  js_std_add_helpers(ctx, argc, argv);
+  js_std_eval_binary(ctx, qjsc_hello, qjsc_hello_size, 0);
+  js_std_loop(ctx);
+  JS_FreeContext(ctx);
+  JS_FreeRuntime(rt);
+  return 0;
+}
+```
+
+可以看到这个版本main函数中调用的函数确实和其他版本的不太一样。
+
+gcc编译，运行a.out成功。
+
+接下来在 QuickJS 中加入代码，将读取回来的字节码输出出来，然后逆向字节码。
+
+QuickJS的代码就会发现，它本身就带有这个功能，修改相关宏定义启用即可；另外，当函数对象是读入而非编译出来的时，并没有打印字节码，在quickjs.c文件中修改JS_ReadObjectRec函数在case为BC_TAG_FUNCTION_BYTECODE的最后加一段输出。
+
+```assembly
+#if DUMP_BYTECODE
+    js_dump_function_bytecode(ctx, b);
+#endif
+```
+
+重新编译并运行程序，得到JavaScript字节码的输出
+
+```assembly
+0000:  02 1b                    27 atom indexes {
+0002:  06 72 63 34                string: 1"rc4"
+0006:  04 73 6e                   string: 1"sn"
+0009:  02 69                      string: 1"i"
+000b:  02 6a                      string: 1"j"
+000d:  02 6b                      string: 1"k"
+000f:  02 6c                      string: 1"l"
+0011:  02 6d                      string: 1"m"
+0013:  02 6e                      string: 1"n"
+0015:  04 75 6e                   string: 1"un"
+0018:  06 61 72 72                string: 1"arr"
+001c:  0c 63 69 70 68 65 72       string: 1"cipher"
+0023:  2a 32 30 32 31 71 75 69
+       63 6b 6a 73 5f 68 61 70
+       70 79 67 61 6d 65          string: 1"2021quickjs_happygame"
+0039:  48 66 6c 61 67 7b 30 31
+       32 33 34 35 36 37 38 39
+       61 62 63 64 65 66 30 31
+       32 33 34 35 36 37 38 39
+       61 7d 2a 2a 2a             string: 1"flag{0123456789abcdef0123456789a}***"
+005e:  02 73                      string: 1"s"
+0060:  18 66 72 6f 6d 43 68 61
+       72 43 6f 64 65             string: 1"fromCharCode"
+006d:  0a 70 72 69 6e 74          string: 1"print"
+0073:  12 73 6f 75 72 63 65 2e
+       6a 73                      string: 1"source.js"
+007d:  08 64 61 74 61             string: 1"data"
+0082:  06 6b 65 79                string: 1"key"
+0086:  06 62 6f 78                string: 1"box"
+008a:  02 78                      string: 1"x"
+008c:  08 74 65 6d 70             string: 1"temp"
+0091:  02 79                      string: 1"y"
+0093:  06 6f 75 74                string: 1"out"
+0097:  08 63 6f 64 65             string: 1"code"
+009c:  14 63 68 61 72 43 6f 64
+       65 41 74                   string: 1"charCodeAt"
+00a7:  08 70 75 73 68             string: 1"push"
+                                }
+00ac:  0e                       function {
+00ad:  00 06 00 9e 01 00 01 00
+       20 00 08 eb 04 01          name: "<eval>"
+                                  args=0 vars=1 defargs=0 closures=0 cpool=8
+                                  stack=32 bclen=619 locals=1
+                                  vars {
+00bb:  a0 01 00 00 00               name: "<ret>"
+                                  }
+                                  bytecode {
+00c0:  40 df 00 00 00 40 40 e0
+       00 00 00 00 40 e1 00 00
+       00 00 40 e2 00 00 00 00
+       40 e3 00 00 00 00 40 e4
+       00 00 00 00 40 e5 00 00
+       00 00 40 e6 00 00 00 00
+       40 e7 00 00 00 00 40 e8
+       00 00 00 00 40 e9 00 00
+       00 00 40 e1 00 00 00 00
+       c2 00 41 df 00 00 00 00
+       3f e0 00 00 00 00 3f e1
+       00 00 00 00 3f e2 00 00
+       00 00 3f e3 00 00 00 00
+       3f e4 00 00 00 00 3f e5
+       00 00 00 00 3f e6 00 00
+       00 00 3f e7 00 00 00 00
+       3f e8 00 00 00 00 3f e9
+       00 00 00 00 3f e1 00 00
+       00 00 04 ea 00 00 00 11
+       3a e7 00 00 00 0e 04 eb
+       00 00 00 11 3a e0 00 00
+       00 cb c0 96 00 c0 e0 00
+       c0 f4 00 bf 44 bf 3d bf
+       7d bf 08 c0 ef 00 c0 cb
+       00 c0 fe 00 c0 f1 00 bf
+       71 c0 d5 00 c0 b0 00 bf
+       40 bf 6a bf 67 c0 a6 00
+       c0 b9 00 c0 9f 00 c0 9e
+       00 c0 ac 00 bf 09 c0 d5
+       00 c0 ef 00 bf 0c bf 64
+       c0 b9 00 bf 5a c0 ae 00
+       bf 6b c0 83 00 26 20 00
+       c0 df 00 4d 20 00 00 80
+       bf 7a 4d 21 00 00 80 c0
+       e5 00 4d 22 00 00 80 c0
+       9d 00 4d 23 00 00 80 11
+       3a e8 00 00 00 0e c1 01
+       11 3a e5 00 00 00 cb c1
+       02 11 3a e6 00 00 00 cb
+       b7 11 3a e4 00 00 00 cb
+       b7 11 3a e3 00 00 00 cb
+       39 df 00 00 00 39 e0 00
+       00 00 39 e7 00 00 00 f2
+       11 3a e9 00 00 00 0e 06
+       cb b7 11 3a e1 00 00 00
+       0e 39 e1 00 00 00 39 e9
+       00 00 00 eb a5 ec 6e 39
+       e9 00 00 00 39 e1 00 00
+       00 48 11 3a e2 00 00 00
+       cb 39 e2 00 00 00 bf 38
+       bf 11 a0 b0 11 3a e4 00
+       00 00 cb 06 cb 39 e4 00
+       00 00 39 e8 00 00 00 39
+       e3 00 00 00 48 ab ec 0f
+       39 e5 00 00 00 93 3a e5
+       00 00 00 cb ee 0d 39 e6
+       00 00 00 93 3a e6 00 00
+       00 cb 39 e3 00 00 00 93
+       3a e3 00 00 00 cb 39 e1
+       00 00 00 93 3a e1 00 00
+       00 0e ee 86 06 cb 39 e5
+       00 00 00 39 e9 00 00 00
+       eb ab ec 15 39 e6 00 00
+       00 b7 ab ec 0c c1 03 11
+       3a e6 00 00 00 cb ee 0a
+       c1 04 11 3a e6 00 00 00
+       cb c3 11 3a ec 00 00 00
+       cb 06 cb 39 e6 00 00 00
+       c1 05 a7 ec 3a 39 ec 00
+       00 00 39 97 00 00 00 43
+       ed 00 00 00 39 96 00 00
+       00 39 e6 00 00 00 c1 06
+       9e f1 24 01 00 9f 11 3a
+       ec 00 00 00 cb 39 e6 00
+       00 00 c1 07 9d 11 3a e6
+       00 00 00 cb ee be 39 ee
+       00 00 00 39 ec 00 00 00
+       f1 cf 28                     at 1, fixup atom: rc4
+                                    at 7, fixup atom: sn
+                                    at 13, fixup atom: i
+                                    at 19, fixup atom: j
+                                    at 25, fixup atom: k
+                                    at 31, fixup atom: l
+                                    at 37, fixup atom: m
+                                    at 43, fixup atom: n
+                                    at 49, fixup atom: un
+                                    at 55, fixup atom: arr
+                                    at 61, fixup atom: cipher
+                                    at 67, fixup atom: i
+                                    at 75, fixup atom: rc4
+                                    at 81, fixup atom: sn
+                                    at 87, fixup atom: i
+                                    at 93, fixup atom: j
+                                    at 99, fixup atom: k
+                                    at 105, fixup atom: l
+                                    at 111, fixup atom: m
+                                    at 117, fixup atom: n
+                                    at 123, fixup atom: un
+                                    at 129, fixup atom: arr
+                                    at 135, fixup atom: cipher
+                                    at 141, fixup atom: i
+                                    at 147, fixup atom: "2021quickjs_happygame"
+                                    at 153, fixup atom: un
+                                    at 159, fixup atom: "flag{0123456789abcdef0123456789a}***"
+                                    at 165, fixup atom: sn
+                                    at 260, fixup atom: "32"
+                                    at 267, fixup atom: "33"
+                                    at 275, fixup atom: "34"
+                                    at 283, fixup atom: "35"
+                                    at 289, fixup atom: arr
+                                    at 298, fixup atom: m
+                                    at 307, fixup atom: n
+                                    at 315, fixup atom: l
+                                    at 323, fixup atom: k
+                                    at 329, fixup atom: rc4
+                                    at 334, fixup atom: sn
+                                    at 339, fixup atom: un
+                                    at 346, fixup atom: cipher
+                                    at 356, fixup atom: i
+                                    at 362, fixup atom: i
+                                    at 367, fixup atom: cipher
+                                    at 376, fixup atom: cipher
+                                    at 381, fixup atom: i
+                                    at 388, fixup atom: j
+                                    at 394, fixup atom: j
+                                    at 406, fixup atom: l
+                                    at 414, fixup atom: l
+                                    at 419, fixup atom: arr
+                                    at 424, fixup atom: k
+                                    at 433, fixup atom: m
+                                    at 439, fixup atom: m
+                                    at 447, fixup atom: n
+                                    at 453, fixup atom: n
+                                    at 459, fixup atom: k
+                                    at 465, fixup atom: k
+                                    at 471, fixup atom: i
+                                    at 477, fixup atom: i
+                                    at 487, fixup atom: m
+                                    at 492, fixup atom: cipher
+                                    at 501, fixup atom: n
+                                    at 513, fixup atom: n
+                                    at 524, fixup atom: n
+                                    at 532, fixup atom: s
+                                    at 540, fixup atom: n
+                                    at 550, fixup atom: s
+                                    at 555, fixup atom: String
+                                    at 560, fixup atom: fromCharCode
+                                    at 565, fixup atom: Number
+                                    at 570, fixup atom: n
+                                    at 584, fixup atom: s
+                                    at 590, fixup atom: n
+                                    at 599, fixup atom: n
+                                    at 607, fixup atom: print
+                                    at 612, fixup atom: s
+                                  }
+                                  debug {
+032b:  de 03 01 20 00 48 01 00
+       4a 52 3f 40 00 7c 04 30
+       30 2b 2b 77 7b 5d 5d 6c
+       3f 0e 40 3f 4a b7 30 2b
+       3f cb 4e 0d                  filename: "source.js"
+                                  }
+                                  cpool {
+034f:  0e                           function {
+0350:  43 06 00 be 03 02 08 02
+       05 00 00 bb 01 0a              name: rc4
+                                      args=2 vars=8 defargs=2 closures=0 cpool=0
+                                      stack=5 bclen=187 locals=10
+                                      vars {
+035e:  e0 03 00 01 00                   name: data
+0363:  e2 03 00 01 00                   name: key
+0368:  e4 03 00 00 00                   name: box
+036d:  c2 03 00 01 00                   name: i
+0372:  e6 03 00 02 00                   name: x
+0377:  e8 03 00 03 00                   name: temp
+037c:  ea 03 00 04 00                   name: y
+0381:  ec 03 00 05 00                   name: out
+0386:  ee 03 00 06 00                   name: code
+038b:  c6 03 00 07 00                   name: k
+                                      }
+                                      bytecode {
+0390:  39 94 00 00 00 c0 00 01
+       f1 cb b7 cc c8 c0 00 01
+       a5 ec 09 c7 c8 c8 4a 95
+       01 ee f2 b7 cd b7 cc c8
+       c0 00 01 a5 ec 2c c9 c7
+       c8 48 9f d4 43 f8 00 00
+       00 c8 d4 eb 9e 24 01 00
+       9f c0 00 01 9e cd c7 c8
+       48 ce c7 c8 72 c7 c9 48
+       4a c7 c9 ca 4a 95 01 ee
+       cf b7 cd b7 c5 04 26 00
+       00 c5 05 b7 cc c8 d3 eb
+       a5 ec 56 d3 43 f8 00 00
+       00 c8 24 01 00 c5 06 c9
+       b8 9f c0 00 01 9e cd c4
+       04 c7 c9 48 9f c0 00 01
+       9e c5 04 c7 c9 48 ce c7
+       c9 72 c7 c4 04 48 4a c7
+       c4 04 ca 4a c7 c9 48 c7
+       c4 04 48 9f c0 00 01 9e
+       c5 07 c4 05 43 f9 00 00
+       00 c4 06 c7 c4 07 48 b0
+       24 01 00 0e 95 01 ee a6
+       c4 05 28                         at 1, fixup atom: Array
+                                        at 45, fixup atom: charCodeAt
+                                        at 101, fixup atom: charCodeAt
+                                        at 165, fixup atom: push
+                                      }
+                                      debug {
+044b:  de 03 03 19 04 35 30 17
+       18 0d 30 7b 17 26 17 19
+       0d 12 1c 2c 40 2b 3f 17
+       2b 1d 4a 5d 17                   filename: "source.js"
+                                      }
+                                    }
+source.js:3: function: rc4
+  args: data key
+  locals:
+    0: var box
+    1: var i
+    2: var x
+    3: var temp
+    4: var y
+    5: var out
+    6: var code
+    7: var k
+  stack_size: 5
+  opcodes:
+        get_var Array
+        push_i16 256
+        call1 1
+        put_loc0 0: box
+        push_0 0
+        put_loc1 1: i
+   12:  get_loc1 1: i
+        push_i16 256
+        lt
+        if_false8 27
+        get_loc0 0: box
+        get_loc1 1: i
+        get_loc1 1: i
+        put_array_el
+        inc_loc 1: i
+        goto8 12
+   27:  push_0 0
+        put_loc2 2: x
+        push_0 0
+        put_loc1 1: i
+   31:  get_loc1 1: i
+        push_i16 256
+        lt
+        if_false8 81
+        get_loc2 2: x
+        get_loc0 0: box
+        get_loc1 1: i
+        get_array_el
+        add
+        get_arg1 1: key
+        get_field2 charCodeAt
+        get_loc1 1: i
+        get_arg1 1: key
+        get_length
+        mod
+        call_method 1
+        add
+        push_i16 256
+        mod
+        put_loc2 2: x
+        get_loc0 0: box
+        get_loc1 1: i
+        get_array_el
+        put_loc3 3: temp
+        get_loc0 0: box
+        get_loc1 1: i
+        to_propkey2
+        get_loc0 0: box
+        get_loc2 2: x
+        get_array_el
+        put_array_el
+        get_loc0 0: box
+        get_loc2 2: x
+        get_loc3 3: temp
+        put_array_el
+        inc_loc 1: i
+        goto8 31
+   81:  push_0 0
+        put_loc2 2: x
+        push_0 0
+        put_loc8 4: y
+        array_from 0
+        put_loc8 5: out
+        push_0 0
+        put_loc1 1: i
+   93:  get_loc1 1: i
+        get_arg0 0: data
+        get_length
+        lt
+        if_false8 184
+        get_arg0 0: data
+        get_field2 charCodeAt
+        get_loc1 1: i
+        call_method 1
+        put_loc8 6: code
+        get_loc2 2: x
+        push_1 1
+        add
+        push_i16 256
+        mod
+        put_loc2 2: x
+        get_loc8 4: y
+        get_loc0 0: box
+        get_loc2 2: x
+        get_array_el
+        add
+        push_i16 256
+        mod
+        put_loc8 4: y
+        get_loc0 0: box
+        get_loc2 2: x
+        get_array_el
+        put_loc3 3: temp
+        get_loc0 0: box
+        get_loc2 2: x
+        to_propkey2
+        get_loc0 0: box
+        get_loc8 4: y
+        get_array_el
+        put_array_el
+        get_loc0 0: box
+        get_loc8 4: y
+        get_loc3 3: temp
+        put_array_el
+        get_loc0 0: box
+        get_loc2 2: x
+        get_array_el
+        get_loc0 0: box
+        get_loc8 4: y
+        get_array_el
+        add
+        push_i16 256
+        mod
+        put_loc8 7: k
+        get_loc8 5: out
+        get_field2 push
+        get_loc8 6: code
+        get_loc0 0: box
+        get_loc8 7: k
+        get_array_el
+        xor
+        call_method 1
+        drop
+        inc_loc 1: i
+        goto8 93
+  184:  get_loc8 5: out
+        return
+
+0468:  0a                           bigint {
+0469:  00                           }
+046a:  0a                           bigint {
+046b:  00                           }
+046c:  0a                           bigint {
+046d:  e8 01 07                       len=7
+0470:  44 b8 90 b5 6b 67 80         }
+0477:  0a                           bigint {
+0478:  e8 01 07                       len=7
+047b:  34 a7 b8 48 7f 8d af         }
+0482:  0a                           bigint {
+0483:  00                           }
+0484:  0a                           bigint {
+0485:  28 01                          len=1
+0487:  fe                           }
+0488:  0a                           bigint {
+0489:  28 01                          len=1
+048b:  fe                           }
+                                  }
+                                }
+source.js:1: function: <eval>
+  locals:
+    0: var <ret>
+  stack_size: 32
+  opcodes:
+        check_define_var rc4,64
+        check_define_var sn,0
+        check_define_var i,0
+        check_define_var j,0
+        check_define_var k,0
+        check_define_var l,0
+        check_define_var m,0
+        check_define_var n,0
+        check_define_var un,0
+        check_define_var arr,0
+        check_define_var cipher,0
+        check_define_var i,0
+        fclosure8 0: [bytecode rc4]
+        define_func rc4,0
+        define_var sn,0
+        define_var i,0
+        define_var j,0
+        define_var k,0
+        define_var l,0
+        define_var m,0
+        define_var n,0
+        define_var un,0
+        define_var arr,0
+        define_var cipher,0
+        define_var i,0
+        push_atom_value "2021quickjs_happygame"
+        dup
+        put_var un
+        drop
+        push_atom_value "flag{0123456789abcdef0123456789a}***"
+        dup
+        put_var sn
+        put_loc0 0: "<ret>"
+        push_i16 150
+        push_i16 224
+        push_i16 244
+        push_i8 68
+        push_i8 61
+        push_i8 125
+        push_i8 8
+        push_i16 239
+        push_i16 203
+        push_i16 254
+        push_i16 241
+        push_i8 113
+        push_i16 213
+        push_i16 176
+        push_i8 64
+        push_i8 106
+        push_i8 103
+        push_i16 166
+        push_i16 185
+        push_i16 159
+        push_i16 158
+        push_i16 172
+        push_i8 9
+        push_i16 213
+        push_i16 239
+        push_i8 12
+        push_i8 100
+        push_i16 185
+        push_i8 90
+        push_i16 174
+        push_i8 107
+        push_i16 131
+        array_from 32
+        push_i16 223
+        define_field "32"
+        push_i8 122
+        define_field "33"
+        push_i16 229
+        define_field "34"
+        push_i16 157
+        define_field "35"
+        dup
+        put_var arr
+        drop
+        push_const8 1: 0n
+        dup
+        put_var m
+        put_loc0 0: "<ret>"
+        push_const8 2: 0n
+        dup
+        put_var n
+        put_loc0 0: "<ret>"
+        push_0 0
+        dup
+        put_var l
+        put_loc0 0: "<ret>"
+        push_0 0
+        dup
+        put_var k
+        put_loc0 0: "<ret>"
+        get_var rc4
+        get_var sn
+        get_var un
+        call2 2
+        dup
+        put_var cipher
+        drop
+        undefined
+        put_loc0 0: "<ret>"
+        push_0 0
+        dup
+        put_var i
+        drop
+  361:  get_var i
+        get_var cipher
+        get_length
+        lt
+        if_false8 484
+        get_var cipher
+        get_var i
+        get_array_el
+        dup
+        put_var j
+        put_loc0 0: "<ret>"
+        get_var j
+        push_i8 56
+        push_i8 17
+        sub
+        xor
+        dup
+        put_var l
+        put_loc0 0: "<ret>"
+        undefined
+        put_loc0 0: "<ret>"
+        get_var l
+        get_var arr
+        get_var k
+        get_array_el
+        eq
+        if_false8 446
+        get_var m
+        post_inc
+        put_var m
+        put_loc0 0: "<ret>"
+        goto8 458
+  446:  get_var n
+        post_inc
+        put_var n
+        put_loc0 0: "<ret>"
+  458:  get_var k
+        post_inc
+        put_var k
+        put_loc0 0: "<ret>"
+        get_var i
+        post_inc
+        put_var i
+        drop
+        goto8 361
+  484:  undefined
+        put_loc0 0: "<ret>"
+        get_var m
+        get_var cipher
+        get_length
+        eq
+        if_false8 520
+        get_var n
+        push_0 0
+        eq
+        if_false8 520
+        push_const8 3: 18071254662143010n
+        dup
+        put_var n
+        put_loc0 0: "<ret>"
+        goto8 529
+  520:  push_const8 4: 24706849372394394n
+        dup
+        put_var n
+        put_loc0 0: "<ret>"
+  529:  push_empty_string
+        dup
+        put_var s
+        put_loc0 0: "<ret>"
+        undefined
+        put_loc0 0: "<ret>"
+  539:  get_var n
+        push_const8 5: 0n
+        gt
+        if_false8 606
+        get_var s
+        get_var String
+        get_field2 fromCharCode
+        get_var Number
+        get_var n
+        push_const8 6: 127n
+        mod
+        call1 1
+        call_method 1
+        add
+        dup
+        put_var s
+        put_loc0 0: "<ret>"
+        get_var n
+        push_const8 7: 127n
+        div
+        dup
+        put_var n
+        put_loc0 0: "<ret>"
+        goto8 539
+  606:  get_var print
+        get_var s
+        call1 1
+        set_loc0 0: "<ret>"
+        return
+
+Error...
+```
+
+首先是rc4函数，应该不用看了
+
+主要看下面的eval函数
+
+有两个步骤
+
+* 赋值
+
+* 操作
+
+  ```assembly
+  push_i8 56
+  push_i8 17
+  sub
+  xor
+  ```
+
+根据此写脚本
+
+```assembly
+# data = [0x02, 0x1B, 0x06, 0x72, 0x63, 0x34, 0x04, 0x73, 0x6E, 0x02, 0x69, 0x02, 0x6A, 0x02, 0x6B, 0x02, 0x6C, 0x02, 0x6D, 0x02, 0x6E, 0x04, 0x75, 0x6E, 0x06, 0x61, 0x72, 0x72, 0x0C, 0x63, 0x69, 0x70, 0x68, 0x65, 0x72, 0x2A, 0x32, 0x30, 0x32, 0x31, 0x71, 0x75, 0x69, 0x63, 0x6B, 0x6A, 0x73, 0x5F, 0x68, 0x61, 0x70, 0x70, 0x79, 0x67, 0x61, 0x6D, 0x65, 0x48, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x2A, 0x02, 0x73, 0x18, 0x66, 0x72, 0x6F, 0x6D, 0x43, 0x68, 0x61, 0x72, 0x43, 0x6F, 0x64, 0x65, 0x0A, 0x70, 0x72, 0x69, 0x6E, 0x74, 0x12, 0x73, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x2E, 0x6A, 0x73, 0x08, 0x64, 0x61, 0x74, 0x61, 0x06, 0x6B, 0x65, 0x79, 0x06, 0x62, 0x6F, 0x78, 0x02, 0x78, 0x08, 0x74, 0x65, 0x6D, 0x70, 0x02, 0x79, 0x06, 0x6F, 0x75, 0x74, 0x08, 0x63, 0x6F, 0x64, 0x65, 0x14, 0x63, 0x68, 0x61, 0x72, 0x43, 0x6F, 0x64, 0x65, 0x41, 0x74, 0x08, 0x70, 0x75, 0x73, 0x68, 0x0E, 0x00, 0x06, 0x00, 0x9E, 0x01, 0x00, 0x01, 0x00, 0x20, 0x00, 0x08, 0xEB, 0x04, 0x01, 0xA0, 0x01, 0x00, 0x00, 0x00, 0x40, 0xDF, 0x00, 0x00, 0x00, 0x40, 0x40, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE2, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE3, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE5, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE6, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x40, 0xE1, 0x00, 0x00, 0x00, 0x00, 0xC2, 0x00, 0x41, 0xDF, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE2, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE3, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE5, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE6, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x3F, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x04, 0xEA, 0x00, 0x00, 0x00, 0x11, 0x3A, 0xE7, 0x00, 0x00, 0x00, 0x0E, 0x04, 0xEB, 0x00, 0x00, 0x00, 0x11, 0x3A, 0xE0, 0x00, 0x00, 0x00, 0xCB, 0xC0, 0x96, 0x00, 0xC0, 0xE0, 0x00, 0xC0, 0xF4, 0x00, 0xBF, 0x44, 0xBF, 0x3D, 0xBF, 0x7D, 0xBF, 0x08, 0xC0, 0xEF, 0x00, 0xC0, 0xCB, 0x00, 0xC0, 0xFE, 0x00, 0xC0, 0xF1, 0x00, 0xBF, 0x71, 0xC0, 0xD5, 0x00, 0xC0, 0xB0, 0x00, 0xBF, 0x40, 0xBF, 0x6A, 0xBF, 0x67, 0xC0, 0xA6, 0x00, 0xC0, 0xB9, 0x00, 0xC0, 0x9F, 0x00, 0xC0, 0x9E, 0x00, 0xC0, 0xAC, 0x00, 0xBF, 0x09, 0xC0, 0xD5, 0x00, 0xC0, 0xEF, 0x00, 0xBF, 0x0C, 0xBF, 0x64, 0xC0, 0xB9, 0x00, 0xBF, 0x5A, 0xC0, 0xAE, 0x00, 0xBF, 0x6B, 0xC0, 0x83, 0x00, 0x26, 0x20, 0x00, 0xC0, 0xDF, 0x00, 0x4D, 0x20, 0x00, 0x00, 0x80, 0xBF, 0x7A, 0x4D, 0x21, 0x00, 0x00, 0x80, 0xC0, 0xE5, 0x00, 0x4D, 0x22, 0x00, 0x00, 0x80, 0xC0, 0x9D, 0x00, 0x4D, 0x23, 0x00, 0x00, 0x80, 0x11, 0x3A, 0xE8, 0x00, 0x00, 0x00, 0x0E, 0xC1, 0x01, 0x11, 0x3A, 0xE5, 0x00, 0x00, 0x00, 0xCB, 0xC1, 0x02, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE4, 0x00, 0x00, 0x00, 0xCB, 0xB7, 0x11, 0x3A, 0xE3, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xDF, 0x00, 0x00, 0x00, 0x39, 0xE0, 0x00, 0x00, 0x00, 0x39, 0xE7, 0x00, 0x00, 0x00, 0xF2, 0x11, 0x3A, 0xE9, 0x00, 0x00, 0x00, 0x0E, 0x06, 0xCB, 0xB7, 0x11, 0x3A, 0xE1, 0x00, 0x00, 0x00, 0x0E, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x39, 0xE9, 0x00, 0x00, 0x00, 0xEB, 0xA5, 0xEC, 0x6E, 0x39, 0xE9, 0x00, 0x00, 0x00, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x48, 0x11, 0x3A, 0xE2, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE2, 0x00, 0x00, 0x00, 0xBF, 0x38, 0xBF, 0x11, 0xA0, 0xB0, 0x11, 0x3A, 0xE4, 0x00, 0x00, 0x00, 0xCB, 0x06, 0xCB, 0x39, 0xE4, 0x00, 0x00, 0x00, 0x39, 0xE8, 0x00, 0x00, 0x00, 0x39, 0xE3, 0x00, 0x00, 0x00, 0x48, 0xAB, 0xEC, 0x0F, 0x39, 0xE5, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE5, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0x0D, 0x39, 0xE6, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE3, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE3, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE1, 0x00, 0x00, 0x00, 0x93, 0x3A, 0xE1, 0x00, 0x00, 0x00, 0x0E, 0xEE, 0x86, 0x06, 0xCB, 0x39, 0xE5, 0x00, 0x00, 0x00, 0x39, 0xE9, 0x00, 0x00, 0x00, 0xEB, 0xAB, 0xEC, 0x15, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xB7, 0xAB, 0xEC, 0x0C, 0xC1, 0x03, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0x0A, 0xC1, 0x04, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xC3, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 0xCB, 0x06, 0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x05, 0xA7, 0xEC, 0x3A, 0x39, 0xEC, 0x00, 0x00, 0x00, 0x39, 0x97, 0x00, 0x00, 0x00, 0x43, 0xED, 0x00, 0x00, 0x00, 0x39, 0x96, 0x00, 0x00, 0x00, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x06, 0x9E, 0xF1, 0x24, 0x01, 0x00, 0x9F, 0x11, 0x3A, 0xEC, 0x00, 0x00, 0x00, 0xCB, 0x39, 0xE6, 0x00, 0x00, 0x00, 0xC1, 0x07, 0x9D, 0x11, 0x3A, 0xE6, 0x00, 0x00, 0x00, 0xCB, 0xEE, 0xBE, 0x39, 0xEE, 0x00, 0x00, 0x00, 0x39, 0xEC, 0x00, 0x00, 0x00, 0xF1, 0xCF, 0x28, 0xDE, 0x03, 0x01, 0x20, 0x00, 0x48, 0x01, 0x00, 0x4A, 0x52, 0x3F, 0x40, 0x00, 0x7C, 0x04, 0x30, 0x30, 0x2B, 0x2B, 0x77, 0x7B, 0x5D, 0x5D, 0x6C, 0x3F, 0x0E, 0x40, 0x3F, 0x4A, 0xB7, 0x30, 0x2B, 0x3F, 0xCB, 0x4E, 0x0D, 0x0E, 0x43, 0x06, 0x00, 0xBE, 0x03, 0x02, 0x08, 0x02, 0x05, 0x00, 0x00, 0xBB, 0x01, 0x0A, 0xE0, 0x03, 0x00, 0x01, 0x00, 0xE2, 0x03, 0x00, 0x01, 0x00, 0xE4, 0x03, 0x00, 0x00, 0x00, 0xC2, 0x03, 0x00, 0x01, 0x00, 0xE6, 0x03, 0x00, 0x02, 0x00, 0xE8, 0x03, 0x00, 0x03, 0x00, 0xEA, 0x03, 0x00, 0x04, 0x00, 0xEC, 0x03, 0x00, 0x05, 0x00, 0xEE, 0x03, 0x00, 0x06, 0x00, 0xC6, 0x03, 0x00, 0x07, 0x00, 0x39, 0x94, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x01, 0xF1, 0xCB, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 0x09, 0xC7, 0xC8, 0xC8, 0x4A, 0x95, 0x01, 0xEE, 0xF2, 0xB7, 0xCD, 0xB7, 0xCC, 0xC8, 0xC0, 0x00, 0x01, 0xA5, 0xEC, 0x2C, 0xC9, 0xC7, 0xC8, 0x48, 0x9F, 0xD4, 0x43, 0xF8, 0x00, 0x00, 0x00, 0xC8, 0xD4, 0xEB, 0x9E, 0x24, 0x01, 0x00, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 0xCD, 0xC7, 0xC8, 0x48, 0xCE, 0xC7, 0xC8, 0x72, 0xC7, 0xC9, 0x48, 0x4A, 0xC7, 0xC9, 0xCA, 0x4A, 0x95, 0x01, 0xEE, 0xCF, 0xB7, 0xCD, 0xB7, 0xC5, 0x04, 0x26, 0x00, 0x00, 0xC5, 0x05, 0xB7, 0xCC, 0xC8, 0xD3, 0xEB, 0xA5, 0xEC, 0x56, 0xD3, 0x43, 0xF8, 0x00, 0x00, 0x00, 0xC8, 0x24, 0x01, 0x00, 0xC5, 0x06, 0xC9, 0xB8, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 0xCD, 0xC4, 0x04, 0xC7, 0xC9, 0x48, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 0xC5, 0x04, 0xC7, 0xC9, 0x48, 0xCE, 0xC7, 0xC9, 0x72, 0xC7, 0xC4, 0x04, 0x48, 0x4A, 0xC7, 0xC4, 0x04, 0xCA, 0x4A, 0xC7, 0xC9, 0x48, 0xC7, 0xC4, 0x04, 0x48, 0x9F, 0xC0, 0x00, 0x01, 0x9E, 0xC5, 0x07, 0xC4, 0x05, 0x43, 0xF9, 0x00, 0x00, 0x00, 0xC4, 0x06, 0xC7, 0xC4, 0x07, 0x48, 0xB0, 0x24, 0x01, 0x00, 0x0E, 0x95, 0x01, 0xEE, 0xA6, 0xC4, 0x05, 0x28, 0xDE, 0x03, 0x03, 0x19, 0x04, 0x35, 0x30, 0x17, 0x18, 0x0D, 0x30, 0x7B, 0x17, 0x26, 0x17, 0x19, 0x0D, 0x12, 0x1C, 0x2C, 0x40, 0x2B, 0x3F, 0x17, 0x2B, 0x1D, 0x4A, 0x5D, 0x17, 0x0A, 0x00, 0x0A, 0x00, 0x0A, 0xE8, 0x01, 0x07, 0x44, 0xB8, 0x90, 0xB5, 0x6B, 0x67, 0x80, 0x0A, 0xE8, 0x01, 0x07, 0x34, 0xA7, 0xB8, 0x48, 0x7F, 0x8D, 0xAF, 0x0A, 0x00, 0x0A, 0x28, 0x01, 0xFE, 0x0A, 0x28, 0x01, 0xFE]
+# print(len(data))
+
+a = [150,224,244,68,61,125,8,239,203,254,241,113,213,176,64,106,103,166,185,159,158,172,9,213,239,12,100,185,90,174,107,131,223,122,229,157]
+data = ""
+for i in a:
+    # print(hex(i^39))
+    data += str(hex(i^39))[2:]
+print(data)
+```
+
+b1c7d3631a5a2fc8ecd9d656f297674d40819eb8b98b2ef2c82b439e7d894ca4f85dc2ba
+
+rc4解密，密钥为`2021quickjs_happygame`
+
+flag{2021_9u1ck_1s_v3r7_1nT3r3st1n9}
