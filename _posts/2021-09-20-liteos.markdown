@@ -1,0 +1,210 @@
+---
+layout: post
+title:  liteos
+date:   2021-09-20 00:01:01 +0300
+image:  2021-09-20-coffee.jpg
+tags:   [ctf,reverse,RISC-V,RCTF]
+---
+
+ida7.5并不能正常识别
+
+```assembly
+─$ file liteos 
+liteos: ELF 32-bit LSB executable, UCB RISC-V, version 1 (SYSV), statically linked, stripped
+```
+
+RISC-V是David Patterson/Andrew Waterman于2011在美国伯克利退出的一种用于教学目的的指令集，其尽可能简化（优化）了传统的CPU指令系统。
+
+下载了目前最新版的ghidra10.0.3，可以准确的识别该文件的指令集RISCV，ghidra打开。
+
+首先查找字符串可以看到`"Welcome to RCTF 2021...\n\r"`
+
+通过交叉引用定位到关键函数
+
+```assembly
+void UndefinedFunction_8000095c(void) {
+  int iStack84;
+  undefined4 uStack72;
+  undefined4 uStack68;
+  undefined4 uStack64;
+  undefined4 uStack60;
+  undefined4 uStack56;
+  undefined2 uStack52;
+  undefined uStack50;
+  undefined uStack49;
+  undefined4 uStack48;
+  undefined4 uStack44;
+  undefined4 uStack40;
+  undefined4 uStack36;
+  undefined4 uStack32;
+  undefined4 uStack28;
+  undefined2 uStack24;
+  
+  do {
+    FUN_80000832("Welcome to RCTF 2021...\n\r");
+    uStack72 = 0x4d524148;
+    uStack68 = 0x44594e4f;
+    uStack64 = 0x4d414552;
+    uStack60 = 0x4f505449;
+    uStack56 = 0x42495353;
+    uStack52 = 0x454c;
+    uStack50 = 0;
+    uStack48 = 0x44434241;
+    uStack44 = 0x48474645;
+    uStack40 = 0x4c4b4a49;
+    uStack36 = 0x504f4e4d;
+    uStack32 = 0x54535251;
+    uStack28 = 0x58575655;
+    uStack24 = 0x5a59;
+    for (iStack84 = 0; iStack84 < 0x16; iStack84 = iStack84 + 1) {
+      if (*(char *)((int)&uStack72 + iStack84) + 3 < 0x5b) {
+        *(char *)((int)&uStack72 + iStack84) = *(char *)((int)&uStack72 + iStack84) + '\x03';
+      }
+      else {
+        *(undefined *)((int)&uStack72 + iStack84) =
+             (&uStack49)[(*(char *)((int)&uStack72 + iStack84) + -0x57) % 0x1a];
+      }
+    }
+    FUN_80000832("The result of encryption: %s\n\r",&uStack72);
+    FUN_800059a2(1000);
+  } while( true );
+}
+```
+
+这里有一点疑惑的地方，for循环了22（0x16）次，但是我不知道怎么把上面的数组分成22个元素。
+
+看一下汇编代码
+
+```assembly
+80000976 b7  47  52       lui        a5 ,0x4d524
+         4d
+8000097a 93  87  87       addi       a5 ,a5 ,0x148
+         14
+8000097e 23  2c  f4       sw         a5 ,-0x48 (s0 )
+         fa
+80000982 b7  57  59       lui        a5 ,0x44595
+         44
+80000986 93  87  f7       addi       a5 ,a5 ,-0x1b1
+         e4
+8000098a 23  2e  f4       sw         a5 ,-0x44 (s0 )
+         fa
+8000098e b7  47  41       lui        a5 ,0x4d414
+         4d
+80000992 93  87  27       addi       a5 ,a5 ,0x552
+         55
+80000996 23  20  f4       sw         a5 ,-0x40 (s0 )
+         fc
+8000099a b7  57  50       lui        a5 ,0x4f505
+         4f
+8000099e 93  87  97       addi       a5 ,a5 ,0x449
+         44
+800009a2 23  22  f4       sw         a5 ,-0x3c (s0 )
+         fc
+800009a6 b7  57  49       lui        a5 ,0x42495
+         42
+800009aa 93  87  37       addi       a5 ,a5 ,0x353
+         35
+800009ae 23  24  f4       sw         a5 ,-0x38 (s0 )
+         fc
+800009b2 91  67           c.lui      a5 ,0x4
+800009b4 93  87  c7       addi       a5 ,a5 ,0x54c
+         54
+800009b8 23  16  f4       sh         a5 ,-0x34 (s0 )
+         fc
+800009bc 23  07  04       sb         zero ,-0x32 (s0 )
+         fc
+800009c0 8d  47           c.li       a5 ,0x3
+800009c2 23  28  f4       sw         a5 ,-0x50 (s0 )
+         fa
+800009c6 b7  77  01       lui        a5 ,0x80017
+         80
+800009ca 93  87  87       addi       a5 ,a5 ,-0x6c8
+         93
+800009ce 98  43           c.lw       a4 ,0x0 (a5 => s_ABCDEFGHIJKLMNOPQRSTUVWXYZ_800169  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+800009d0 23  28  e4       sw         a4 ,-0x30 (s0 )
+         fc
+800009d4 d8  43           c.lw       a4 ,0x4 (a5 => s_EFGHIJKLMNOPQRSTUVWXYZ_80016938+4  = "EFGHIJKLMNOPQRSTUVWXYZ"
+800009d6 23  2a  e4       sw         a4 ,-0x2c (s0 )
+         fc
+800009da 98  47           c.lw       a4 ,0x8 (a5 => s_IJKLMNOPQRSTUVWXYZ_80016938+8 )    = "IJKLMNOPQRSTUVWXYZ"
+800009dc 23  2c  e4       sw         a4 ,-0x28 (s0 )
+         fc
+800009e0 d8  47           c.lw       a4 ,0xc (a5 => s_MNOPQRSTUVWXYZ_80016938+12 )       = "MNOPQRSTUVWXYZ"
+800009e2 23  2e  e4       sw         a4 ,-0x24 (s0 )
+         fc
+800009e6 98  4b           c.lw       a4 ,0x10 (a5 => s_QRSTUVWXYZ_80016938+16 )          = "QRSTUVWXYZ"
+800009e8 23  20  e4       sw         a4 ,-0x20 (s0 )
+         fe
+800009ec d8  4b           c.lw       a4 ,0x14 (a5 => s_UVWXYZ_80016938+20 )              = "UVWXYZ"
+800009ee 23  22  e4       sw         a4 ,-0x1c (s0 )
+         fe
+800009f2 83  d7  87       lhu        a5 ,0x18 (a5 => s_YZ_80016938+24 )                  = "YZ"
+         01
+800009f6 23  14  f4       sh         a5 ,-0x18 (s0 )
+         fe
+800009fa 23  26  04       sw         zero ,-0x54 (s0 )
+         fa
+```
+
+**u类指令格式**
+
+LUI：创建32位无符号整数，存放立即数到rd的高20位，低12位置0
+
+AUIPC：创建pc的相对地址，pc+无符号立即数(偏移量)=>rd
+
+**寄存器-立即数:**
+
+ADDI：将12位有符号立即数和rs相加，溢出忽略，直接使用结果的最低32bit，并存入rd
+
+至此该部分逻辑搞清楚了
+
+```assembly
+uStack72 = 0x4d524148;
+uStack68 = 0x44594e4f;
+uStack64 = 0x4d414552;
+uStack60 = 0x4f505449;
+uStack56 = 0x42495353;
+uStack52 = 0x454c;
+```
+
+这是22个元素的数组，要注意顺序，这里第一个元素是0x48，不是0x4d。
+
+```assembly
+uStack48 = 0x44434241;
+uStack44 = 0x48474645;
+uStack40 = 0x4c4b4a49;
+uStack36 = 0x504f4e4d;
+uStack32 = 0x54535251;
+uStack28 = 0x58575655;
+uStack24 = 0x5a59;
+```
+
+这是26个字母
+
+写一个C语言脚本实现该部分逻辑并输出
+
+```assembly
+#include <stdio.h>
+
+int main(){
+    int data[22] = {0x48, 0x41, 0x52, 0x4d, 0x4f, 0x4e, 0x59, 0x44, 0x52, 0x45, 0x41,
+                    0x4d, 0x49, 0x54, 0x50, 0x4f, 0x53, 0x53, 0x49, 0x42, 0x4c, 0x45};
+    for(int i=0; i<22; i++){
+        if(data[i] < 0x5b){
+            data[i] = (data[i] + '\x03' - 'A')%26 + 'A';
+        }else {
+            data[i] = 'A' + (data[i]-0x57)%0x1a;
+        }
+        printf("%c", data[i]);
+    }
+    return 0;
+}
+```
+
+输出
+
+KDUPRQBGUHDPLWSRVVLEOH
+
+得到flag
+
+RCTF{KDUPRQBGUHDPLWSRVVLEOH}
