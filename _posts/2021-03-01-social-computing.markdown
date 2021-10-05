@@ -559,3 +559,5 @@ $$
     \quad
     $$
     
+
+![]({{site.baseurl}}/img/2021-03-01-xmind.jpg)
