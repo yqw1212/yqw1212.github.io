@@ -1,0 +1,454 @@
+---
+layout: post
+title:  OddCode
+date:   2021-10-10 08:00:01 +0300
+image:  2021-10-10-japan.jpg
+tags:   [ctf,reverse,羊城杯]
+---
+
+进入ida，花指令太多，无法反编译，只能看汇编。
+
+```assembly
+.text:00CC526C                 public start
+.text:00CC526C start:
+.text:00CC526C                 push    ecx
+.text:00CC526D                 push    offset aInputYourFlagH ; "Input your flag here:\r\n"
+.text:00CC5272                 call    ds:printf
+.text:00CC5278                 add     esp, 4
+.text:00CC527B                 push    offset byte_CC701D
+.text:00CC5280                 push    offset a46s     ; "%46s"
+.text:00CC5285                 call    ds:scanf
+.text:00CC528B                 add     esp, 8
+.text:00CC528E                 xor     eax, eax
+.text:00CC5290                 mov     bl, 2Dh ; '-'
+.text:00CC5292                 cmp     byte_CC701D, 53h ; 'S'
+.text:00CC5299                 jnz     short loc_CC52E4
+.text:00CC529B                 cmp     byte_CC701E, 61h ; 'a'
+.text:00CC52A2                 jnz     short loc_CC52E4
+.text:00CC52A4                 cmp     byte_CC701F, 6Eh ; 'n'
+.text:00CC52AB                 jnz     short loc_CC52E4
+.text:00CC52AD                 cmp     byte_CC7020, 67h ; 'g'
+.text:00CC52B4                 jnz     short loc_CC52E4
+.text:00CC52B6                 cmp     byte_CC7021, 46h ; 'F'
+.text:00CC52BD                 jnz     short loc_CC52E4
+.text:00CC52BF                 cmp     byte_CC7022, 6Fh ; 'o'
+.text:00CC52C6                 jnz     short loc_CC52E4
+.text:00CC52C8                 cmp     byte_CC7023, 72h ; 'r'
+.text:00CC52CF                 jnz     short loc_CC52E4
+.text:00CC52D1                 cmp     byte_CC7024, 7Bh ; '{'
+.text:00CC52D8                 jnz     short loc_CC52E4
+.text:00CC52DA                 cmp     byte_CC7045, 7Dh ; '}'
+.text:00CC52E1                 jnz     short loc_CC52E4
+.text:00CC52E3                 inc     eax
+.text:00CC52E4
+.text:00CC52E4 loc_CC52E4:                             ; CODE XREF: .text:00CC5299↑j
+.text:00CC52E4                                         ; .text:00CC52A2↑j ...
+.text:00CC52E4                 or      eax, eax
+.text:00CC52E6                 jnz     short loc_CC52FD
+.text:00CC52E8                 push    offset aFail    ; "Fail."
+.text:00CC52ED                 call    ds:printf
+.text:00CC52F3                 add     esp, 4
+.text:00CC52F6                 push    0
+.text:00CC52F8                 call    ExitProcess
+.text:00CC52FD ; ---------------------------------------------------------------------------
+.text:00CC52FD
+.text:00CC52FD loc_CC52FD:                             ; CODE XREF: .text:00CC52E6↑j
+.text:00CC52FD                 lea     edi, unk_CC705C
+.text:00CC5303                 lea     esi, byte_CC701D
+.text:00CC5309                 jmp     far ptr dword_CC5640
+.text:00CC5310 ; ---------------------------------------------------------------------------
+.text:00CC5310                 call    sub_CC1010
+.text:00CC5315                 call    $+5
+.text:00CC531A                 mov     dword ptr [esp+4], 23h ; '#'
+.text:00CC5322                 sub     dword ptr [esp], 8C431Ah
+.text:00CC5329                 add     dword ptr [esp], 8C4331h
+.text:00CC5330                 retf
+.text:00CC5331 ; ---------------------------------------------------------------------------
+.text:00CC5331                 or      eax, eax
+.text:00CC5333                 jnz     short loc_CC5345
+.text:00CC5335                 push    offset aFail    ; "Fail."
+.text:00CC533A                 call    ds:printf
+.text:00CC5340                 add     esp, 4
+.text:00CC5343                 jmp     short loc_CC5353
+.text:00CC5345 ; ---------------------------------------------------------------------------
+.text:00CC5345
+.text:00CC5345 loc_CC5345:                             ; CODE XREF: .text:00CC5333↑j
+.text:00CC5345                 push    offset aSuccess ; "Success."
+.text:00CC534A                 call    ds:printf
+.text:00CC5350                 add     esp, 4
+.text:00CC5353
+.text:00CC5353 loc_CC5353:                             ; CODE XREF: .text:00CC5343↑j
+.text:00CC5353                 push    0
+.text:00CC5355                 call    ExitProcess
+.text:00CC5355 ; ---------------------------------------------------------------------------
+.text:00CC535A                 align 100h
+.text:00CC5400                 dd 90h dup(?)
+.text:00CC5640 dword_CC5640    dd 270h dup(?)          ; CODE XREF: .text:00CC5309↑J
+.text:00CC5640 _text           ends
+```
+
+在这里有一句汇编语言ida反编译有问题，
+
+```assembly
+.text:00CC5309                 jmp     far ptr dword_CC5640
+```
+
+通过使用其他反编译器调试可以发现应该是
+
+```assembly
+.text:00CC5309                 jmp     far 33:CC5310
+```
+
+CS为代码段寄存器，CPU从CS：IP指向内存单元读取指令。这里有一个隐含操作就是把CS寄存器直接赋值为0x33。
+
+在Windows中，程序可以通过修改代码段寄存器切换32位模式和64位模式，当CS为0x33时，CPU按64位模式执行指令，当CS为0x23,时，CPU按32位模式执行指令。
+
+执行完这个远跳转后，程序跳转到CC5310这个地址（也就是下一条指令），CPU切换到64位模式执行，所以接下来的代码都要按64位模式解析，而由于我们使用的是ida32，自然不能很好的解析。
+
+切换到64位模式后，执行sub_2E1010函数。
+
+函数执行完，将CS的值改回0x23，切回32位模式：
+
+```assembly
+.text:00CC531A                 mov     dword ptr [esp+4], 23h ; '#'
+```
+
+所以本题的关键是sub_2E1010函数。
+
+求解本题有两种方法：
+
+* 32位的调试器没法调试64位的代码块，所以拷贝出64位代码块所有的二进制数据，重新编译生成一个新的exe文件，再使用64位的语法完成对Check函数的参数传递，这样就可以使用调试器调试这段代码了。
+
+  保存一份网上大佬的wp，等以后有时间学一波。
+
+  ![]({{site.baseurl}}/img/2021-10-10-dalao.jpg)
+
+* 用unicorn写一个模拟调试器，并且实现一个tracer，用来跟踪代码块执行的轨迹。
+
+使用unicorn需要初始化寄存器，所以需要通过动态调式知道程序运行时寄存器的值，通过这道题学习一下Windbg的使用方法
+
+首先找到程序的入口点
+
+**u**命令显示指定的内存中的程序代码的反汇编。如果要反汇编某一个地址，直接用**u**命令加地址。
+
+```assembly
+0:000> u $exentry
+OddCode+0x526c:
+003e526c 51              push    ecx
+003e526d 6800703e00      push    offset OddCode+0x7000 (003e7000)
+003e5272 ff150c603e00    call    dword ptr [OddCode+0x600c (003e600c)]
+003e5278 83c404          add     esp,4
+003e527b 681d703e00      push    offset OddCode+0x701d (003e701d)
+003e5280 6818703e00      push    offset OddCode+0x7018 (003e7018)
+003e5285 ff1508603e00    call    dword ptr [OddCode+0x6008 (003e6008)]
+003e528b 83c408          add     esp,8
+```
+
+若要控制或显示断点，可以使用以下方法：
+
+- 使用 **bl (断点列表)** 命令列出现有断点及其当前状态。
+- 使用 **bp (Set Breakpoint)** 命令设置新的断点。
+
+```assembly
+0:000> bp 0x003e52E6
+```
+
+![]({{site.baseurl}}/img/2021-10-10-windbg.jpg)
+
+```assembly
+from unicorn import *
+from unicorn.x86_const import *
+ 
+ADDRESS = 0x401000          # 程序加载的地址
+INPUT_ADDRESS = 0x40701D    # 输入的地址
+KEY_ADDRESS = 0x40705C      # 16字节key的地址
+with open('OddCode.exe', 'rb') as file:
+    file.seek(0x400)
+    X64_CODE = file.read(0x4269)    # 读取代码
+ 
+class Unidbg:
+ 
+    def __init__(self, flag):
+
+        # Initialize emulator in X86-64bit mode
+        # arch硬件架构, mode硬件模式
+        mu = Uc(UC_ARCH_X86, UC_MODE_64)
+
+        # 基址为0x401000，分配16MB内存
+        mu.mem_map(ADDRESS, 0x1000000)
+        mu.mem_write(ADDRESS, X64_CODE)
+        mu.mem_write(INPUT_ADDRESS, flag)       # 随便写入一个flag
+        mu.mem_write(KEY_ADDRESS, b'\x90\xF0\x70\x7C\x52\x05\x91\x90\xAA\xDA\x8F\xFA\x7B\xBC\x79\x4D')
+
+        # 初始化寄存器，寄存器的状态就是切换到64位模式之前的状态，可以通过动调得到
+        mu.reg_write(UC_X86_REG_RAX, 1)
+        mu.reg_write(UC_X86_REG_RBX, 0x97D02D)
+        mu.reg_write(UC_X86_REG_RCX, 0xf8C67891)
+        mu.reg_write(UC_X86_REG_RDX, 0x3E701C)
+        mu.reg_write(UC_X86_REG_RSI, INPUT_ADDRESS)  # input参数
+        mu.reg_write(UC_X86_REG_RDI, KEY_ADDRESS)    # key参数
+        mu.reg_write(UC_X86_REG_RBP, 0xB3F8C4)
+        mu.reg_write(UC_X86_REG_RSP, 0xB3F8C4)
+        mu.reg_write(UC_X86_REG_RIP, 0x3E5309)
+        mu.hook_add(UC_HOOK_CODE, self.trace)        # hook代码执行，保存代码块执行轨迹
+        self.mu = mu
+        self.except_addr = 0
+        self.traces = []        # 用来保存代码块执行轨迹
+ 
+    # 这里通过hook指令执行，再判断当前的地址是否与上次执行的地址+上一条指令的长度是否相等来判断是否发生了代码块跳转
+    def trace(self, mu, address, size, data):
+        if address != self.except_addr:
+            self.traces.append(address)
+        self.except_addr = address + size
+ 
+    def start(self):
+        try:
+            self.mu.emu_start(0x401010, -1)
+        except:
+            pass
+        print([hex(addr)for addr in self.traces])
+ 
+Unidbg(b'SangFor{00000000000000000000000000000000}').start()
+```
+
+输出
+
+```assembly
+['0x401010', '0x403634', '0x403e1d', '0x40389c', '0x403d9e', '0x403b8e', '0x4037ae', '0x403f3a', '0x404ee5', '0x4051ad', '0x4045f9', '0x404e03', '0x403c8f', '0x404cf1', '0x404e96', '0x403d49', '0x403641', '0x404ca8', '0x4049fd', '0x405109', '0x404e16', '0x40382a', '0x4048f1', '0x403ec2', '0x404567', '0x403a7e', '0x404ae0', '0x403718', '0x40402f', '0x404ba1', '0x404263', '0x404441', '0x404af2', '0x4042f7', '0x405163', '0x403dd1', '0x4049b7', '0x404907', '0x404ddb', '0x402896', '0x402e08', '0x4035a4', '0x402bd2', '0x4032a2', '0x402cf2', '0x40296d', '0x402eb6', '0x403391', '0x402f9b', '0x402ff8', '0x402b83', '0x403082', '0x402ab3', '0x40333e', '0x402ee9', '0x402bc5', '0x403519', '0x403447', '0x4031a1', '0x4033fa', '0x402bba', '0x403623', '0x402b95', '0x402e99', '0x40308d', '0x4033a0', '0x403473', '0x4035ac', '0x402b21', '0x402980', '0x40341d', '0x4031d4', '0x4032ab', '0x4030e2', '0x40289c', '0x402acb', '0x4030f4', '0x4034f8', '0x403176', '0x402e5d', '0x402cfe', '0x402bfb', '0x402f15', '0x402c6e', '0x402ea5', '0x40305d', '0x402f91', '0x403267', '0x403210', '0x40324a', '0x40330f', '0x4032d9', '0x402e78', '0x402924', '0x4034d5', '0x402c19', '0x403121', '0x402907', '0x402a75', '0x40332e', '0x402dc9', '0x402edc', '0x40353d', '0x402c2f', '0x402cd4', '0x4028e4', '0x402b6c', '0x403481', '0x40294b', '0x402b40', '0x402e83', '0x402f4d', '0x4031f8', '0x404df6', '0x404177', '0x40496d', '0x4037a1', '0x403a3a', '0x404d76', '0x403e38', '0x4045bc', '0x403f86', '0x403df5', '0x404242', '0x403aee', '0x405039', '0x403ff8', '0x404cb9', '0x4048a1', '0x404135', '0x403d05', '0x404bd9', '0x403c0e', '0x405133', '0x4042d7', '0x404bff', '0x4039fe', '0x4050a8', '0x404a2f', '0x404e6a', '0x4043f6', '0x40401d', '0x4043a1', '0x404b95', '0x4037d5', '0x40404d', '0x4037c6', '0x4046b3', '0x405120', '0x405013', '0x405075', '0x404673', '0x4045e1', '0x403ba2', '0x404802', '0x40481c', '0x4038d6', '0x404f11', '0x404494', '0x4041f1', '0x403853', '0x40504d', '0x404529', '0x4050df', '0x403671', '0x403968', '0x403741', '0x404074', '0x40368e', '0x404ffb', '0x404c86', '0x40491f', '0x40432b', '0x403e8c', '0x403f97', '0x4038e5', '0x4044bc', '0x40444e', '0x403a48', '0x4039c9', '0x4046d2', '0x403982', '0x403eed', '0x404682', '0x403d7c', '0x403eb6', '0x403c25', '0x404390', '0x40462c', '0x404957', '0x404a0c', '0x40486e', '0x40493b', '0x404479', '0x404760', '0x404ed5', '0x404eb6', '0x404d52', '0x4039a8', '0x4041bb', '0x404e48', '0x4039b4', '0x40513e', '0x4041a4', '0x40473a', '0x404abe', '0x4047d8', '0x404650', '0x4051b7', '0x404367', '0x403b75', '0x403c63', '0x404542', '0x40487f', '0x404b79', '0x404ccc', '0x403cc8', '0x404d28', '0x4036f1', '0x404a7b', '0x403cd3', '0x403e98', '0x404f28', '0x403847', '0x4038ac', '0x40365c', '0x40454f', '0x403944', '0x404105', '0x404506', '0x404bb6', '0x403893', '0x404c71', '0x403839', '0x404f3b', '0x403bca', '0x403795', '0x403b16', '0x4040c9', '0x403d3c', '0x403afe', '0x405230', '0x40419c']
+```
+
+这么多代码块一个个去手动分析不太现实，于是再加一个hook来hook输入和key的访问操作，来帮助我们找到了访问了输入和key的指令所在的代码块，加上
+
+```assembly
+mu.hook_add(UC_HOOK_MEM_READ, self.hook_mem_read)
+ 
+def hook_mem_read(self, mu, access, address, size, value, data):
+    if address >= INPUT_ADDRESS and address <= INPUT_ADDRESS + 41:
+        print(f'Read input[{address - INPUT_ADDRESS}] at {hex(mu.reg_read(UC_X86_REG_RIP))}')
+    if address >= KEY_ADDRESS and address <= KEY_ADDRESS + 16:
+        print(f'Read key[{address - KEY_ADDRESS}] at {hex(mu.reg_read(UC_X86_REG_RIP))}')
+```
+
+输出
+
+```assembly
+Read input[8] at 0x40326d
+Read input[8] at 0x403214
+Read input[8] at 0x403219
+Read input[9] at 0x40324a
+Read input[9] at 0x403254
+Read input[9] at 0x40325e
+Read key[0] at 0x403a3e
+```
+
+通过内存访问hook我们得到了几个很重要的信息：
+
+- 输入可能恒是2字节一组进行加密后比较。
+- input[8]和input[9]正好是flag中左花括号的后两个字符，说明当前比对失败后程序不会继续比对剩下的部分。
+
+接下来看看访问了input和key的代码
+
+0x403214和0x403219
+
+```assembly
+.text:00CC3210 loc_CC3210:                             ; CODE XREF: .text:00CC3272↓p
+.text:00CC3210                 dec     eax
+.text:00CC3211                 add     esp, 8
+.text:00CC3214                 cmp     byte ptr [esi], 39h ; '9'
+.text:00CC3217                 ja      short loc_CC3221
+.text:00CC3219                 mov     al, [esi]
+.text:00CC321B                 dec     eax
+.text:00CC321C                 sub     eax, 30h ; '0'
+.text:00CC321F                 jmp     short loc_CC324A
+```
+
+0x40324a、0x403254和0x40325e
+
+```assembly
+.text:00CC324A loc_CC324A:                             ; CODE XREF: .text:00CC321F↑j
+.text:00CC324A                 cmp     byte ptr [esi+1], 30h ; '0'
+.text:00CC324E                 jb      near ptr dword_CC2F9C+29h
+.text:00CC3254                 cmp     byte ptr [esi+1], 39h ; '9'
+.text:00CC3258                 ja      near ptr dword_CC2F9C+29h
+.text:00CC325E                 mov     bl, [esi+1]
+.text:00CC3261                 jmp     near ptr loc_CC330E+1
+.text:00CC3266 ; ---------------------------------------------------------------------------
+.text:00CC3266                 sbb     byte ptr [edx-48h], 0
+.text:00CC3266 ; ---------------------------------------------------------------------------
+.text:00CC326A                 db    0
+.text:00CC326B                 db    0
+.text:00CC326C ; ---------------------------------------------------------------------------
+.text:00CC326C                 add     [eax-508DCFC2h], al
+.text:00CC3272                 call    loc_CC3210
+.text:00CC3277                 inc     byte ptr [ecx+eax*2+48068A5Ch]
+.text:00CC327E                 sub     eax, 41h ; 'A'
+.text:00CC3281                 pushf
+.text:00CC3282                 dec     esp
+.text:00CC3283                 mov     [esp], ecx
+.text:00CC3286                 dec     eax
+.text:00CC3287                 mov     [esp-8], edi
+.text:00CC328B                 dec     eax
+.text:00CC328C                 lea     esp, [esp-8]
+.text:00CC3290                 call    $+5
+.text:00CC3295                 pop     edi
+.text:00CC3296                 dec     eax
+.text:00CC3297                 add     edi, 82E49091h
+.text:00CC329D                 jmp     near ptr dword_CC2C30+0Ah
+```
+
+可以发现对于每个字符，和'0'、'9'进行比较，这种情况一般在将字符转化为数字时会经常用到。说明程序可能是将16进制两字节的输入转换成了对应的16进制数。
+
+修改一下trace函数，通过capstone反汇编引擎找到执行到的cmp指令和test指令的地址：
+
+```assembly
+def trace(self, mu, address, size, data):
+    disasm = self.md.disasm(mu.mem_read(address, size), address)
+    for i in disasm:
+        mnemonic = i.mnemonic
+        if mnemonic == 'cmp' or mnemonic == 'test':
+            print(f'Instruction {mnemonic} at {hex(address)}')
+    if address != self.except_addr:
+        self.traces.append(address)
+    self.except_addr = address + size
+```
+
+输出
+
+```assembly
+Instruction cmp at 0x403ca1
+Instruction cmp at 0x404de8
+Instruction cmp at 0x40326d
+Read input[8] at 0x40326d
+Instruction cmp at 0x403214
+Read input[8] at 0x403214
+Read input[8] at 0x403219
+Instruction cmp at 0x40324a
+Read input[9] at 0x40324a
+Instruction cmp at 0x403254
+Read input[9] at 0x403254
+Read input[9] at 0x40325e
+Instruction test at 0x404177
+Read key[0] at 0x403a3e
+Instruction cmp at 0x4038e7
+```
+
+可以看到在读取key之后执行的cmp指令只有一个，位于0xCC38E7这个地址，代码如下：
+
+```assembly
+.text:00CC38E5 loc_CC38E5:                             ; CODE XREF: .text:00CC3FA2↓j
+.text:00CC38E5                 xor     bl, cl
+.text:00CC38E7                 cmp     al, bl
+.text:00CC38E9                 jnz     loc_CC44BC
+.text:00CC38EF                 pushf
+.text:00CC38F0                 dec     eax
+.text:00CC38F1                 mov     [esp], ebp
+.text:00CC38F4                 jmp     loc_CC3AA6
+```
+
+所以我们可以通过记录程序**第几次执行到了2E38EF这个地址**，来判断比较成功比对了几个字节，通过这种方法来爆破flag。
+
+```assembly
+from ctypes import addressof
+from unicorn import *
+from unicorn.x86_const import *
+from capstone import *
+ 
+ADDRESS = 0x2E1000          # 程序加载的地址
+INPUT_ADDRESS = 0x2E701D    # 输入的地址
+KEY_ADDRESS = 0x2E705C      # 16字节key的地址
+with open('OddCode.exe', 'rb') as file:
+    file.seek(0x400)
+    X64_CODE = file.read(0x4269)    # 读取代码
+ 
+class Unidbg:
+ 
+    def __init__(self, flag, except_hit):
+        self.except_hit = except_hit
+        self.hit = 0
+        self.success = False
+        mu = Uc(UC_ARCH_X86, UC_MODE_64)
+        # 基址为0x2E1000，分配16MB内存
+        mu.mem_map(ADDRESS, 0x1000000)
+        mu.mem_write(ADDRESS, X64_CODE)
+        mu.mem_write(INPUT_ADDRESS, flag)       # 随便写入一个flag
+        mu.mem_write(KEY_ADDRESS, b'\x90\xF0\x70\x7C\x52\x05\x91\x90\xAA\xDA\x8F\xFA\x7B\xBC\x79\x4D')
+        # 初始化寄存器，寄存器的状态就是切换到64位模式之前的状态，可以通过动调得到
+        mu.reg_write(UC_X86_REG_RAX, 1)
+        mu.reg_write(UC_X86_REG_RBX, 0x51902D)
+        mu.reg_write(UC_X86_REG_RCX, 0xD86649D8)
+        mu.reg_write(UC_X86_REG_RDX, 0x2E701C)
+        mu.reg_write(UC_X86_REG_RSI, INPUT_ADDRESS)  # input参数
+        mu.reg_write(UC_X86_REG_RDI, KEY_ADDRESS)    # key参数
+        mu.reg_write(UC_X86_REG_RBP, 0x6FFBBC)
+        mu.reg_write(UC_X86_REG_RSP, 0x6FFBAC)
+        mu.reg_write(UC_X86_REG_RIP, 0x2E1010)
+        mu.hook_add(UC_HOOK_CODE, self.trace)        # hook代码执行，保存代码块执行轨迹
+        #mu.hook_add(UC_HOOK_MEM_READ, self.hook_mem_read)
+        self.mu = mu
+        self.except_addr = 0
+        self.traces = []        # 用来保存代码块执行轨迹
+        self.md = Cs(CS_ARCH_X86, CS_MODE_64)
+ 
+    def trace(self, mu, address, size, data):
+        '''
+        disasm = self.md.disasm(mu.mem_read(address, size), address)
+        for i in disasm:
+            mnemonic = i.mnemonic
+            if mnemonic == 'cmp' or mnemonic == 'test':
+                print(f'Instruction {mnemonic} at {hex(address)}')
+        '''
+        if address != self.except_addr:
+            self.traces.append(address)
+        self.except_addr = address + size
+        if address == 0x2E38EF:
+            self.hit += 1
+            #print(f'hit {self.hit}')
+            if self.hit == self.except_hit:
+                self.success = True
+                mu.emu_stop()
+ 
+ 
+    def hook_mem_read(self, mu, access, address, size, value, data):
+        if address >= INPUT_ADDRESS and address <= INPUT_ADDRESS + 41:
+            print(f'Read input[{address - INPUT_ADDRESS}] at {hex(mu.reg_read(UC_X86_REG_RIP))}')
+        if address >= KEY_ADDRESS and address <= KEY_ADDRESS + 16:
+            print(f'Read key[{address - KEY_ADDRESS}] at {hex(mu.reg_read(UC_X86_REG_RIP))}')
+ 
+ 
+    def solve(self):
+        try:
+            self.mu.emu_start(0x2E1010, -1)
+        except:
+            pass
+        return self.success
+ 
+def get_flag(flag, except_hit):
+    for i in b'1234567890abcdefABCDEF':
+        for j in b'1234567890abcdefABCDEF':
+            flag[8 + (except_hit - 1) * 2] = i
+            flag[8 + (except_hit - 1) * 2 + 1] = j
+            if Unidbg(bytes(flag), except_hit).solve():
+                return
+ 
+flag = bytearray(b'SangFor{00000000000000000000000000000000}')
+for i in range(1, 17):
+    get_flag(flag, i)
+    print(flag.decode())
+```
+
+SangFor{A7000000000000000000000000000000}
+SangFor{A7A40000000000000000000000000000}
+SangFor{A7A4A000000000000000000000000000}
+SangFor{A7A4A0C0000000000000000000000000}
+SangFor{A7A4A0C0B10000000000000000000000}
+SangFor{A7A4A0C0B10B00000000000000000000}
+SangFor{A7A4A0C0B10Baf000000000000000000}
+SangFor{A7A4A0C0B10Bafa70000000000000000}
+SangFor{A7A4A0C0B10Bafa77600000000000000}
+SangFor{A7A4A0C0B10Bafa776F5000000000000}
+SangFor{A7A4A0C0B10Bafa776F55F0000000000}
+SangFor{A7A4A0C0B10Bafa776F55FF400000000}
+SangFor{A7A4A0C0B10Bafa776F55FF4F8000000}
+SangFor{A7A4A0C0B10Bafa776F55FF4F8C60000}
+SangFor{A7A4A0C0B10Bafa776F55FF4F8C6E800}
+SangFor{A7A4A0C0B10Bafa776F55FF4F8C6E849}
