@@ -3,7 +3,7 @@ layout: post
 title:  合成杯（鹤城杯）部分PWN
 date:   2021-10-08 00:01:01 +0300
 image:  2021-10-08-pebbles.jpg
-tags:   [ctf,Pwn,canary,rop,heap,UAF]
+tags:   [ctf,Pwn,canary,rop,heap,UAF,鹤城杯]
 ---
 
 第一次在比赛中做出Pwn题
