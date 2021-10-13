@@ -3,7 +3,7 @@ layout: post
 title:  OddCode
 date:   2021-10-10 08:00:01 +0300
 image:  2021-10-10-japan.jpg
-tags:   [ctf,reverse,羊城杯]
+tags:   [ctf,reverse,羊城杯,unicorn]
 ---
 
 进入ida，花指令太多，无法反编译，只能看汇编。
