@@ -167,7 +167,7 @@ item *a;
 main(){
 	sort(array, 5);
 	for(int i=0; i<5; i++){
-		printf("array[%d] = {%s, %d}\n", i, array[i].data, array[i].key);
+		printf("array[%d] = { %s, %d}\n", i, array[i].data, array[i].key);
 	}
 }
 ```
