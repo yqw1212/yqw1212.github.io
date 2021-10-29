@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  [FlareOn5]Web2.0
+title:  Web2.0(FlareOn5)
 date:   2021-10-29 00:08:01 +0300
 image:  2021-10-29-boy.jpg
 tags:   [ctf,reverse,wasm,FlareOn]
