@@ -135,7 +135,7 @@ public class MainActivity$a implements View$OnClickListener {
             }
 
             Toast.makeText(this.b, "Congs, good student!", 0).show();
-            this.b.q.setText(String.format("flag{%s}", v15));
+            this.b.q.setText(String.format("flag{"+v15+"}"));
             this.b.p.setText("Congs!");
             this.b.p.setClickable(false);
             this.b.o.setKeyListener(v7);
