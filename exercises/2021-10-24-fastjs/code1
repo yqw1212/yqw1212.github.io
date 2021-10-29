@@ -1,0 +1,561 @@
+0000:  02 3a                    58 atom indexes {
+1"long2str"
+1"str2long"
+1"sdfsfsdf"
+1"str2Hex"
+1"hex2str"
+1"xxxfss"
+1"main"
+1"args"
+1"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+1"_keyStr"
+1"dfsfs"
+1"scriptArgs"
+1"shift"
+1"error"
+1"./test_encode.js"
+1"v"
+1"w"
+1"vl"
+1"sl"
+1"i"
+1"fromCharCode"
+1"substring"
+1"s"
+1"len"
+1"charCodeAt"
+1"str"
+1"key"
+1"k"
+1"n"
+1"z"
+1"y"
+1"delta"
+1"mx"
+1"e"
+1"q"
+1"sum"
+1"p"
+1"floor"
+1"output"
+1"chr1"
+1"parseInt"
+1"substr"
+1"chr2"
+1"chr3"
+1"enc1"
+1"enc2"
+1"enc3"
+1"enc4"
+1"isNaN"
+1"charAt"
+1"dfsfdsfsd"
+1"fwderf"
+1"print"
+1"your input: "
+1"no_thing_is_true"
+1"dfdfwf3"
+1"05aed0ce441f80b5bc36af4c698509fc6cc3c97146353de5a95c6abea07fd4a7070932d86ac32d628672a59123e5972331db5dffe7057362"
+1"yes"
+0002:  10 6c 6f 6e 67 32 73 74
+       72 10 73 74 72 32 6c 6f
+       6e 67 10 73 64 66 73 66
+       73 64 66 0e 73 74 72 32
+       48 65 78 0e 68 65 78 32
+       73 74 72 0c 78 78 78 66
+       73 73 08 6d 61 69 6e 08
+       61 72 67 73 82 01 41 42
+       43 44 45 46 47 48 49 4a
+       4b 4c 4d 4e 4f 50 51 52
+       53 54 55 56 57 58 59 5a
+       61 62 63 64 65 66 67 68
+       69 6a 6b 6c 6d 6e 6f 70
+       71 72 73 74 75 76 77 78
+       79 7a 30 31 32 33 34 35
+       36 37 38 39 2b 2f 3d 0e
+       5f 6b 65 79 53 74 72 0a
+       64 66 73 66 73 14 73 63
+       72 69 70 74 41 72 67 73
+       0a 73 68 69 66 74 0a 65
+       72 72 6f 72 20 2e 2f 74
+       65 73 74 5f 65 6e 63 6f
+       64 65 2e 6a 73 02 76 02
+       77 04 76 6c 04 73 6c 02
+       69 18 66 72 6f 6d 43 68
+       61 72 43 6f 64 65 12 73
+       75 62 73 74 72 69 6e 67
+       02 73 06 6c 65 6e 14 63
+       68 61 72 43 6f 64 65 41
+       74 06 73 74 72 06 6b 65
+       79 02 6b 02 6e 02 7a 02
+       79 0a 64 65 6c 74 61 04
+       6d 78 02 65 02 71 06 73
+       75 6d 02 70 0a 66 6c 6f
+       6f 72 0c 6f 75 74 70 75
+       74 08 63 68 72 31 10 70
+       61 72 73 65 49 6e 74 0c
+       73 75 62 73 74 72 08 63
+       68 72 32 08 63 68 72 33
+       08 65 6e 63 31 08 65 6e
+       63 32 08 65 6e 63 33 08
+       65 6e 63 34 0a 69 73 4e
+       61 4e 0c 63 68 61 72 41
+       74 12 64 66 73 66 64 73
+       66 73 64 0c 66 77 64 65
+       72 66 0a 70 72 69 6e 74
+       18 79 6f 75 72 20 69 6e
+       70 75 74 3a 20 20 6e 6f
+       5f 74 68 69 6e 67 5f 69
+       73 5f 74 72 75 65 0e 64
+       66 64 66 77 66 33 e0 01
+       30 35 61 65 64 30 63 65
+       34 34 31 66 38 30 62 35
+       62 63 33 36 61 66 34 63
+       36 39 38 35 30 39 66 63
+       36 63 63 33 63 39 37 31
+       34 36 33 35 33 64 65 35
+       61 39 35 63 36 61 62 65
+       61 30 37 66 64 34 61 37
+       30 37 30 39 33 32 64 38
+       36 61 63 33 32 64 36 32
+       38 36 37 32 61 35 39 31
+       32 33 65 35 39 37 32 33
+       33 31 64 62 35 64 66 66
+       65 37 30 35 37 33 36 32
+       06 79 65 73              }
+020e:  0e                       function {
+020f:  00 06 00 a0 01 00 01 00
+       03 00 08 e4 01 01          name: "<eval>"
+                                  args=0 vars=1 defargs=0 closures=0 cpool=8
+                                  stack=3 bclen=228 locals=1
+                                  vars {
+021d:  a2 01 00 00 00               name: "<ret>"
+                                  }
+                                  bytecode {
+0222:  3f e1 00 00 00 40 3f e2
+       00 00 00 40 3f e3 00 00
+       00 40 3f e4 00 00 00 40
+       3f e5 00 00 00 40 3f e6
+       00 00 00 40 3f e7 00 00
+       00 40 3f e8 00 00 00 00
+       c0 00 40 e1 00 00 00 00
+       c0 01 40 e2 00 00 00 00
+       c0 02 40 e3 00 00 00 00
+       c0 03 40 e4 00 00 00 00
+       c0 04 40 e5 00 00 00 00
+       c0 05 40 e6 00 00 00 00
+       c0 07 40 e7 00 00 00 00
+       3e e8 00 00 00 00 38 e6
+       00 00 00 04 e9 00 00 00
+       15 43 ea 00 00 00 c9 38
+       e6 00 00 00 c0 06 15 43
+       eb 00 00 00 c9 06 c9 37
+       ec 00 00 00 f4 eb 1d 38
+       ec 00 00 00 11 39 e8 00
+       00 00 c9 38 e8 00 00 00
+       42 ed 00 00 00 24 00 00
+       c9 ec 25 06 c9 37 4d 00
+       00 00 f4 eb 0f 38 4d 00
+       00 00 11 39 e8 00 00 00
+       c9 ec 0d 04 ee 00 00 00
+       11 39 e8 00 00 00 c9 38
+       e7 00 00 00 38 e8 00 00
+       00 ef cd 28                  at 1, fixup atom: long2str
+                                    at 7, fixup atom: str2long
+                                    at 13, fixup atom: sdfsfsdf
+                                    at 19, fixup atom: str2Hex
+                                    at 25, fixup atom: hex2str
+                                    at 31, fixup atom: xxxfss
+                                    at 37, fixup atom: main
+                                    at 43, fixup atom: args
+                                    at 51, fixup atom: long2str
+                                    at 59, fixup atom: str2long
+                                    at 67, fixup atom: sdfsfsdf
+                                    at 75, fixup atom: str2Hex
+                                    at 83, fixup atom: hex2str
+                                    at 91, fixup atom: xxxfss
+                                    at 99, fixup atom: main
+                                    at 105, fixup atom: args
+                                    at 111, fixup atom: xxxfss
+                                    at 116, fixup atom: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+                                    at 122, fixup atom: _keyStr
+                                    at 128, fixup atom: xxxfss
+                                    at 136, fixup atom: dfsfs
+                                    at 144, fixup atom: scriptArgs
+                                    at 152, fixup atom: scriptArgs
+                                    at 158, fixup atom: args
+                                    at 164, fixup atom: args
+                                    at 169, fixup atom: shift
+                                    at 182, fixup atom: arguments
+                                    at 190, fixup atom: arguments
+                                    at 196, fixup atom: args
+                                    at 204, fixup atom: error
+                                    at 210, fixup atom: args
+                                    at 216, fixup atom: main
+                                    at 221, fixup atom: args
+                                  }
+                                  debug {
+0306:  de 03 01 13 f1 00 3e b0
+       01 58 00 05 36 00 09 40
+       35 3f 49 3f 3f 0d 41         filename: "./test_encode.js"
+                                  }
+                                  cpool {
+031d:  0e                           function {
+031e:  43 06 00 c2 03 02 03 02
+       09 00 01 6e 05                 name: long2str
+                                      args=2 vars=3 defargs=2 closures=0 cpool=1
+                                      stack=9 bclen=110 locals=5
+                                      vars {
+032b:  e0 03 00 01 00                   name: v
+0330:  e2 03 00 01 00                   name: w
+0335:  e4 03 00 00 00                   name: vl
+033a:  e6 03 00 01 00                   name: sl
+033f:  e8 03 00 02 00                   name: i
+                                      }
+                                      bytecode {
+0344:  d1 e9 c9 d1 c5 b6 9e 47
+       bf 00 ad ca b5 cb c7 c5
+       a3 ea 3b d1 c7 71 38 99
+       00 00 00 42 f5 00 00 00
+       d1 c7 47 be ff 00 ad d1
+       c7 47 bd 08 a2 be ff 00
+       ad d1 c7 47 bd 10 a2 be
+       ff 00 ad d1 c7 47 bd 18
+       a2 be ff 00 ad 24 04 00
+       49 93 02 ec c2 d2 ea 15
+       d1 42 5b 00 00 00 c1 24
+       01 00 42 f6 00 00 00 b5
+       c6 25 02 00 d1 42 5b 00
+       00 00 c1 25 01 00                at 23, fixup atom: String
+                                        at 28, fixup atom: fromCharCode
+                                        at 82, fixup atom: join
+                                        at 91, fixup atom: substring
+                                        at 102, fixup atom: join
+                                      }
+                                      debug {
+03b2:  de 03 01 0b 03 12 30 27
+       67 35 35 49 17 12 69             filename: "./test_encode.js"
+                                      }
+                                      cpool {
+03c1:  06                               float64 {
+03c2:  00 00 e0 ff ff ff ef 41            4.29497e+09
+                                        }
+                                      }
+                                    }
+03ca:  0e                           function {
+03cb:  43 06 00 c4 03 02 03 02
+       07 00 00 5d 05                 name: str2long
+                                      args=2 vars=3 defargs=2 closures=0 cpool=0
+                                      stack=7 bclen=93 locals=5
+                                      vars {
+03d8:  ee 03 00 01 00                   name: s
+03dd:  e2 03 00 01 00                   name: w
+03e2:  f0 03 00 00 00                   name: len
+03e7:  e0 03 00 01 00                   name: v
+03ec:  e8 03 00 02 00                   name: i
+                                      }
+                                      bytecode {
+03f1:  d1 e9 c9 26 00 00 ca b5
+       cb c7 c5 a3 ea 46 c6 c7
+       b7 a1 71 d1 42 f9 00 00
+       00 c7 24 01 00 d1 42 f9
+       00 00 00 c7 b6 9d 24 01
+       00 bd 08 a0 af d1 42 f9
+       00 00 00 c7 b7 9d 24 01
+       00 bd 10 a0 af d1 42 f9
+       00 00 00 c7 b8 9d 24 01
+       00 bd 18 a0 af 49 b9 94
+       02 ec b7 d2 ea 06 c6 c6
+       e9 c5 49 c6 28                   at 21, fixup atom: charCodeAt
+                                        at 31, fixup atom: charCodeAt
+                                        at 47, fixup atom: charCodeAt
+                                        at 63, fixup atom: charCodeAt
+                                      }
+                                      debug {
+044e:  de 03 13 0b 03 12 17 27
+       4e 53 53 58 1c 12 1d             filename: "./test_encode.js"
+                                      }
+                                    }
+045d:  0e                           function {
+045e:  43 06 00 c6 03 02 0b 02
+       06 00 04 f8 01 0d              name: sdfsfsdf
+                                      args=2 vars=11 defargs=2 closures=0 cpool=4
+                                      stack=6 bclen=248 locals=13
+                                      vars {
+046c:  f4 03 00 01 00                   name: str
+0471:  f6 03 00 01 00                   name: key
+0476:  e0 03 00 00 00                   name: v
+047b:  f8 03 00 01 00                   name: k
+0480:  fa 03 00 02 00                   name: n
+0485:  fc 03 00 03 00                   name: z
+048a:  fe 03 00 04 00                   name: y
+048f:  80 04 00 05 00                   name: delta
+0494:  82 04 00 06 00                   name: mx
+0499:  84 04 00 07 00                   name: e
+049e:  86 04 00 08 00                   name: q
+04a3:  88 04 00 09 00                   name: sum
+04a8:  8a 04 00 0a 00                   name: p
+                                      }
+                                      bytecode {
+04ad:  d1 c1 a9 ea 03 c1 28 38
+       e2 00 00 00 d1 0a f0 c9
+       38 e2 00 00 00 d2 09 f0
+       ca c5 e9 b6 9e cb c5 c7
+       47 cc c5 b5 47 c3 04 bf
+       00 c3 05 38 9d 00 00 00
+       42 06 01 00 00 bb bd 34
+       c7 b6 9d 9b 9d 24 01 00
+       c3 08 b5 c3 09 c2 08 90
+       c3 08 b5 a5 69 9b 00 00
+       00 c2 09 c2 05 9d bf 01
+       ad c4 09 b7 a2 b8 ad c3
+       07 b5 c3 0a c2 0a c7 a3
+       ea 43 c5 c2 0a b6 9d 47
+       c3 04 c8 ba a2 c2 04 b7
+       a0 ae c2 04 b8 a2 c8 b9
+       a0 ae 9d c2 09 c2 04 ae
+       c6 c2 0a b8 ad c2 07 ae
+       47 c8 ae 9d ae c3 06 c5
+       c2 0a 71 c5 c2 0a 47 c2
+       06 9d bf 02 ad 16 49 cc
+       93 0a ec b9 c5 b5 47 c3
+       04 c8 ba a2 c2 04 b7 a0
+       ae c2 04 b8 a2 c8 b9 a0
+       ae 9d c2 09 c2 04 ae c6
+       c2 0a b8 ad c2 07 ae 47
+       c8 ae 9d ae c3 06 c5 c7
+       71 c5 c7 47 c2 06 9d bf
+       03 ad 16 49 cc ed 5f ff
+       38 e4 00 00 00 38 e1 00
+       00 00 c5 09 f0 23 01 00          at 8, fixup atom: str2long
+                                        at 17, fixup atom: str2long
+                                        at 44, fixup atom: Math
+                                        at 49, fixup atom: floor
+                                        at 233, fixup atom: str2Hex
+                                        at 238, fixup atom: long2str
+                                      }
+                                      debug {
+05a5:  de 03 23 15 03 1c 08 08
+       30 30 1d 44 85 3f 35 21
+       30 2b bc 58 17 1c bc 4e
+       13                               filename: "./test_encode.js"
+                                      }
+                                      cpool {
+05be:  06                               float64 {
+05bf:  00 00 20 37 ef c6 e3 41            2.65444e+09
+                                        }
+05c7:  06                               float64 {
+05c8:  00 00 e0 ff ff ff ef 41            4.29497e+09
+                                        }
+05d0:  06                               float64 {
+05d1:  00 00 e0 ff ff ff ef 41            4.29497e+09
+                                        }
+05d9:  06                               float64 {
+05da:  00 00 e0 ff ff ff ef 41            4.29497e+09
+                                        }
+                                      }
+                                    }
+05e2:  0e                           function {
+05e3:  43 06 00 c8 03 01 03 01
+       04 00 01 32 04                 name: str2Hex
+                                      args=1 vars=3 defargs=1 closures=0 cpool=1
+                                      stack=4 bclen=50 locals=4
+                                      vars {
+05f0:  b0 01 00 01 00                   name: input
+05f5:  8e 04 00 00 00                   name: output
+05fa:  90 04 00 01 00                   name: chr1
+05ff:  e8 03 00 02 00                   name: i
+                                      }
+                                      bytecode {
+0604:  c1 c9 c1 ca b5 cb d1 42
+       f9 00 00 00 c7 91 cb 24
+       01 00 42 37 00 00 00 bd
+       10 24 01 00 ce e9 b6 a9
+       ea 06 bf 00 c6 9d ca c6
+       94 00 c7 d1 e9 a3 eb d7
+       c5 28                            at 8, fixup atom: charCodeAt
+                                        at 19, fixup atom: toString
+                                      }
+                                      debug {
+0636:  de 03 3e 08 03 0d 0d 0e
+       76 35 12 21                      filename: "./test_encode.js"
+                                      }
+                                      cpool {
+0642:  07                               string {
+1"0"
+0643:  02 30                            }
+                                      }
+                                    }
+0645:  0e                           function {
+0646:  43 06 00 ca 03 01 03 01
+       06 00 00 52 04                 name: hex2str
+                                      args=1 vars=3 defargs=1 closures=0 cpool=0
+                                      stack=6 bclen=82 locals=4
+                                      vars {
+0653:  b0 01 00 01 00                   name: input
+0658:  8e 04 00 00 00                   name: output
+065d:  e8 03 00 01 00                   name: i
+0662:  f8 03 00 02 00                   name: k
+                                      }
+                                      bytecode {
+0667:  c1 c9 b5 ca c6 d1 e9 a3
+       ea 47 38 09 01 00 00 d1
+       42 0a 01 00 00 c6 b6 24
+       02 00 bd 10 f0 b9 a0 38
+       09 01 00 00 d1 42 0a 01
+       00 00 c6 8f ce b6 24 02
+       00 bd 10 f0 af cf be ff
+       00 ad cb c5 38 99 00 00
+       00 42 f5 00 00 00 c7 24
+       01 00 9d c9 93 01 ec b5
+       c5 28                            at 11, fixup atom: parseInt
+                                        at 17, fixup atom: substr
+                                        at 32, fixup atom: parseInt
+                                        at 38, fixup atom: substr
+                                        at 61, fixup atom: String
+                                        at 66, fixup atom: fromCharCode
+                                      }
+                                      debug {
+06b9:  de 03 4a 09 03 0d 0d 21
+       da 21 58 0d 0d                   filename: "./test_encode.js"
+                                      }
+                                    }
+06c6:  0e                           function {
+06c7:  43 06 00 cc 03 00 00 00
+       00 00 00 01 00                 name: xxxfss
+                                      args=0 vars=0 defargs=0 closures=0 cpool=0
+                                      stack=0 bclen=1 locals=0
+                                      bytecode {
+06d4:  29                             }
+                                      debug {
+06d5:  de 03 56 01 03                   filename: "./test_encode.js"
+                                      }
+                                    }
+06da:  0e                           function {
+06db:  43 06 00 00 01 09 01 04
+       00 00 e6 01 0a                 name: "<null>"
+                                      args=1 vars=9 defargs=1 closures=0 cpool=0
+                                      stack=4 bclen=230 locals=10
+                                      vars {
+06e8:  b0 01 00 01 00                   name: input
+06ed:  8e 04 00 00 00                   name: output
+06f2:  90 04 00 01 00                   name: chr1
+06f7:  96 04 00 02 00                   name: chr2
+06fc:  98 04 00 03 00                   name: chr3
+0701:  9a 04 00 04 00                   name: enc1
+0706:  9c 04 00 05 00                   name: enc2
+070b:  9e 04 00 06 00                   name: enc3
+0710:  a0 04 00 07 00                   name: enc4
+0715:  e8 03 00 08 00                   name: i
+                                      }
+                                      bytecode {
+071a:  c1 c9 c1 cc c1 c3 07 b5
+       c3 08 d1 42 f9 00 00 00
+       c2 08 91 c3 08 24 01 00
+       ca d1 42 f9 00 00 00 c2
+       08 91 c3 08 24 01 00 cb
+       d1 42 f9 00 00 00 c2 08
+       91 c3 08 24 01 00 cc c6
+       b7 a1 c3 04 c6 b8 ad b9
+       a0 c7 b9 a1 af c3 05 c7
+       bd 0f ad b7 a0 c8 bb a1
+       af c3 06 c8 bd 3f ad c3
+       07 38 11 01 00 00 c7 ef
+       ea 09 bd 40 c4 07 c3 06
+       ec 0e 38 11 01 00 00 c8
+       ef ea 05 bd 40 c3 07 c5
+       38 e6 00 00 00 41 ea 00
+       00 00 42 12 01 00 00 c2
+       04 24 01 00 9d 38 e6 00
+       00 00 41 ea 00 00 00 42
+       12 01 00 00 c2 05 24 01
+       00 9d 38 e6 00 00 00 41
+       ea 00 00 00 42 12 01 00
+       00 c2 06 24 01 00 9d 38
+       e6 00 00 00 41 ea 00 00
+       00 42 12 01 00 00 c2 07
+       24 01 00 9d c9 c1 d0 cf
+       ca c1 c4 07 c4 06 c4 05
+       c3 04 c2 08 d1 e9 a3 6a
+       2a ff ff ff c5 28                at 12, fixup atom: charCodeAt
+                                        at 27, fixup atom: charCodeAt
+                                        at 42, fixup atom: charCodeAt
+                                        at 90, fixup atom: isNaN
+                                        at 107, fixup atom: isNaN
+                                        at 121, fixup atom: xxxfss
+                                        at 126, fixup atom: _keyStr
+                                        at 131, fixup atom: charAt
+                                        at 142, fixup atom: xxxfss
+                                        at 147, fixup atom: _keyStr
+                                        at 152, fixup atom: charAt
+                                        at 163, fixup atom: xxxfss
+                                        at 168, fixup atom: _keyStr
+                                        at 173, fixup atom: charAt
+                                        at 184, fixup atom: xxxfss
+                                        at 189, fixup atom: _keyStr
+                                        at 194, fixup atom: charAt
+                                      }
+                                      debug {
+0800:  de 03 59 18 03 0d 0d 12
+       13 4e 4e 4e 1c 3a 3f 21
+       30 21 3a 18 08 6c 6c 6c
+       71 17 30 35                      filename: "./test_encode.js"
+                                      }
+                                    }
+081c:  0e                           function {
+081d:  43 06 00 ce 03 01 04 01
+       04 00 00 84 01 05              name: main
+                                      args=1 vars=4 defargs=1 closures=0 cpool=0
+                                      stack=4 bclen=132 locals=5
+                                      vars {
+082b:  d0 03 00 01 00                   name: args
+0830:  b0 01 00 00 00                   name: input
+0835:  a6 04 00 01 00                   name: dfsfdsfsd
+083a:  a8 04 00 02 00                   name: fwderf
+083f:  ac 01 00 03 00                   name: target
+                                      }
+                                      bytecode {
+0844:  d1 e9 b6 a3 ea 0d 38 15
+       01 00 00 04 ee 00 00 00
+       ef 29 38 15 01 00 00 04
+       16 01 00 00 d1 b5 47 9d
+       ef 0e d1 b5 47 c9 38 e6
+       00 00 00 42 eb 00 00 00
+       c5 24 01 00 ca 04 17 01
+       00 00 11 39 18 01 00 00
+       0e 38 e3 00 00 00 c6 38
+       18 01 00 00 f0 cf e9 bd
+       70 aa ea 0d 38 15 01 00
+       00 04 ee 00 00 00 ef 29
+       04 19 01 00 00 cc c7 c8
+       a9 ea 0e 38 15 01 00 00
+       04 1a 01 00 00 ef 0e 29
+       38 15 01 00 00 04 ee 00
+       00 00 ef 29                      at 7, fixup atom: print
+                                        at 12, fixup atom: error
+                                        at 19, fixup atom: print
+                                        at 24, fixup atom: "your input: "
+                                        at 39, fixup atom: xxxfss
+                                        at 44, fixup atom: dfsfs
+                                        at 54, fixup atom: no_thing_is_true
+                                        at 60, fixup atom: dfdfwf3
+                                        at 66, fixup atom: sdfsfsdf
+                                        at 72, fixup atom: dfdfwf3
+                                        at 85, fixup atom: print
+                                        at 90, fixup atom: error
+                                        at 97, fixup atom: "05aed0ce441f80b5bc36af4c698509fc6cc3c97146353de5a95c6abea07fd4a7070932d86ac32d628672a59123e5972331db5dffe7057362"
+                                        at 108, fixup atom: print
+                                        at 113, fixup atom: yes
+                                        at 121, fixup atom: print
+                                        at 126, fixup atom: error
+                                      }
+                                      debug {
+08c8:  de 03 76 11 03 21 3b 08
+       54 17 4f 3f 40 26 3b 09
+       21 1d 3f 09 3c                   filename: "./test_encode.js"
+                                      }
+                                    }
+                                  }
+                                }
+your input: flag
+error
