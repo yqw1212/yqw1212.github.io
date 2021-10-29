@@ -1,0 +1,149 @@
+---
+layout: post
+title:  [FlareOn5]Web2.0
+date:   2021-10-29 00:08:01 +0300
+image:  2021-10-29-boy.jpg
+tags:   [ctf,reverse,wasm,FlareOn]
+---
+
+首先在题目目录下开启http服务
+
+> python -m http.server
+
+chrome浏览器输入网址
+
+> http://localhost:8000/
+
+页面为
+
+💩
+
+查看JavaScript代码，原来要输出一个参数q
+
+> http://localhost:8000/?q=melody
+
+在JavaScript代码中找到对对结果的比较
+
+```assembly
+if (instance.exports.Match(pa, a.byteLength, pb, b.byteLength) == 1) {
+    // PARTY POPPER
+    document.getElementById("container").innerText = "🎉";
+} else {
+    // PILE OF POO
+    document.getElementById("container").innerText = "💩";
+}
+```
+
+发现Match为wasm中的函数，即Match为wasm程序的入口，在Match处下断点，注意不要下在if处。
+
+![]({{site.baseurl}}/img/2021-10-29-breakpoint.jpg)
+
+运行程序，程序断在了断点处，步入，然后慢慢调试。
+
+通过调试学习一下wasm的指令
+
+赋值，执行第一句时，先把变量压入栈中，执行第二句执行令时，把栈顶的值再弹出赋给变量。
+
+```assembly
+i32.const 32
+local.set $var5
+```
+
+add，同理，get指令把变量的值压入栈中，add指令弹出栈顶的两个值进行add计算并将结果压入栈中，set指令将栈顶的值弹出赋给变量。
+
+```assembly
+local.get $var6
+local.get $var8
+i32.add
+local.set $var9
+```
+
+wasm
+
+变量，i表示整数，f表示浮点数
+
+- `i32.const`
+- `i64.const`
+- `f32.const`
+- `f64.const`
+
+运算
+
+- `i32.add`: sign-agnostic addition
+- `i32.sub`: sign-agnostic subtraction
+- `i32.mul`: sign-agnostic multiplication (lower 32-bits)
+- `i32.div_s`: signed division (result is truncated toward zero)
+- `i32.div_u`: unsigned division (result is floored)
+- `i32.rem_s`: signed remainder (result has the sign of the dividend)
+- `i32.rem_u`: unsigned remainder
+
+比特运算
+
+- `i32.and`: sign-agnostic bitwise and
+- `i32.or`: sign-agnostic bitwise inclusive or
+- `i32.xor`: sign-agnostic bitwise exclusive or
+- `i32.shl`: sign-agnostic shift left
+- `i32.shr_u`: zero-replicating (logical) shift right
+- `i32.shr_s`: sign-replicating (arithmetic) shift right
+- `i32.rotl`: sign-agnostic rotate left
+- `i32.rotr`: sign-agnostic rotate right
+
+比较运算
+
+- `i32.eq`: sign-agnostic compare equal
+- `i32.ne`: sign-agnostic compare unequal
+- `i32.lt_s`: signed less than
+- `i32.le_s`: signed less than or equal
+- `i32.lt_u`: unsigned less than
+- `i32.le_u`: unsigned less than or equal
+- `i32.gt_s`: signed greater than
+- `i32.ge_s`: signed greater than or equal
+- `i32.gt_u`: unsigned greater than
+- `i32.ge_u`: unsigned greater than or equal
+
+根据逆向经验，调试时主要注意比较的地方，即`i32.eq`指令
+
+单步调试直到0xbf2，
+
+![]({{site.baseurl}}/img/2021-10-29-bf2.jpg)
+
+![]({{site.baseurl}}/img/2021-10-29-stack1.jpg)
+
+对两个数进行比较，通过验证
+
+```assembly
+>>> chr(119)
+'w'
+>>> chr(109)
+'m'
+```
+
+$var83中的是我们输入的值，$var82是正确的值。
+
+继续运行，再次到达0xbf2，栈中的值证明了我们的猜测
+
+![]({{site.baseurl}}/img/2021-10-29-stack2.jpg)
+
+```assembly
+>>> chr(97)
+'a'
+>>> chr(101)
+'e'
+```
+
+输入已知正确的字符串，然后直接在0xbf2处下断点,每次停在这里时查看`$var82`的值，最后得到
+
+119,97,115,109,95,114,117,108,101,122,95,106,115,95,100,114,111,111,108,122,64,102,108,97,114,101,45,111,110,46,99,111,109
+
+python转化
+
+```assembly
+data = [119,97,115,109,95,114,117,108,101,122,95,106,115,95,100,114,111,111,108,122,64,102,108,97,114,101,45,111,110,46,99,111,109]
+flag = ""
+for i in data:
+    flag += chr(i)
+
+print(flag)
+```
+
+wasm_rulez_js_droolz@flare-on.com
