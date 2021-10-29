@@ -1,0 +1,3 @@
+The future of the internet is here, again. This next challenge will showcase some the exciting new technologies paving the information super-highway for the next generation. 
+
+Hint:本题解出相应字符串后请用flag{}包裹，形如：flag{123456@flare-on.com}
