@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)http://cetctf-1251267611.file.myqcloud.com/Eat_something.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>今天吃啥</title>
+    <meta name="keywords" content="今天吃啥">
+    <meta name="description" content="今天吃啥">
+    <style>
+        html {
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        body {
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #EEE;
+            font-family: "微软雅黑";
+        }
+        
+        #wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -60px;
+            margin-left: -250px;
+            width: 500px;
+            height: 120px;
+            text-align: center;
+        }
+        
+        #wrapper h1 {
+            margin: 0 0 20px;
+            padding: 0;
+            font-weight: 300;
+            font-size: 30px;
+        }
+        
+        #wrapper h1 b{
+            font-weight: 700;
+        }
+        
+        #start {
+            width: 120px;
+            height: 40px;
+            margin-left: px;
+            vertical-align: middle;
+            font-family: "微软雅黑";
+            cursor: pointer;
+        }
+        
+        #stop {
+            display:none;
+            width: 120px;
+            height: 40px;
+            vertical-align: middle;
+            font-family: 微软雅黑;
+            cursor: pointer;
+        }
+        
+        #cfg {
+            color: #666;
+            text-shadow: 1px 1px 1px #eee;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .temp {
+            position: absolute;
+            z-index: -1;
+            color: #777;
+        }
+        
+        #popbox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -140px;
+            margin-left: -210px;
+            padding: 0 10px;
+            width: 400px;
+            height: 280px;
+            -webkit-border-radius: 7px;
+            -moz-border-radius: 7px;
+            border-radius: 7px;
+            background: #fff;
+            -webkit-box-shadow: 0 0 22px #333, inset 0 -3px 7px #DDD;
+            -moz-box-shadow: 0 0 22px #333, inset 0 -3px 7px #DDD;
+            box-shadow: 0 0 22px #333, inset 0 -3px 7px #DDD;
+            border: 1px solid #666;
+        }
+        
+        #ok {
+            float: right;
+            margin: -3px 0 0;
+            color: #666;
+            cursor: pointer;
+            width: 50px;
+            height: 22px;
+        }
+        
+        #weibo {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+        }
+        
+    </style>
+    <script type="text/javascript" src="./今天吃啥_files/Eat_something.js.下载"></script>
+    <script>
+        Module.onRuntimeInitialized = function (){
+            checkright = Module.cwrap('checkright', 'string', ['string'])
+        }
+        function nice(){
+            var inpObj = document.getElementById("id1");
+            document.write(checkright(inpObj.value))
+            if(checkright(inpObj.value) === "You are right!"){
+                document.write(inpObj.value)
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+<div id="wrapper" style="margin-top: -300px;">
+    <h1 style="font-size: 80px;">
+        今天吃啥？
+        <br>
+        <br>
+        <b style="color:#000000" id="what"></b>
+    </h1>
+    <input style="width: 600px; height: 150px; font-size: 80px;" type="button" value="开始" id="start">
+    <input type="button" value="开始" id="stop" style="display: none; width: 600px; height: 150px; font-size: 80px;">
+
+</div>
+
+<textarea rows="9" cols="53" id="list" style="display:none">                馄饨 拉面 烩面 热干面 刀削面 油泼面 炸酱面 炒面 重庆小面 米线 酸辣粉 土豆粉 螺狮粉 凉皮儿 麻辣烫 肉夹馍 羊肉汤 炒饭 盖浇饭 卤肉饭 烤肉饭 黄焖鸡米饭 驴肉火烧 川菜 麻辣香锅 火锅 酸菜鱼 烤串 披萨 烤鸭 汉堡 炸鸡 寿司 蟹黄包 煎饼果子 生煎 炒年糕
+    </textarea>
+
+<input id="id1" type="text" maxlength="26">
+<button type="button" onclick="nice()">clickme</button>
+
+<script src="./今天吃啥_files/jquery-1.6.4.min.js.下载"></script>
+<script src="./今天吃啥_files/random.js.下载"></script>
+
+
+
+<div style="position: static; display: none; width: 0px; height: 0px; border: none; padding: 0px; margin: 0px;"><div id="trans-tooltip"><div id="tip-left-top" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-left-top.png&quot;);"></div><div id="tip-top" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-top.png&quot;) repeat-x;"></div><div id="tip-right-top" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-right-top.png&quot;);"></div><div id="tip-right" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-right.png&quot;) repeat-y;"></div><div id="tip-right-bottom" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-right-bottom.png&quot;);"></div><div id="tip-bottom" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-bottom.png&quot;) repeat-x;"></div><div id="tip-left-bottom" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-left-bottom.png&quot;);"></div><div id="tip-left" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-left.png&quot;);"></div><div id="trans-content"></div></div><div id="tip-arrow-bottom" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-arrow-bottom.png&quot;);"></div><div id="tip-arrow-top" style="background: url(&quot;chrome-extension://jpjgjbbhaifmiigkopmnpbgcgmigaame/imgs/map/tip-arrow-top.png&quot;);"></div></div></body></html>
