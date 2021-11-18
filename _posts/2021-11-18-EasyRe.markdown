@@ -1,0 +1,174 @@
+---
+layout: post
+title:  EasyRE_Revenge(陇原战"疫"2021网络安全大赛)
+date:   2021-11-18 00:08:01 +0300
+image:  2021-11-18-tea.jpg
+tags:   [ctf,reverse,JunkCode]
+---
+
+考的是花指令
+
+main
+
+```assembly
+int __cdecl main_0(int argc, const char **argv, const char **envp)
+{
+  char v4; // [esp+0h] [ebp-E4h]
+  char v5; // [esp+0h] [ebp-E4h]
+  int i; // [esp+D0h] [ebp-14h]
+  char *Str; // [esp+DCh] [ebp-8h]
+
+  __CheckForDebuggerJustMyCode(&unk_41D015);
+  Str = (char *)malloc(0x64u);
+  sub_4110DC("Please input:", v4);
+  sub_41128A("%s", (char)Str);
+  if ( j_strlen(Str) != 0x20 )
+  {
+    sub_4110DC("Sorry! Try again!\n", v5);
+    exit(1);
+  }
+  dword_41B190 = sub_4111F4((int)Str);
+  for ( i = 0; i < 8; ++i )
+  {
+    if ( *(_DWORD *)(dword_41B190 + 4 * i) != dword_41B000[i] )
+    {
+      sub_4110DC("Sorry! Try again!\n", v5);
+      exit(1);
+    }
+  }
+  sub_4110DC("good! flag is flag{your input}!\n", v5);
+  return 0;
+}
+```
+
+sub_4111F4为加密函数
+
+但是发现这个函数ida无法分析，存在花指令
+
+![]({{site.baseurl}}/img/2021-11-18-old.jpg)
+
+重新定义代码
+
+![]({{site.baseurl}}/img/2021-11-18-patch.jpg)
+
+看wp写了idc脚本
+
+```assembly
+auto addr_start = 0x4117A0;//函数起始地址
+auto addr_end = 0x411E58;//函数结束地址
+auto i=0, j=0;
+for(i=addr_start; i<addr_end; i++){
+    if(Dword(i)==0x1E8){
+        for(j=0; j<6; j++,i++){
+            PatchByte(i, 0x90);
+        }
+        i=i+4;
+        for(j=0; j<3; j++,i++){
+            PatchByte(i, 0x90);
+        }
+        i=i+10;
+        for(j=0; j<3; j++,i++){
+            PatchByte(i, 0x90);
+        }
+        i=i+5;
+        for(j=0; j<1; j++,i++){
+            PatchByte(i, 0x90);
+        }
+        i=i+3;
+        for(j=0; j<2; j++,i++){
+            PatchByte(i, 0x90);
+        }
+        i--;
+    }
+}
+```
+
+得到去除花指令后的函数
+
+```assembly
+_DWORD *__cdecl sub_4117A0(int a1)
+{
+  int j; // [esp+D0h] [ebp-90h]
+  int i; // [esp+DCh] [ebp-84h]
+  int v4[27]; // [esp+E8h] [ebp-78h] BYREF
+  _DWORD *v5; // [esp+154h] [ebp-Ch]
+
+  v5 = malloc(0x64u);
+  j_memset(v4, 0, 0x64u);
+  v4[0] = 0x271E150C;
+  v4[1] = 0x3B322920;
+  v4[2] = 0x5F564D44;
+  v4[3] = 0x736A6158;
+  v4[4] = 0x978E857C;
+  v4[5] = 0xABA29990;
+  v4[6] = 0xCFC6BDB4;
+  v4[7] = 0xE3DAD1C8;
+  for ( i = 0; i < 8; ++i )
+    v5[i] = *(_DWORD *)(a1 + 4 * i) ^ v4[(7 * i + 2) % 8];
+  for ( j = 0; j < 8; ++j )
+  {
+    v5[j] ^= v5[j] << 7;
+    v5[j] ^= v4[(7 * j + 3) % 8];
+    v5[j] ^= v5[(5 * j + 3) % 8];
+    v5[j] ^= v5[j] << 0xD;
+    v5[j] ^= v4[(7 * j + 5) % 8];
+    v5[j] ^= v5[j] << 0x11;
+  }
+  return v5;
+}
+```
+
+z3求解
+
+```assembly
+from z3 import *
+from Crypto.Util.number import *
+
+condition = []
+
+v0 = BitVec('v0', 32)
+v1 = BitVec('v1', 32)
+v2 = BitVec('v2', 32)
+v3 = BitVec('v3', 32)
+v4 = BitVec('v4', 32)
+v5 = BitVec('v5', 32)
+v6 = BitVec('v6', 32)
+v7 = BitVec('v7', 32)
+s=Solver()
+
+data = [v0, v1, v2, v3, v4, v5, v6, v7]
+
+# 7 * i + 2
+# 2,1,0,7,6,5,4,3
+
+v4 = [0x271E150C, 0x3B322920, 0x5F564D44, 0x736A6158, 0x978E857C, 0xABA29990, 0xCFC6BDB4, 0xE3DAD1C8]
+
+for i in range(8):
+    data[i] ^= v4[(7*i+2)%8]
+
+result = [0xEEE8B042, 0x57D0EE6C, 0xF3F54B32, 0xD3F0B7D6, 0x0A61C389, 0x38C7BA40, 0x0C3D9E2C, 0xD64A9284]
+
+for j in range(8):
+    data[j] ^= data[j] << 7
+    data[j] ^= v4[(7 * j + 3) % 8]
+    data[j] ^= data[(5 * j + 3) % 8]
+    data[j] ^= data[j] << 0xD
+    data[j] ^= v4[(7 * j + 5) % 8]
+    data[j] ^= data[j] << 0x11
+
+for i in range(8):
+    s.add(data[i]==result[i])
+
+print(s.check())
+print(s.model())
+
+flag = [1630954594, 828781622, 862085687, 909140836, 825516597, 1633759329, 879047012,943285560]
+flag_str = ""
+for f in flag:
+    # flag_str += str(hex(f))[2:]
+    flag_str += long_to_bytes(f).decode()[::-1]
+
+print(flag_str)
+```
+
+bd6a64f17bb3dc065b41a0aad1e48e98
