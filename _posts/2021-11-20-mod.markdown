@@ -1,0 +1,191 @@
+---
+layout: post
+title:  mod
+date:   2021-11-20 00:08:01 +0300
+image:  2021-11-20-children.jpg
+tags:   [ctf,reverse,JunkCode,z3,东华杯]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  int v3; // ecx
+  int v4; // eax
+  int v5; // ecx
+  _BYTE *v6; // eax
+  char *v7; // ecx
+  char v8; // dl
+  int v9; // eax
+  int v11; // [esp+0h] [ebp-74h]
+  int v12; // [esp+0h] [ebp-74h]
+  _DWORD v13[27]; // [esp+4h] [ebp-70h] BYREF
+
+  memset(v13, 0, 0x64u);
+  v4 = sub_401670(v3, sub_4018B0);
+  std::wostream::operator<<(v4, v11);
+  sub_4019B0(v5, v13[0]);
+  sub_401320();
+  v6 = v13;
+  v7 = a2aycdfl2fs1btm;
+  do
+  {
+    if ( *v7 != *v6 )
+      break;
+    if ( !*v7 )
+      break;
+    v8 = v7[1];
+    if ( v8 != v6[1] )
+      break;
+    v7 += 2;
+    v6 += 2;
+  }
+  while ( v8 );
+  v9 = sub_401670(v7, sub_4018B0);
+  std::wostream::operator<<(v9, v12);
+  system("pause");
+  return 0;
+}
+```
+
+sub_401320是加密函数
+
+```assembly
+int sub_401320()
+{
+  char v1; // [esp+0h] [ebp-3Ch]
+  char *v2; // [esp+10h] [ebp-2Ch]
+  char *Buffer; // [esp+14h] [ebp-28h]
+  signed int v4; // [esp+1Ch] [ebp-20h]
+  int savedregs; // [esp+3Ch] [ebp+0h] BYREF
+
+  v4 = strlen(byte_4054A8);
+  dword_4054A0 = v4;
+  if ( v4 % 3 == 1 || v4 % 3 != 2 )
+  {
+    Buffer = &byte_4054A8[dword_4054A0++];
+    sub_401020(Buffer, "=", v1);
+  }
+  v2 = &byte_4054A8[dword_4054A0++];
+  sub_401020(v2, "=", v1);
+  return sub_4013E4((int)&savedregs);
+}
+```
+
+发现不太对劲，应该是ida分析不正确，查看汇编存在花指令
+
+nop掉花指令
+
+![]({{site.baseurl}}/img/2021-11-20-nop1.jpg)
+
+![]({{site.baseurl}}/img/2021-11-20-nop2.jpg)
+
+![]({{site.baseurl}}/img/2021-11-20-nop3.jpg)
+
+得到sub_401312
+
+```assembly
+int __usercall sub_401312@<eax>(char a1@<dil>, int a2)
+{
+  int result; // eax
+  char v4; // [esp-40h] [ebp-40h]
+  char *v5; // [esp-30h] [ebp-30h]
+  char *v6; // [esp-2Ch] [ebp-2Ch]
+  signed int v7; // [esp-24h] [ebp-24h]
+  int i; // [esp-18h] [ebp-18h]
+
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  __debugbreak();
+  v7 = strlen(byte_4054A8);
+  dword_4054A0 = v7;
+  if ( v7 % 3 == 1 || v7 % 3 != 2 )
+  {
+    v6 = &byte_4054A8[dword_4054A0++];
+    sub_401020(v6, "=", a1);
+  }
+  v5 = &byte_4054A8[dword_4054A0++];
+  sub_401020(v5, "=", a1);
+  for ( i = 0; i < dword_4054A0; i += 3 )
+    sub_4011A0((int)byte_4054A8, i, a2);
+  result = v7 / 3;
+  if ( v7 % 3 == 1 )
+    return sub_401020((char *)(a2 + 4 * (v7 / 3)), "==", v4);
+  if ( v7 % 3 == 2 )
+    result = sub_401020((char *)(a2 + 4 * (v7 / 3)), "=", v4);
+  return result;
+}
+```
+
+sub_4011A0加密函数
+
+```assembly
+int __cdecl sub_4011A0(int a1, int a2, int a3)
+{
+  int result; // eax
+  _BYTE v4[64]; // [esp+14h] [ebp-40h] BYREF
+
+  memset(v4, 0xCCu, sizeof(v4));
+  *(_BYTE *)(a3 + 4 * (a2 / 3)) = byte_405018[((4 * (*(_BYTE *)(a2 + a1 + 2) & 3)) | *(_BYTE *)(a2 + a1 + 1) & 0x30 | *(_BYTE *)(a2 + a1) & 0xC0) >> 2];
+  *(_BYTE *)(a3 + 4 * (a2 / 3) + 1) = byte_405018[((4 * (*(_BYTE *)(a2 + a1) & 3)) | *(_BYTE *)(a2 + a1 + 2) & 0x30 | *(_BYTE *)(a2 + a1 + 1) & 0xC0) >> 2];
+  *(_BYTE *)(a3 + 4 * (a2 / 3) + 2) = byte_405018[((4 * (*(_BYTE *)(a2 + a1 + 1) & 3)) | *(_BYTE *)(a2 + a1) & 0x30 | *(_BYTE *)(a2 + a1 + 2) & 0xC0) >> 2];
+  result = a2 / 3;
+  *(_BYTE *)(a3 + 4 * (a2 / 3) + 3) = byte_405018[(*(_BYTE *)(a2 + a1 + 2) & 0xC | (4 * *(_BYTE *)(a2 + a1 + 1)) & 0x30 | (0x10 * *(_BYTE *)(a2 + a1)) & 0xC0) >> 2];
+  return result;
+}
+```
+
+优化
+
+a3[a2 / 3] = byte_405018[((4 * (a1[a2 + 2] & 3)) | a1[a2 + 1] & 0x30 | a1[a2] & 0xC0) >> 2];
+a3[a2 / 3 + 1] = byte_405018[((4 * (a1[a2] & 3)) | a1[a2 + 2] & 0x30 | a1[a2 + 1] & 0xC0) >> 2];
+a3[a2 / 3 + 2] = byte_405018[((4 * (a1[a2 + 1] & 3)) | a1[a2] & 0x30 | a1[a2 + 2] & 0xC0) >> 2];
+a3[a2 / 3 + 3] = byte_405018[(a1[a2 + 2] & 0xC | (4 * a1[a2 + 1]) & 0x30 | (0x10 * a1[a2]) & 0xC0) >> 2];
+
+z3解方程
+
+```assembly
+from z3 import *
+
+table = "ABCDFEGH1JKLRSTMNP0VWQUXY2a8cdefijklmnopghwxyqrstuvzOIZ34567b9+/"
+
+result = "2aYcdfL2fS1BTMMF1RSeMTTASS1OJ8RHTJdBYJ2STJfNMSMAYcKUJddp"
+
+flag_str = ""
+for i in range(0, len(result), 4):
+    flag = [BitVec("v{}".format(i), 8) for i in range(3)]
+
+    s=Solver()
+    # s.add(table.index(result[i+0]) == (((4 * (flag[2] & 3)) | flag[1] & 0x30 | flag[0] & 0xC0) >> 2))
+    # s.add(table.index(result[i+1]) == (((4 * (flag[0] & 3)) | flag[2] & 0x30 | flag[1] & 0xC0) >> 2))
+    # s.add(table.index(result[i+2]) == (((4 * (flag[1] & 3)) | flag[0] & 0x30 | flag[2] & 0xC0) >> 2))
+    # s.add(table.index(result[i+3]) == ((flag[2] & 0xC | (4 * flag[1]) & 0x30 | (0x10 * flag[0]) & 0xC0) >> 2))
+    s.add((table.index(result[i+0]) << 2) == (((4 * (flag[2] & 3)) | flag[1] & 0x30 | flag[0] & 0xC0) ))
+    s.add((table.index(result[i+1]) << 2) == (((4 * (flag[0] & 3)) | flag[2] & 0x30 | flag[1] & 0xC0) ))
+    s.add((table.index(result[i+2]) << 2) == (((4 * (flag[1] & 3)) | flag[0] & 0x30 | flag[2] & 0xC0) ))
+    s.add((table.index(result[i+3]) << 2) == ((flag[2] & 0xC | (4 * flag[1]) & 0x30 | (0x10 * flag[0]) & 0xC0) ))
+
+    assert s.check() == sat
+    model = s.model()
+    print(model)
+    flag_str += "".join([chr(model.eval(j).as_long()) for j in flag])
+
+print(flag_str)
+```
+
+不知道为什么在等号右面>>2不行，换成在等号左面<<2就行了
+
+flag{5a073724-8223-413d-11fa-d53b133df89e}
+
