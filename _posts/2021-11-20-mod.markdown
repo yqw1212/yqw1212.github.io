@@ -1,10 +1,12 @@
 ---
 layout: post
-title:  mod
+title:  mod && ooo
 date:   2021-11-20 00:08:01 +0300
 image:  2021-11-20-children.jpg
-tags:   [ctf,reverse,JunkCode,z3,东华杯]
+tags:   [ctf,reverse,JunkCode,z3,东华杯,burst]
 ---
+
+### mod
 
 main
 
@@ -189,3 +191,90 @@ print(flag_str)
 
 flag{5a073724-8223-413d-11fa-d53b133df89e}
 
+### ooo
+
+主要函数
+
+```assembly
+__int64 __fastcall sub_401E40(__int64 a1, int a2, int a3, int a4, int a5, int a6)
+{
+  __int64 result; // rax
+  char v7; // [rsp+Bh] [rbp-75h]
+  int i; // [rsp+Ch] [rbp-74h]
+  u32 uaddr2[2]; // [rsp+10h] [rbp-70h] BYREF
+  __int64 v10; // [rsp+18h] [rbp-68h]
+  __int64 v11; // [rsp+20h] [rbp-60h]
+  __int64 v12; // [rsp+28h] [rbp-58h]
+  __int64 v13; // [rsp+30h] [rbp-50h]
+  __int64 v14; // [rsp+38h] [rbp-48h]
+  __int64 v15; // [rsp+40h] [rbp-40h]
+  __int64 v16; // [rsp+48h] [rbp-38h]
+  __int64 v17; // [rsp+50h] [rbp-30h]
+  __int64 v18; // [rsp+58h] [rbp-28h]
+  __int64 v19; // [rsp+60h] [rbp-20h]
+  __int64 v20; // [rsp+68h] [rbp-18h]
+  int v21; // [rsp+70h] [rbp-10h]
+  unsigned __int64 v22; // [rsp+78h] [rbp-8h]
+
+  v22 = __readfsqword(0x28u);
+  *(_QWORD *)uaddr2 = 0LL;
+  v10 = 0LL;
+  v11 = 0LL;
+  v12 = 0LL;
+  v13 = 0LL;
+  v14 = 0LL;
+  v15 = 0LL;
+  v16 = 0LL;
+  v17 = 0LL;
+  v18 = 0LL;
+  v19 = 0LL;
+  v20 = 0LL;
+  v21 = 0;
+  sub_410DF0((unsigned int)"give me a flag: ", a2, a3, a4, a5, a6);
+  sub_418970(uaddr2);
+  v7 = v10 ^ HIBYTE(uaddr2[1]) ^ BYTE1(v10);
+  for ( i = 0; i <= 0x29; ++i )
+    *((_BYTE *)uaddr2 + i) ^= v7;
+  if ( (unsigned int)sub_401DE7(uaddr2) )
+  {
+    sub_418C70("okk");
+    sub_410330(0LL);
+  }
+  sub_418C70("nono, may be.... ");
+  result = 0LL;
+  if ( __readfsqword(0x28u) != v22 )
+    sub_454840();
+  return result;
+}
+```
+
+sub_401DE7比较结果
+
+```assembly
+__int64 __fastcall sub_401DE7(__int64 a1)
+{
+  int i; // [rsp+14h] [rbp-4h]
+
+  for ( i = 0; i <= 0x29; ++i )
+  {
+    if ( *(_BYTE *)(i + a1) != (unsigned __int8)dword_4C0100[i] )
+      return 0LL;
+  }
+  return 1LL;
+}
+```
+
+比赛的时候动调没调出来，也没有想到要爆破，直接寄
+
+```assembly
+a = [0x6,0x10C,0x201,0x307,0x41B,0x551,0x653,0x706,0x853,0x955,0x0A56,0x0B56,0x0C53,0x0D4D,0x0E55,0x0F50,0x1001,0x1154,0x124D,0x1354,0x1457,0x1557,0x1602,0x174D,0x1852,0x1957,0x1A58,0x1B02,0x1C4D,0x1D02,0x1E57,0x1F51,0x2051,0x2150,0x2252,0x2356,0x2406,0x2506,0x2657,0x2701,0x2804,0x291D]
+
+for i in range(127):
+    flag = ""
+    for j in a:
+        flag += chr((i^j)&0xff)
+    
+    print(flag)
+```
+
+flag{13f35663-50a4-477b-278b-b711026ff7ad}
