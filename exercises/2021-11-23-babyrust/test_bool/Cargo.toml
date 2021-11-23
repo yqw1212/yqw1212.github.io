@@ -1,0 +1,9 @@
+[package]
+name = "test_bool"
+version = "0.1.0"
+authors = ["yqw1212 <55695639+yqw1212@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
