@@ -1,5 +1,5 @@
 macro_rules! check {
-    (@s n1ctf{$Never:tt}) => {
+    (@s n1ctf{\$Never:tt}) => {
         check!(stringify!($Never))
     };
     (@e ($Never:expr,$Gonna:expr,$Give:expr); (Never gonna give you up $($code:tt)*)) => {
