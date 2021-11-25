@@ -37,7 +37,7 @@ macro_rules! check {
         $Never[$Give] = $Gonna;
         check!(@e ($Never,$Gonna,$Give); ($($code)*));
     };
-    ($Never:expr) => {{
+    ($Never:expr) => {\{
         fn check() -> bool {
             let mut never = $Never.as_bytes().to_vec();
             let mut gonna = false as u8;
@@ -47,7 +47,7 @@ macro_rules! check {
             ));
         }
         check()
-    }};
+    }\};
     (@e ($Never:expr,$Gonna:expr,$Give:expr); (Never gonna give never gonna give)) => {
         let you = [148u8, 59, 143, 112, 121, 186, 106, 133, 55, 90, 164, 166, 167, 121, 174, 147, 148, 167, 99, 86, 81, 161, 151, 149, 132, 56, 88, 188, 141, 127, 151, 63];
         return $Never == you;
