@@ -1,0 +1,681 @@
+---
+layout: post
+title:  gghdl
+date:   2021-12-02 00:08:01 +0300
+image:  2021-12-02-woman.jpg
+tags:   [ctf,reverse,西湖论剑]
+---
+
+程序用以下项目编写，ghdl/ghdl: VHDL 2008/93/87 simulator
+
+```assembly
+__int64 __fastcall sub_55A34DAD8450(char a1)
+{
+  __int64 v1; // rax
+  __int64 v2; // rbx
+  __int64 v3; // rax
+  __int64 result; // rax
+  __int64 v5; // [rsp+40h] [rbp-60h]
+  int *v6; // [rsp+48h] [rbp-58h]
+  __int64 v7; // [rsp+58h] [rbp-48h]
+  int v8; // [rsp+68h] [rbp-38h]
+  int v9; // [rsp+6Ch] [rbp-34h]
+
+  if ( !a1 )
+    sub_55A34DAE9330(&unk_55A34DB99F60);
+  if ( unk_55A34DB99209 )
+    sub_55A34DAF8BE0();
+  if ( a1 )
+  {
+    v5 = qword_55A34DB99160;
+    v6 = (int *)off_55A34DB99168;
+    v9 = dword_55A34DB99114;
+    dword_55A34DB99114 = 0;
+  }
+  else
+  {
+    v5 = qword_55A34DB99150;
+    v6 = (int *)off_55A34DB99158;
+    v9 = dword_55A34DB99110;
+    dword_55A34DB99110 = 0;
+  }
+  qword_55A34DB99120 += v9;
+  if ( unk_55A34DB9922C == 1 )
+  {
+    v8 = 0;
+    while ( v9 > v8 )
+    {
+      ++v8;
+      if ( !v5 )
+        sub_55A34DAE22C7();
+      if ( v8 < *v6 || v8 > v6[1] )
+        sub_55A34DAE22C7();
+      v7 = *(_QWORD *)(v5 + 8 * (v8 - (__int64)*v6));
+      if ( !v7 )
+        sub_55A34DAE22C7();
+      if ( *(_BYTE *)(v7 + 0x10) != 1 )
+        sub_55A34DAEE704("run non-resumed process", &unk_55A34DB719B8);
+      if ( unk_55A34DB99202 )
+      {
+        sub_55A34DAE8C08("run process  []run non-resumed process", &unk_55A34DB71B08);
+        v1 = sub_55A34DAE2129();
+        sub_55A34DAD7E1A(v1, v7);
+        sub_55A34DAE8C08(" []run non-resumed process", &unk_55A34DB71B10);
+        v2 = *(_QWORD *)(v7 + 8);
+        v3 = sub_55A34DAE2129();
+        sub_55A34DAE8E4C(v3, v2);
+        sub_55A34DAE8C08("]run non-resumed process", &unk_55A34DB71B18);
+        sub_55A34DAE8D1E();
+      }
+      *(_BYTE *)(v7 + 0x10) = 0;
+      sub_55A34DAF67C4(v7);
+      if ( !*(_QWORD *)v7 )
+        sub_55A34DAE22C7();
+      (*(void (__fastcall **)(_QWORD))v7)(*(_QWORD *)(v7 + 8));
+      if ( unk_55A34DB9920A )
+      {
+        if ( !*(_BYTE *)(v7 + 0x12) && (unsigned __int8)sub_55A34DAF38A4(*(_QWORD *)(v7 + 0x18)) != 1 )
+          sub_55A34DAEE704("non-empty stack2", &unk_55A34DB71B38);
+        sub_55A34DAC94FC();
+      }
+    }
+  }
+  else
+  {
+    dword_55A34DB99E00 = v9;
+    qword_55A34DB99170 = v5;
+    off_55A34DB99178 = v6;
+    dword_55A34DB99E04 = 1;
+    sub_55A34DAF66B0(sub_55A34DAD81DC);
+  }
+  if ( v9 <= 0 )
+    result = 1LL;
+  else
+    result = 2LL;
+  return result;
+}
+```
+
+sub_55B996208450
+
+```assembly
+__int64 __fastcall sub_55B996208450(char a1)
+{
+  __int64 v1; // rax
+  __int64 v2; // rbx
+  __int64 v3; // rax
+  __int64 result; // rax
+  __int64 v5; // [rsp+40h] [rbp-60h]
+  int *v6; // [rsp+48h] [rbp-58h]
+  __int64 v7; // [rsp+58h] [rbp-48h]
+  int v8; // [rsp+68h] [rbp-38h]
+  int v9; // [rsp+6Ch] [rbp-34h]
+
+  if ( !a1 )
+    sub_55B996219330(&unk_55B9962C9F60);
+  if ( unk_55B9962C9209 )
+    sub_55B996228BE0();
+  if ( a1 )
+  {
+    v5 = qword_55B9962C9160;
+    v6 = (int *)off_55B9962C9168;
+    v9 = dword_55B9962C9114;
+    dword_55B9962C9114 = 0;
+  }
+  else
+  {
+    v5 = qword_55B9962C9150;
+    v6 = (int *)off_55B9962C9158;
+    v9 = dword_55B9962C9110;
+    dword_55B9962C9110 = 0;
+  }
+  qword_55B9962C9120 += v9;
+  if ( unk_55B9962C922C == 1 )
+  {
+    v8 = 0;
+    while ( v9 > v8 )
+    {
+      ++v8;
+      if ( !v5 )
+        sub_55B9962122C7();
+      if ( v8 < *v6 || v8 > v6[1] )
+        sub_55B9962122C7();
+      v7 = *(_QWORD *)(v5 + 8 * (v8 - (__int64)*v6));
+      if ( !v7 )
+        sub_55B9962122C7();
+      if ( *(_BYTE *)(v7 + 0x10) != 1 )
+        sub_55B99621E704("run non-resumed process", &unk_55B9962A19B8);
+      if ( unk_55B9962C9202 )
+      {
+        sub_55B996218C08("run process  []run non-resumed process", &unk_55B9962A1B08);
+        v1 = sub_55B996212129();
+        sub_55B996207E1A(v1, v7);
+        sub_55B996218C08(" []run non-resumed process", &unk_55B9962A1B10);
+        v2 = *(_QWORD *)(v7 + 8);
+        v3 = sub_55B996212129();
+        sub_55B996218E4C(v3, v2);
+        sub_55B996218C08("]run non-resumed process", &unk_55B9962A1B18);
+        sub_55B996218D1E();
+      }
+      *(_BYTE *)(v7 + 0x10) = 0;
+      sub_55B9962267C4(v7);
+      if ( !*(_QWORD *)v7 )
+        sub_55B9962122C7();
+      (*(void (__fastcall **)(_QWORD))v7)(*(_QWORD *)(v7 + 8));
+      if ( unk_55B9962C920A )
+      {
+        if ( !*(_BYTE *)(v7 + 0x12) && (unsigned __int8)sub_55B9962238A4(*(_QWORD *)(v7 + 0x18)) != 1 )
+          sub_55B99621E704("non-empty stack2", &unk_55B9962A1B38);
+        sub_55B9961F94FC();
+      }
+    }
+  }
+  else
+  {
+    dword_55B9962C9E00 = v9;
+    qword_55B9962C9170 = v5;
+    off_55B9962C9178 = v6;
+    dword_55B9962C9E04 = 1;
+    sub_55B9962266B0(sub_55B9962081DC);
+  }
+  if ( v9 <= 0 )
+    result = 1LL;
+  else
+    result = 2LL;
+  return result;
+}
+```
+
+执行到(\*(void (\_\_fastcall \*\*)(\_QWORD))v7)(*(_QWORD *)(v7 + 8));输出Input Flag
+
+定位关键函数
+
+使用Finger识别函数，帮助更好地分析程序逻辑
+
+```assembly
+__int64 __fastcall sub_2DCE0(__int64 a1)
+{
+  int state; // ebx
+  int *v3; // r12
+  __int64 v4; // rbp
+  __int64 v5; // rbp
+  __int64 v6; // rbp
+  int *v7; // rbx
+  __int64 v8; // r12
+  unsigned int v9; // er15
+  int v10; // ebp
+  char v11; // bp
+  __int64 v12; // r15
+  unsigned int v13; // ebp
+  int v14; // ebp
+  char v15; // bp
+  __int64 v16; // r15
+  unsigned int v17; // ebp
+  int v18; // ebp
+  char v19; // bp
+  __int64 v20; // r15
+  unsigned int v21; // ebp
+  int v22; // ebp
+  char v23; // bp
+  __int64 v24; // r15
+  unsigned int v25; // ebp
+  int v26; // ebp
+  char v27; // bp
+  int v28; // ecx
+  bool v29; // al
+  __int64 v30; // r15
+  unsigned int v31; // ebp
+  int v32; // ebp
+  char v33; // bp
+  __int64 v34; // rbp
+  __int64 v35; // rbp
+  __int64 result; // rax
+  int v37; // ebx
+  __int64 v38; // rbp
+  __int64 v39; // rbp
+  __int64 v40; // rax
+  __int64 v41; // rbp
+  __int64 v42; // r15
+  int v43; // ebp
+  __int64 v44; // rbp
+  __int64 i; // rbx
+  _BYTE *v46; // rdi
+  bool v47; // al
+  int v48[2]; // [rsp+8h] [rbp-320h] BYREF
+  char v49; // [rsp+10h] [rbp-318h]
+  int v50; // [rsp+14h] [rbp-314h]
+  int v51[2]; // [rsp+18h] [rbp-310h] BYREF
+  char v52; // [rsp+20h] [rbp-308h]
+  int v53; // [rsp+24h] [rbp-304h]
+  int v54[2]; // [rsp+28h] [rbp-300h] BYREF
+  char v55; // [rsp+30h] [rbp-2F8h]
+  int v56; // [rsp+34h] [rbp-2F4h]
+  int v57[2]; // [rsp+38h] [rbp-2F0h] BYREF
+  char v58; // [rsp+40h] [rbp-2E8h]
+  int v59; // [rsp+44h] [rbp-2E4h]
+  int v60[2]; // [rsp+48h] [rbp-2E0h] BYREF
+  char v61; // [rsp+50h] [rbp-2D8h]
+  int v62; // [rsp+54h] [rbp-2D4h]
+  int v63[2]; // [rsp+58h] [rbp-2D0h] BYREF
+  char v64; // [rsp+60h] [rbp-2C8h]
+  int v65; // [rsp+64h] [rbp-2C4h]
+  int v66[2]; // [rsp+68h] [rbp-2C0h] BYREF
+  char v67; // [rsp+70h] [rbp-2B8h]
+  int v68; // [rsp+74h] [rbp-2B4h]
+  __int64 v69; // [rsp+78h] [rbp-2B0h] BYREF
+  char v70; // [rsp+80h] [rbp-2A8h]
+  __int64 v71; // [rsp+88h] [rbp-2A0h]
+  __int64 v72; // [rsp+90h] [rbp-298h]
+  __int64 v73; // [rsp+98h] [rbp-290h]
+  __int64 v74; // [rsp+A0h] [rbp-288h]
+  __int64 v75; // [rsp+A8h] [rbp-280h]
+  __int64 v76; // [rsp+B0h] [rbp-278h]
+  int v77; // [rsp+B8h] [rbp-270h] BYREF
+  __int64 v78; // [rsp+C0h] [rbp-268h]
+  __int64 v79[2]; // [rsp+C8h] [rbp-260h] BYREF
+  char v80; // [rsp+D8h] [rbp-250h]
+  int v81; // [rsp+DCh] [rbp-24Ch]
+  int v82; // [rsp+E0h] [rbp-248h] BYREF
+  __int64 v83; // [rsp+E8h] [rbp-240h]
+  __int64 v84[2]; // [rsp+F0h] [rbp-238h] BYREF
+  char v85; // [rsp+100h] [rbp-228h]
+  int v86; // [rsp+104h] [rbp-224h]
+  __int64 v87; // [rsp+108h] [rbp-220h]
+  int *v88; // [rsp+110h] [rbp-218h]
+  int v89; // [rsp+118h] [rbp-210h] BYREF
+  __int64 v90; // [rsp+120h] [rbp-208h]
+  __int64 v91[2]; // [rsp+128h] [rbp-200h] BYREF
+  char v92; // [rsp+138h] [rbp-1F0h]
+  int v93; // [rsp+13Ch] [rbp-1ECh]
+  int v94; // [rsp+140h] [rbp-1E8h] BYREF
+  __int64 v95; // [rsp+148h] [rbp-1E0h]
+  int v96; // [rsp+150h] [rbp-1D8h] BYREF
+  __int64 v97; // [rsp+158h] [rbp-1D0h]
+  __int64 v98[2]; // [rsp+160h] [rbp-1C8h] BYREF
+  char v99; // [rsp+170h] [rbp-1B8h]
+  int v100; // [rsp+174h] [rbp-1B4h]
+  __int64 v101[2]; // [rsp+178h] [rbp-1B0h] BYREF
+  __int64 v102[2]; // [rsp+188h] [rbp-1A0h] BYREF
+  __int64 v103[2]; // [rsp+198h] [rbp-190h] BYREF
+  __int64 v104; // [rsp+1A8h] [rbp-180h] BYREF
+  __int64 v105; // [rsp+1B0h] [rbp-178h]
+  __int64 v106[2]; // [rsp+1B8h] [rbp-170h] BYREF
+  __int64 v107[2]; // [rsp+1C8h] [rbp-160h] BYREF
+  __int64 v108; // [rsp+1D8h] [rbp-150h] BYREF
+  __int64 v109; // [rsp+1E0h] [rbp-148h]
+  __int64 v110[2]; // [rsp+1E8h] [rbp-140h] BYREF
+  __int64 v111[2]; // [rsp+1F8h] [rbp-130h] BYREF
+  __int64 v112; // [rsp+208h] [rbp-120h] BYREF
+  __int64 v113; // [rsp+210h] [rbp-118h]
+  __int64 v114[2]; // [rsp+218h] [rbp-110h] BYREF
+  __int64 v115[2]; // [rsp+228h] [rbp-100h] BYREF
+  __int64 v116; // [rsp+238h] [rbp-F0h] BYREF
+  __int64 v117; // [rsp+240h] [rbp-E8h]
+  __int64 v118[2]; // [rsp+248h] [rbp-E0h] BYREF
+  __int64 v119[2]; // [rsp+258h] [rbp-D0h] BYREF
+  __int64 v120; // [rsp+268h] [rbp-C0h] BYREF
+  __int64 v121; // [rsp+270h] [rbp-B8h]
+  __int64 v122[2]; // [rsp+278h] [rbp-B0h] BYREF
+  __int64 v123[2]; // [rsp+288h] [rbp-A0h] BYREF
+  __int64 v124; // [rsp+298h] [rbp-90h] BYREF
+  __int64 v125; // [rsp+2A0h] [rbp-88h]
+  __int64 v126[2]; // [rsp+2A8h] [rbp-80h] BYREF
+  __int64 v127; // [rsp+2B8h] [rbp-70h] BYREF
+  __int64 v128; // [rsp+2C0h] [rbp-68h]
+  __int64 v129[2]; // [rsp+2C8h] [rbp-60h] BYREF
+  __int64 v130[3]; // [rsp+2D8h] [rbp-50h] BYREF
+  __int64 v131; // [rsp+2F0h] [rbp-38h]
+
+  state = *(_DWORD *)(a1 + 0x114);
+  v76 = (__int64)&unk_DC400 + 8;
+  v75 = (__int64)&unk_DC440 + 8;
+  v74 = (__int64)&unk_DC480 + 8;
+  v73 = (__int64)&unk_DC4C0 + 8;
+  v72 = (__int64)&unk_DC500 + 8;
+  v71 = (__int64)&unk_DC540 + 8;
+  v3 = (int *)&unk_105C58;
+  while ( 1 )
+  {
+    switch ( state )
+    {
+      case 0:
+        *(_DWORD *)(a1 + 0x110) = 0;
+        v4 = sub_42BBC();
+        v98[0] = *(_QWORD *)(a1 + 0x100);
+        v130[0] = (__int64)"Input Flag";
+        v130[1] = (__int64)&unk_DC628;
+        v98[1] = (__int64)v130;
+        v99 = 0;
+        v100 = 0;
+        sub_2BF90(v98);
+        *(_QWORD *)(a1 + 0x100) = v98[0];
+        sub_42C32(v4);
+        v5 = sub_42BBC();
+        v96 = *v3;
+        v97 = *(_QWORD *)(a1 + 0x100);
+        sub_2B790(&v96);
+        *(_QWORD *)(a1 + 0x100) = v97;
+        sub_42C32(v5);
+        v6 = sub_42BBC();
+        v94 = unk_105C54;
+        v95 = *(_QWORD *)(a1 + 0xF0);
+        sub_28B50(&v94);
+        *(_QWORD *)(a1 + 0xF0) = v95;
+        sub_42C32(v6);
+        v131 = *(_QWORD *)(a1 + 0xF0);
+        v130[2] = v131 + 0x10;
+        state = 2;
+        if ( *(unsigned int *)(v131 + 0xC) >= 0x2CuLL )
+          state = 1;
+        continue;
+      case 1:
+        *(_QWORD *)(a1 + 0x118) = 0x2C00000001LL;
+        state = 6;
+        continue;
+      case 2:
+        v34 = sub_42BBC();
+        v91[0] = *(_QWORD *)(a1 + 0xF8);
+        v129[0] = (__int64)"Wrong!";
+        v129[1] = (__int64)&unk_DC658;
+        v91[1] = (__int64)v129;
+        v92 = 0;
+        v93 = 0;
+        sub_2BF90(v91);
+        *(_QWORD *)(a1 + 0xF8) = v91[0];
+        sub_42C32(v34);
+        v35 = sub_42BBC();
+        v89 = *v3;
+        v90 = *(_QWORD *)(a1 + 0xF8);
+        sub_2B790(&v89);
+        *(_QWORD *)(a1 + 0xF8) = v90;
+        sub_42C32(v35);
+        result = sub_43790();
+        *(_DWORD *)(a1 + 0x114) = 3;
+        return result;
+      case 3:
+        sub_4CB90("hello.vhdl", 0x2BLL, 6LL);
+        return result;
+      case 4:
+        state = 5;
+        if ( *(_DWORD *)(a1 + 0x118) != *(_DWORD *)(a1 + 0x11C) )
+        {
+          ++*(_DWORD *)(a1 + 0x118);
+          state = 6;
+        }
+        continue;
+      case 5:
+        v37 = *(_DWORD *)(a1 + 0x110);
+        v38 = sub_42BBC();
+        if ( v37 == 0x2C )
+        {
+          v84[0] = *(_QWORD *)(a1 + 0xF8);
+          v102[0] = (__int64)&unk_DC688;
+          v102[1] = (__int64)&unk_DC678;
+          v84[1] = (__int64)v102;
+          v85 = 0;
+          v86 = 0;
+          sub_2BF90(v84);
+          *(_QWORD *)(a1 + 0xF8) = v84[0];
+          sub_42C32(v38);
+          v39 = sub_42BBC();
+          v82 = *v3;
+          v83 = *(_QWORD *)(a1 + 0xF8);
+          sub_2B790(&v82);
+          v40 = v83;
+        }
+        else
+        {
+          v79[0] = *(_QWORD *)(a1 + 0xF8);
+          v101[0] = (__int64)"Wrong!";
+          v101[1] = (__int64)&unk_DC698;
+          v79[1] = (__int64)v101;
+          v80 = 0;
+          v81 = 0;
+          sub_2BF90(v79);
+          *(_QWORD *)(a1 + 0xF8) = v79[0];
+          sub_42C32(v38);
+          v39 = sub_42BBC();
+          v77 = *v3;
+          v78 = *(_QWORD *)(a1 + 0xF8);
+          sub_2B790(&v77);
+          v40 = v78;
+        }
+        *(_QWORD *)(a1 + 0xF8) = v40;
+        sub_42C32(v39);
+        result = sub_43790();
+        *(_DWORD *)(a1 + 0x114) = 8;
+        return result;
+      case 6:
+        v41 = sub_42BBC();
+        v69 = *(_QWORD *)(a1 + 0xF0);
+        v70 = 0;
+        sub_29B90(&v69);
+        *(_QWORD *)(a1 + 0xF0) = v69;
+        *(_BYTE *)(a1 + 0x108) = v70;
+        sub_42C32(v41);
+        *(_DWORD *)(a1 + 0x10C) = *(unsigned __int8 *)(a1 + 0x108);
+        v42 = sub_42BBC();
+        v43 = *(_DWORD *)(a1 + 0x10C);
+        if ( v43 < 0 )
+          sub_4CDDA("hello.vhdl", 0x30LL);
+        sub_231D0(&v127, (unsigned int)v43, 8LL);
+        v87 = v127;
+        v88 = v66;
+        v66[0] = *(_DWORD *)v128;
+        v66[1] = *(_DWORD *)(v128 + 4);
+        v67 = *(_BYTE *)(v128 + 8);
+        v68 = *(_DWORD *)(v128 + 0xC);
+        if ( v68 != 8 )
+          sub_4CDDA("hello.vhdl", 0x30LL);
+        v44 = v87;
+        for ( i = 0LL; (unsigned int)i <= 7; ++i )
+        {
+          v46 = *(_BYTE **)(a1 + 8 * i + 0x10);
+          *(_BYTE *)(a1 + i + 0x120) = *(_BYTE *)(v44 + i);
+          v47 = 1;
+          if ( !v46[0x2A] )
+            v47 = *v46 != *(_BYTE *)(a1 + i + 0x120);
+          if ( v47 )
+            _ghdl_signal_direct_assign();
+        }
+        sub_42C32(v42);
+        result = sub_4381E(&unk_F4240, "hello.vhdl", 0x31LL);
+        *(_DWORD *)(a1 + 0x114) = 7;
+        return result;
+      case 7:
+        if ( *(int *)(a1 + 0x118) > 0 && *(int *)(a1 + 0x118) < 9 )// 1~8
+        {
+          v7 = v3;
+          v126[0] = a1 + 0x98;
+          v126[1] = (__int64)&asc_DC3E0[8];
+          v8 = sub_42BBC();
+          v9 = *(_DWORD *)(a1 + 0x118) - 1;
+          if ( v9 >= 8 )
+            sub_4D036("hello.vhdl", 0x33LL, v9, v76);
+          v10 = dword_DC420[v9];
+          if ( v10 < 0 )
+            sub_4CDDA("hello.vhdl", 0x33LL);
+          sub_231D0(&v124, (unsigned int)v10, 8LL);
+          v123[0] = v124;
+          v123[1] = (__int64)v63;
+          v63[0] = *(_DWORD *)v125;
+          v63[1] = *(_DWORD *)(v125 + 4);
+          v64 = *(_BYTE *)(v125 + 8);
+          v65 = *(_DWORD *)(v125 + 0xC);
+          v11 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v126, v123);
+          sub_42C32(v8);
+          v3 = v7;
+          if ( (v11 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        if ( *(int *)(a1 + 0x118) >= 9 && *(int *)(a1 + 0x118) < 0x11 )// 9~16
+        {
+          v122[0] = a1 + 0x98;
+          v122[1] = (__int64)&asc_DC3E0[8];
+          v12 = sub_42BBC();
+          v13 = *(_DWORD *)(a1 + 0x118) - 9;
+          if ( v13 >= 8 )
+            sub_4D036("hello.vhdl", 0x38LL, v13, v75);
+          v14 = dword_DC460[v13];
+          if ( v14 < 0 )
+            sub_4CDDA("hello.vhdl", 0x38LL);
+          sub_231D0(&v120, (unsigned int)v14, 8LL);
+          v119[0] = v120;
+          v119[1] = (__int64)v60;
+          v60[0] = *(_DWORD *)v121;
+          v60[1] = *(_DWORD *)(v121 + 4);
+          v61 = *(_BYTE *)(v121 + 8);
+          v62 = *(_DWORD *)(v121 + 0xC);
+          v15 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v122, v119);
+          sub_42C32(v12);
+          if ( (v15 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        if ( *(int *)(a1 + 0x118) >= 0x11 && *(int *)(a1 + 0x118) < 0x19 )// 17~24
+        {
+          v118[0] = a1 + 0x98;
+          v118[1] = (__int64)&asc_DC3E0[8];
+          v16 = sub_42BBC();
+          v17 = *(_DWORD *)(a1 + 0x118) - 0x11;
+          if ( v17 >= 8 )
+            sub_4D036("hello.vhdl", 0x3DLL, v17, v74);
+          v18 = dword_DC4A0[v17];
+          if ( v18 < 0 )
+            sub_4CDDA("hello.vhdl", 0x3DLL);
+          sub_231D0(&v116, (unsigned int)v18, 8LL);
+          v115[0] = v116;
+          v115[1] = (__int64)v57;
+          v57[0] = *(_DWORD *)v117;
+          v57[1] = *(_DWORD *)(v117 + 4);
+          v58 = *(_BYTE *)(v117 + 8);
+          v59 = *(_DWORD *)(v117 + 0xC);
+          v19 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v118, v115);
+          sub_42C32(v16);
+          if ( (v19 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        if ( *(int *)(a1 + 0x118) >= 0x19 && *(int *)(a1 + 0x118) < 0x21 )// 25~32
+        {
+          v114[0] = a1 + 0x98;
+          v114[1] = (__int64)&asc_DC3E0[8];
+          v20 = sub_42BBC();
+          v21 = *(_DWORD *)(a1 + 0x118) - 0x19;
+          if ( v21 >= 8 )
+            sub_4D036("hello.vhdl", 0x42LL, v21, v73);
+          v22 = dword_DC4E0[v21];
+          if ( v22 < 0 )
+            sub_4CDDA("hello.vhdl", 0x42LL);
+          sub_231D0(&v112, (unsigned int)v22, 8LL);
+          v111[0] = v112;
+          v111[1] = (__int64)v54;
+          v54[0] = *(_DWORD *)v113;
+          v54[1] = *(_DWORD *)(v113 + 4);
+          v55 = *(_BYTE *)(v113 + 8);
+          v56 = *(_DWORD *)(v113 + 0xC);
+          v23 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v114, v111);
+          sub_42C32(v20);
+          if ( (v23 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        if ( *(int *)(a1 + 0x118) >= 0x21 && *(int *)(a1 + 0x118) < 0x29 )// 33~40
+        {
+          v110[0] = a1 + 0x98;
+          v110[1] = (__int64)&asc_DC3E0[8];
+          v24 = sub_42BBC();
+          v25 = *(_DWORD *)(a1 + 0x118) - 0x21;
+          if ( v25 >= 8 )
+            sub_4D036("hello.vhdl", 0x47LL, v25, v72);
+          v26 = dword_DC520[v25];
+          if ( v26 < 0 )
+            sub_4CDDA("hello.vhdl", 0x47LL);
+          sub_231D0(&v108, (unsigned int)v26, 8LL);
+          v107[0] = v108;
+          v107[1] = (__int64)v51;
+          v51[0] = *(_DWORD *)v109;
+          v51[1] = *(_DWORD *)(v109 + 4);
+          v52 = *(_BYTE *)(v109 + 8);
+          v53 = *(_DWORD *)(v109 + 0xC);
+          v27 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v110, v107);
+          sub_42C32(v24);
+          if ( (v27 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        v28 = *(_DWORD *)(a1 + 0x118);
+        v29 = v28 > 0x28;
+        if ( v28 >= 0x29 )
+          v29 = *(_DWORD *)(a1 + 0x118) < 0x31; // 41~49
+        state = 4;
+        if ( v29 )
+        {
+          v106[0] = a1 + 0x98;
+          v106[1] = (__int64)&asc_DC3E0[8];
+          v30 = sub_42BBC();
+          v31 = *(_DWORD *)(a1 + 0x118) - 0x29;
+          if ( v31 >= 8 )
+            sub_4D036("hello.vhdl", 0x4CLL, v31, v71);
+          v32 = dword_DC560[v31];
+          if ( v32 < 0 )
+            sub_4CDDA("hello.vhdl", 0x4CLL);
+          sub_231D0(&v104, (unsigned int)v32, 8LL);
+          v103[0] = v104;
+          v103[1] = (__int64)v48;
+          v48[0] = *(_DWORD *)v105;
+          v48[1] = *(_DWORD *)(v105 + 4);
+          v49 = *(_BYTE *)(v105 + 8);
+          v50 = *(_DWORD *)(v105 + 0xC);
+          v33 = ieee__std_logic_1164__logic_x01z_table_EQ_0(v106, v103);
+          sub_42C32(v30);
+          if ( (v33 & 1) != 0 )
+            ++*(_DWORD *)(a1 + 0x110);
+        }
+        break;
+      case 8:
+        sub_4CB90("hello.vhdl", 0x58LL, 6LL);
+        return result;
+      default:
+        sub_4CB90("hello.vhdl", 0x15LL, 6LL);
+        return result;
+    }
+  }
+}
+```
+
+起始状态为case 7，有6个比较，使用了函数ieee\_\_std\_logic\_1164\_\_logic\_x01z\_table\_EQ\_0。
+
+判断完所有字符后，跳转到状态5进行结果输出，判断比对正确的字符串长度，预期值是44。
+
+取出6段硬编码的值
+
+0xD8, 0xDD, 0xCF, 0xDF, 0xC8, 0xDA, 0xE7, 0xAC
+
+0xAA, 0xAE, 0xA5, 0xAD, 0xA5, 0xAA, 0xAE, 0xB1
+
+0xFD, 0xFE, 0xFD, 0xF8, 0xB1, 0xA8, 0xAC, 0xFF
+
+0xA4, 0xB1, 0xA4, 0xAF, 0xAD, 0xA4, 0xB1, 0xFA
+
+0xAC, 0xFD, 0xAA, 0xFE, 0xAD, 0xA4, 0xAA, 0xA8
+
+0xA4, 0xAE, 0xFF, 0xE1, 0xC8, 0xDA, 0xE7, 0xAC, 0x128
+
+通过使用第一部分与"DASCTF{"做异或发现key为0x9C
+
+对其它部分也异或0x9C
+
+```assembly
+data = [0xD8, 0xDD, 0xCF, 0xDF, 0xC8, 0xDA, 0xE7, 0xAC,
+        0xAA, 0xAE, 0xA5, 0xAD, 0xA5, 0xAA, 0xAE, 0xB1,
+        0xFD, 0xFE, 0xFD, 0xF8, 0xB1, 0xA8, 0xAC, 0xFF,
+        0xA4, 0xB1, 0xA4, 0xAF, 0xAD, 0xA4, 0xB1, 0xFA,
+        0xAC, 0xFD, 0xAA, 0xFE, 0xAD, 0xA4, 0xAA, 0xA8,
+        0xA4, 0xAE, 0xFF, 0xE1, 0xC8, 0xDA, 0xE7, 0xAC, 0x128]
+
+flag = ""
+
+for i in data:
+    flag += chr(i^0x9C)
+
+print(flag)
+```
+
+DASCTF{06291962-abad-40c8-8318-f0a6b186482c}
