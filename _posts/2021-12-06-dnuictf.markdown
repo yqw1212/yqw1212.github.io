@@ -1,0 +1,1058 @@
+---
+layout: post
+title:  暗泉杯Re WP
+date:   2021-12-06 00:08:01 +0300
+image:  2021-12-06-vintage.jpg
+tags:   [ctf,reverse,暗泉杯,vm]
+---
+
+### easyRe
+
+main
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  sub_4012C8(a1, a2, a3);
+  semid = semget(0, 1, 0x3B6);
+  LODWORD(qword_6030D0) = 1;
+  if ( semctl(semid, 0, 0x10, qword_6030D0) == 0xFFFFFFFF )
+    perror("semctl setval error");
+  sops.sem_num = 0;
+  sops.sem_op = 0xFFFF;
+  sops.sem_flg = 0x1000;
+  stru_6030BE.sem_num = 0;
+  stru_6030BE.sem_op = 1;
+  stru_6030BE.sem_flg = 0x1000;
+  if ( fork() )
+  {
+    signal(2, handler);
+    sub_40097D();
+    while ( 1 )
+      ;
+  }
+  puts("Input your flag: ");
+  sub_401271(s1, 0x2ALL);
+  return sub_400A0D(&unk_4019C0, s1);
+}
+```
+
+sub_400A0D
+
+```assembly
+int __fastcall sub_400A0D(__int64 a1, __int64 a2)
+{
+  unsigned __int8 v2; // dl
+  __pid_t v3; // eax
+  __pid_t v4; // eax
+  __pid_t v5; // eax
+  __pid_t v6; // eax
+  __pid_t v7; // eax
+  __pid_t v8; // eax
+  __pid_t v9; // eax
+  __pid_t v10; // eax
+  __pid_t v11; // eax
+  __pid_t v12; // eax
+  __pid_t v13; // eax
+  __pid_t v14; // eax
+  __pid_t v15; // eax
+  __pid_t v16; // eax
+  __pid_t v17; // eax
+  __pid_t v18; // eax
+  __pid_t v19; // eax
+  __pid_t v20; // eax
+  __pid_t v21; // eax
+  __pid_t v22; // eax
+  __pid_t v23; // eax
+  __pid_t v24; // eax
+  __pid_t v25; // eax
+  __pid_t v26; // eax
+  __pid_t v27; // eax
+  union sigval val; // [rsp+10h] [rbp-20h]
+  union sigval vala; // [rsp+10h] [rbp-20h]
+  union sigval valb; // [rsp+10h] [rbp-20h]
+  union sigval valc; // [rsp+10h] [rbp-20h]
+  union sigval vald; // [rsp+10h] [rbp-20h]
+  union sigval vale; // [rsp+10h] [rbp-20h]
+  union sigval valf; // [rsp+10h] [rbp-20h]
+  union sigval valg; // [rsp+10h] [rbp-20h]
+  union sigval valh; // [rsp+10h] [rbp-20h]
+  union sigval vali; // [rsp+10h] [rbp-20h]
+  union sigval valj; // [rsp+10h] [rbp-20h]
+  union sigval valk; // [rsp+10h] [rbp-20h]
+  int v41; // [rsp+24h] [rbp-Ch]
+  char *v42; // [rsp+28h] [rbp-8h]
+
+  qword_6030C8 = (__int64)(s1 + 0x780);
+  *((_QWORD *)s1 + 0xF1) = a2;
+  v42 = s1 + 0x4F;
+  semop(semid, &sops, 1uLL);
+  while ( 1 )
+  {
+    v41 = *(_DWORD *)(4LL * *(unsigned __int8 *)(qword_6030C8 + 0x14) + a1);
+    if ( v41 == 0x17 )
+      break;
+    ++*(_BYTE *)(qword_6030C8 + 0x14);
+    switch ( v41 )
+    {
+      case 0:
+      case 8:
+      case 9:
+      case 0xA:
+      case 0xC:
+      case 0xD:
+      case 0xE:
+      case 0x11:
+      case 0x13:
+      case 0x14:
+        v2 = *(_BYTE *)(qword_6030C8 + 0x14);
+        *(_BYTE *)(qword_6030C8 + 0x14) = v2 + 1;
+        *v42 = *(_DWORD *)(4LL * v2 + a1);
+        break;
+      default:
+        break;
+    }
+    switch ( v41 )
+    {
+      case 0:
+        v3 = getppid();
+        sigqueue(v3, 0x22, (const union sigval)v42);
+        break;
+      case 1:
+        val.sival_ptr = (void *)(qword_6030C8 + 0x10);
+        v4 = getppid();
+        sigqueue(v4, 0x22, val);
+        break;
+      case 2:
+        vala.sival_ptr = (void *)(qword_6030C8 + 0x11);
+        v5 = getppid();
+        sigqueue(v5, 0x22, vala);
+        break;
+      case 3:
+        valb.sival_ptr = (void *)(qword_6030C8 + 0x12);
+        v6 = getppid();
+        sigqueue(v6, 0x22, valb);
+        break;
+      case 4:
+        valc.sival_ptr = (void *)(qword_6030C8 + 0x10);
+        v7 = getppid();
+        sigqueue(v7, 0x23, valc);
+        break;
+      case 5:
+        vald.sival_ptr = (void *)(qword_6030C8 + 0x11);
+        v8 = getppid();
+        sigqueue(v8, 0x23, vald);
+        break;
+      case 6:
+        vale.sival_ptr = (void *)(qword_6030C8 + 0x12);
+        v9 = getppid();
+        sigqueue(v9, 0x23, vale);
+        break;
+      case 7:
+        v10 = getppid();
+        kill(v10, 0x24);
+        break;
+      case 8:
+        valf.sival_ptr = (void *)(qword_6030C8 + 0x10);
+        v11 = getppid();
+        sigqueue(v11, 0x25, valf);
+        break;
+      case 9:
+        valg.sival_ptr = (void *)(qword_6030C8 + 0x11);
+        v12 = getppid();
+        sigqueue(v12, 0x25, valg);
+        break;
+      case 0xA:
+        valh.sival_ptr = (void *)(qword_6030C8 + 0x12);
+        v13 = getppid();
+        sigqueue(v13, 0x25, valh);
+        break;
+      case 0xB:
+        v14 = getppid();
+        kill(v14, 0x26);
+        break;
+      case 0xC:
+        vali.sival_ptr = (void *)(qword_6030C8 + 0x10);
+        v15 = getppid();
+        sigqueue(v15, 0x27, vali);
+        break;
+      case 0xD:
+        valj.sival_ptr = (void *)(qword_6030C8 + 0x11);
+        v16 = getppid();
+        sigqueue(v16, 0x27, valj);
+        break;
+      case 0xE:
+        valk.sival_ptr = (void *)(qword_6030C8 + 0x12);
+        v17 = getppid();
+        sigqueue(v17, 0x27, valk);
+        break;
+      case 0xF:
+        v18 = getppid();
+        kill(v18, 0x28);
+        break;
+      case 0x10:
+        v19 = getppid();
+        kill(v19, 0x29);
+        break;
+      case 0x11:
+        v20 = getppid();
+        kill(v20, 0x2A);
+        break;
+      case 0x12:
+        v21 = getppid();
+        kill(v21, 0x2B);
+        break;
+      case 0x13:
+        v22 = getppid();
+        kill(v22, 0x2C);
+        break;
+      case 0x14:
+        v23 = getppid();
+        kill(v23, 0x2D);
+        break;
+      case 0x15:
+        v24 = getppid();
+        kill(v24, 0x2E);
+        break;
+      case 0x16:
+        v25 = getppid();
+        kill(v25, 0x2F);
+        break;
+      default:
+        v26 = getppid();
+        kill(v26, 2);
+        exit(0);
+    }
+    semop(semid, &sops, 1uLL);
+  }
+  v27 = getppid();
+  return kill(v27, 2);
+}
+```
+
+发现使用了很多信号量的东西
+
+找到了将函数和信号量绑定的函数
+
+```assembly
+int sub_40144B()
+{
+  struct sigaction v1; // [rsp+0h] [rbp-140h] BYREF
+  struct sigaction v2; // [rsp+A0h] [rbp-A0h] BYREF
+
+  sigemptyset(&v2.sa_mask);
+  v2.sa_handler = (__sighandler_t)sub_400E1D;
+  v2.sa_flags = 4;
+  sigaction(0x22, &v2, &v1);
+  
+  sigemptyset(&v2.sa_mask);
+  v2.sa_handler = (__sighandler_t)sub_400E78;
+  v2.sa_flags = 4;
+  sigaction(0x23, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_400ED7;
+  v2.sa_flags = 0;
+  sigaction(0x24, &v2, &v1);
+  sigemptyset(&v2.sa_mask);
+  
+  v2.sa_handler = (__sighandler_t)sub_400F16;
+  v2.sa_flags = 4;
+  sigaction(0x25, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_400F67;
+  v2.sa_flags = 0;
+  sigaction(0x26, &v2, &v1);
+  sigemptyset(&v2.sa_mask);
+  
+  v2.sa_handler = (__sighandler_t)sub_400FA8;
+  v2.sa_flags = 4;
+  sigaction(0x27, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_400FFB;
+  v2.sa_flags = 0;
+  sigaction(0x28, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_40103A;
+  v2.sa_flags = 0;
+  sigaction(0x29, &v2, &v1);
+  sigemptyset(&v2.sa_mask);
+  
+  v2.sa_handler = (__sighandler_t)sub_401089;
+  v2.sa_flags = 4;
+  sigaction(0x2A, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_4010EA;
+  v2.sa_flags = 0;
+  sigaction(0x2B, &v2, &v1);
+  sigemptyset(&v2.sa_mask);
+  
+  v2.sa_handler = (__sighandler_t)sub_40113A;
+  v2.sa_flags = 4;
+  sigaction(0x2C, &v2, &v1);
+  sigemptyset(&v2.sa_mask);
+  
+  v2.sa_handler = (__sighandler_t)sub_40116C;
+  v2.sa_flags = 4;
+  sigaction(0x2D, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_4011AD;
+  v2.sa_flags = 0;
+  sigaction(0x2E, &v2, &v1);
+  
+  v2.sa_handler = (__sighandler_t)sub_40120D;
+  v2.sa_flags = 0;
+  return sigaction(0x2F, &v2, &v1);
+}
+```
+
+分析每个函数的作用
+
+sub_400E1D
+
+```assembly
+int __fastcall sub_400E1D(__int64 a1, __int64 a2)
+{
+  __int64 v2; // rsi
+  unsigned __int8 v3; // dl
+
+  v2 = *(_QWORD *)qword_6030C8;
+  v3 = *(_BYTE *)(qword_6030C8 + 0x13);
+  *(_BYTE *)(qword_6030C8 + 0x13) = v3 + 1;
+  *(_BYTE *)(v2 + v3) = **(_BYTE **)(a2 + 0x18);
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+qword_6030C8 + 0x13存的值是一个一个偏移量，给qword_6030C8+这个偏移量的地址存入a2 + 0x18，并且偏移量++。所以相当于一个push操作。
+
+sub_400E78
+
+```assembly
+int __fastcall sub_400E78(__int64 a1, __int64 a2)
+{
+  _BYTE *v2; // rdx
+  __int64 v3; // rcx
+  __int64 v4; // rax
+
+  v2 = *(_BYTE **)(a2 + 0x18);
+  v3 = *(_QWORD *)qword_6030C8;
+  v4 = qword_6030C8;
+  --*(_BYTE *)(qword_6030C8 + 0x13);
+  *v2 = *(_BYTE *)(v3 + *(unsigned __int8 *)(v4 + 0x13));
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+pop操作
+
+sub_400ED7
+
+```assembly
+int sub_400ED7()
+{
+  *(_BYTE *)(qword_6030C8 + 0x10) += *(_BYTE *)(qword_6030C8 + 0x11);
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_400F16
+
+```assembly
+int __fastcall sub_400F16(__int64 a1, __int64 a2)
+{
+  **(_BYTE **)(a2 + 0x18) += s1[0x4F];
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_400F67
+
+```assembly
+int sub_400F67()
+{
+  *(_BYTE *)(qword_6030C8 + 0x10) -= *(_BYTE *)(qword_6030C8 + 0x11);
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_400FA8
+
+```assembly
+int __fastcall sub_400FA8(__int64 a1, __int64 a2)
+{
+  **(_BYTE **)(a2 + 0x18) -= s1[0x4F];
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_400FFB
+
+```assembly
+int sub_400FFB()
+{
+  *(_BYTE *)(qword_6030C8 + 0x10) ^= *(_BYTE *)(qword_6030C8 + 0x11);
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_40103A
+
+```assembly
+int sub_40103A()
+{
+  *(_BYTE *)(qword_6030C8 + 0x15) = *(_BYTE *)(qword_6030C8 + 0x10) == *(_BYTE *)(qword_6030C8 + 0x11);
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_401089
+
+```assembly
+int sub_401089()
+{
+  __int64 v0; // rsi
+  unsigned __int8 v1; // dl
+
+  v0 = *(_QWORD *)qword_6030C8;
+  v1 = *(_BYTE *)(qword_6030C8 + 0x13);
+  *(_BYTE *)(qword_6030C8 + 0x13) = v1 + 1;
+  *(_BYTE *)(v0 + v1) = *(_BYTE *)(qword_6030C8 + 0x14);
+  *(_BYTE *)(qword_6030C8 + 0x14) = s1[0x4F];
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+将当前程序执行到的位置压栈，给指向程序执行位置的指针赋一个新的值，即跳到一个新的位置，相当于调用一个函数
+
+sub_4010EA
+
+```assembly
+int sub_4010EA()
+{
+  __int64 v0; // rdx
+  __int64 v1; // rcx
+  __int64 v2; // rax
+
+  v0 = qword_6030C8;
+  v1 = *(_QWORD *)qword_6030C8;
+  v2 = qword_6030C8;
+  --*(_BYTE *)(qword_6030C8 + 0x13);
+  *(_BYTE *)(v0 + 0x14) = *(_BYTE *)(v1 + *(unsigned __int8 *)(v2 + 0x13));
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+函数返回return
+
+sub_40113A
+
+```assembly
+int sub_40113A()
+{
+  *(_BYTE *)(qword_6030C8 + 0x14) = s1[0x4F];
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_40116C
+
+```assembly
+int sub_40116C()
+{
+  if ( *(_BYTE *)(qword_6030C8 + 0x15) )
+    *(_BYTE *)(qword_6030C8 + 0x14) = s1[0x4F];
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_4011AD
+
+```assembly
+int sub_4011AD()
+{
+  __int64 v0; // rsi
+  unsigned __int8 v1; // dl
+
+  v0 = *(_QWORD *)qword_6030C8;
+  v1 = *(_BYTE *)(qword_6030C8 + 0x13);
+  *(_BYTE *)(qword_6030C8 + 0x13) = v1 + 1;
+  *(_BYTE *)(v0 + v1) = *(_BYTE *)(*(_QWORD *)(qword_6030C8 + 8) + *(unsigned __int8 *)(qword_6030C8 + 0x12));
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+sub_40120D
+
+```assembly
+int sub_40120D()
+{
+  _BYTE *v0; // rdx
+  __int64 v1; // rcx
+  __int64 v2; // rax
+
+  v0 = (_BYTE *)(*(unsigned __int8 *)(qword_6030C8 + 0x12) + *(_QWORD *)(qword_6030C8 + 8));
+  v1 = *(_QWORD *)qword_6030C8;
+  v2 = qword_6030C8;
+  --*(_BYTE *)(qword_6030C8 + 0x13);
+  *v0 = *(_BYTE *)(v1 + *(unsigned __int8 *)(v2 + 0x13));
+  return semop(semid, &stru_6030BE, 1uLL);
+}
+```
+
+写脚本输出虚拟机指令
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+
+int s;
+
+void op(int sig, int par, int index){
+    switch(sig){
+        case 0x22:{
+            //qword_6030C8[qword_6030C8[0x13]] = a2;
+            //qword_6030C8[0x13]++;
+
+            if(index == 0){
+                printf("qword_6030C8[qword_6030C8[0x13]] = %d;\n", par);
+                printf("qword_6030C8[0x13]++;\n");
+            }else{
+                printf("qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x%x];\n", index);
+                printf("qword_6030C8[0x13]++;\n");
+            }
+            break;
+        }
+        case 0x23:{
+            //qword_6030C8[0x13]--;
+            //a2 = qword_6030C8[qword_6030C8[0x13]];
+
+            printf("qword_6030C8[0x13]--;\n");
+            printf("qword_6030C8[0x%x] = qword_6030C8[qword_6030C8[0x13]];\n", index);
+            break;
+        }
+        case 0x24:{
+            //qword_6030C8[0x10] += qword_6030C8[0x11];
+
+            printf("qword_6030C8[0x10] += qword_6030C8[0x11];\n");
+            break;
+        }
+        case 0x25:{
+            //a2 += s;
+
+
+            printf("qword_6030C8[0x%d] += %d;\n", index, s);
+            break;
+        }
+        case 0x26:{
+            //qword_6030C8[0x10] -= qword_6030C8[0x11];
+
+            printf("qword_6030C8[0x10] -= qword_6030C8[0x11];\n");
+            break;
+        }
+        case 0x27:{
+            //a2 -= s1[0x4F];
+
+            printf("qword_6030C8[0x%x] -= %d;\n", index, s);
+            break;
+        }
+        case 0x28:{
+            //qword_6030C8[0x10] ^= qword_6030C8[0x11];
+
+            printf("qword_6030C8[0x10] ^= qword_6030C8[0x11];\n");
+            break;
+        }
+        case 0x29:{
+            //qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];
+
+            printf("qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];\n");
+            break;
+        }
+        case 0x2A:{
+            //qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];
+            //qword_6030C8[0x13]++;
+            //qword_6030C8[0x14] = s1[0x4F];
+
+            printf("qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];\n");
+            printf("qword_6030C8[0x13]++;\n");
+            printf("qword_6030C8[0x14] = %d;\n", s);
+            break;
+        }
+        case 0x2B:{
+            //qword_6030C8[0x13]--;
+            //qword_6030C8[0x14] = qword_6030C8[qword_6030C8[0x13];
+
+            printf("qword_6030C8[0x13]--;\n");
+            printf("qword_6030C8[0x14] = qword_6030C8[qword_6030C8[0x13];\n");
+            break;
+        }
+        case 0x2C:{
+            //qword_6030C8[0x14] = s1[0x4F];
+
+            printf("qword_6030C8[0x14] = %d;\n", s);
+            break;
+        }
+        case 0x2D:{
+            //if ( qword_6030C8[0x15] )
+            //    qword_6030C8[0x14] = s1[0x4F];
+
+            printf("if ( qword_6030C8[0x15] )\n");
+            printf("    qword_6030C8[0x14] = %d;\n", s);
+            break;
+        }
+        case 0x2E:{
+            //qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[8][qword_6030C8[0x12]];
+
+            printf("qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[8][qword_6030C8[0x12]];\n");
+            break;
+        }
+        case 0x2F:{
+            //qword_6030C8[0x13]--;
+            //qword_6030C8[8][qword_6030C8[0x12]] = qword_6030C8[qword_6030C8[0x13];
+
+            printf("qword_6030C8[0x13]--;\n");
+            printf("qword_6030C8[8][qword_6030C8[0x12]] = qword_6030C8[qword_6030C8[0x13];\n");
+            break;
+        }
+    }
+}
+
+int main(){
+    int opcode[87] = {17, 52, 0, 42, 5, 16, 20, 9, 23, 0, 36, 5, 3, 17, 29, 6, 0, 0, 5, 3, 17, 64, 6, 0, 72, 5, 17, 29, 23, 14, 1, 21, 4, 15, 1, 22, 2, 0, 0, 4, 3, 5, 16, 20, 50, 5, 9, 2, 19, 29, 5, 18, 21, 4, 16, 20, 61, 10, 1, 19, 52, 3, 4, 18, 14, 1, 21, 4, 7, 1, 22, 2, 0, 0, 4, 3, 5, 16, 20, 85, 5, 9, 1, 19, 64, 5, 18};
+    int qword_6030C8[100] = {};
+
+    //for(int i=0; opcode[i]!=0x17; i++){
+    for(int i=0; i<87; i++){
+        int opc = opcode[i];
+        switch(opc){
+            case 0:
+            case 8:
+            case 9:
+            case 0xA:
+            case 0xC:
+            case 0xD:
+            case 0xE:
+            case 0x11:
+            case 0x13:
+            case 0x14:{
+                s = opcode[++i];
+                break;
+            }
+            default:
+                break;
+        }
+        switch(opc){
+            case 0:
+                op(0x22, s, 0);
+                break;
+            case 1:
+                op(0x22, qword_6030C8[0x10], 0x10);
+                break;
+            case 2:
+                op(0x22, qword_6030C8[0x11], 0x11);
+                break;
+            case 3:
+                op(0x22, qword_6030C8[0x12], 0x12);
+                break;
+            case 4:
+                op(0x23, qword_6030C8[0x10], 0x10);
+                break;
+            case 5:
+                op(0x23, qword_6030C8[0x11], 0x11);
+                break;
+            case 6:
+                op(0x23, qword_6030C8[0x12], 0x12);
+                break;
+            case 7:
+                op(0x24, 0, 0);
+                break;
+            case 8:
+                op(0x25, qword_6030C8[0x10], 0x10);
+                break;
+            case 9:
+                op(0x25, qword_6030C8[0x11], 0x11);
+                break;
+            case 0xA:
+                op(0x25, qword_6030C8[0x12], 0x12);
+                break;
+            case 0xB:
+                op(0x26, 0, 0);
+                break;
+            case 0xC:
+                op(0x27, qword_6030C8[0x10], 0x10);
+                break;
+            case 0xD:
+                op(0x27, qword_6030C8[0x11], 0x11);
+                break;
+            case 0xE:
+                op(0x27, qword_6030C8[0x12], 0x12);
+                break;
+            case 0xF:
+                op(0x28, 0, 0);
+                break;
+            case 0x10:
+                op(0x29, 0, 0);
+                break;
+            case 0x11:
+                op(0x2A, 0, 0);
+                break;
+            case 0x12:
+                op(0x2B, 0, 0);
+                break;
+            case 0x13:
+                op(0x2C, 0, 0);
+                break;
+            case 0x14:
+                op(0x2D, 0, 0);
+                break;
+            case 0x15:
+                op(0x2E, 0, 0);
+                break;
+            case 0x16:
+                op(0x2F, 0, 0);
+                break;
+            default:
+                op(2, 0, 0);
+                break;
+        }
+    }
+
+    return 0;
+}
+```
+
+指令
+
+```assembly
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];
+qword_6030C8[0x13]++;
+qword_6030C8[0x14] = 52;
+qword_6030C8[qword_6030C8[0x13]] = 42;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];
+if ( qword_6030C8[0x15] )
+    qword_6030C8[0x14] = 9;
+qword_6030C8[qword_6030C8[0x13]] = 36;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x12];
+qword_6030C8[0x13]++;
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];
+qword_6030C8[0x13]++;
+qword_6030C8[0x14] = 29;
+qword_6030C8[0x13]--;
+qword_6030C8[0x12] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = 0;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x12];
+qword_6030C8[0x13]++;
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];
+qword_6030C8[0x13]++;
+qword_6030C8[0x14] = 64;
+qword_6030C8[0x13]--;
+qword_6030C8[0x12] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = 72;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x14];
+qword_6030C8[0x13]++;
+qword_6030C8[0x14] = 29;
+qword_6030C8[0x12] -= 1;
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[8][qword_6030C8[0x12]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x10] ^= qword_6030C8[0x11];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x10];
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[8][qword_6030C8[0x12]] = qword_6030C8[qword_6030C8[0x13];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x11];
+qword_6030C8[0x13]++;
+qword_6030C8[qword_6030C8[0x13]] = 0;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x12];
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];
+if ( qword_6030C8[0x15] )
+    qword_6030C8[0x14] = 50;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x17] += 2;
+qword_6030C8[0x14] = 29;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x14] = qword_6030C8[qword_6030C8[0x13];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[8][qword_6030C8[0x12]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];
+if ( qword_6030C8[0x15] )
+    qword_6030C8[0x14] = 61;
+qword_6030C8[0x18] += 1;
+qword_6030C8[0x14] = 52;
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x12];
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x14] = qword_6030C8[qword_6030C8[0x13];
+qword_6030C8[0x12] -= 1;
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[8][qword_6030C8[0x12]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x10] += qword_6030C8[0x11];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x10];
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[8][qword_6030C8[0x12]] = qword_6030C8[qword_6030C8[0x13];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x11];
+qword_6030C8[0x13]++;
+qword_6030C8[qword_6030C8[0x13]] = 0;
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x10] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[qword_6030C8[0x13]] = qword_6030C8[0x12];
+qword_6030C8[0x13]++;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x15] = qword_6030C8[0x10] == qword_6030C8[0x11];
+if ( qword_6030C8[0x15] )
+    qword_6030C8[0x14] = 85;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x17] += 1;
+qword_6030C8[0x14] = 64;
+qword_6030C8[0x13]--;
+qword_6030C8[0x11] = qword_6030C8[qword_6030C8[0x13]];
+qword_6030C8[0x13]--;
+qword_6030C8[0x14] = qword_6030C8[qword_6030C8[0x13];
+```
+
+分析逻辑，主要难点在于地址的跳转和函数的调用
+
+解密
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(){
+
+    char result[42] = {0xA3, 0xD8, 0xAC, 0xA9, 0xA8, 0xD6, 0xA6, 0xCD, 0xD0, 0xD5,
+                       0xF7, 0xB7, 0x9C, 0xB3, 0x31, 0x2D, 0x40, 0x5B, 0x4B, 0x3A,
+                       0xFD, 0x57, 0x42, 0x5F, 0x58, 0x52, 0x54, 0x1B, 0x0C, 0x78,
+                       0x39, 0x2D, 0xD9, 0x3D, 0x35, 0x1F, 0x09, 0x41, 0x40, 0x47,
+                       0x42, 0x11};
+    for(int i=41; i>=0; i--){
+        result[i] = result[i] ^ (72 + 2*(41-i));
+        //printf("%d ", result[i]);
+    }
+
+    for(int i=41; i>=0; i--){
+        result[i] -= (41-i);
+        //printf("%d ", result[i]);
+    }
+
+    for(int i=41; i>=0; i--){
+        result[i] ^= 36 + (2*(41-i));
+    }
+    for(int i=0; i<42; i++){
+        printf("%c", result[i]);
+    }
+
+    return 0;
+}
+```
+
+flag{Now_Y0u_Know_th4_Signa1_0f_Linux!!!!}
+
+其他题都是签到题
+
+### 签到
+
+搜字符串
+
+flag{REVERSE_1s_Very_3asy!}
+
+### happyCTF
+
+main看起来有点复杂
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  std::ostream *v3; // eax
+  std::ostream *v4; // eax
+  int result; // eax
+  std::ostream *v6; // eax
+  std::ostream *v7; // eax
+  unsigned __int8 *v8; // [esp+5Ch] [ebp-70h]
+  unsigned __int8 *v9; // [esp+60h] [ebp-6Ch]
+  main::__l2::<lambda_7686c8adb828765130ce2b0d457195d9> cmp; // [esp+68h] [ebp-64h] BYREF
+  unsigned __int8 key[24]; // [esp+6Ch] [ebp-60h] BYREF
+  char item; // [esp+87h] [ebp-45h]
+  char *v13; // [esp+88h] [ebp-44h]
+  char *v14; // [esp+8Ch] [ebp-40h]
+  std::string *v15; // [esp+90h] [ebp-3Ch]
+  main::__l2::<lambda_1b3a4e77a09e1a7ed440bad3aa4c443b> add; // [esp+94h] [ebp-38h] BYREF
+  std::vector<unsigned char> v; // [esp+98h] [ebp-34h] BYREF
+  std::string str; // [esp+A4h] [ebp-28h] BYREF
+  int v19; // [esp+C8h] [ebp-4h]
+
+  std::string::string(&str);
+  v19 = 0;
+  v3 = std::operator<<<std::char_traits<char>>(&std::cout, "please input flag");
+  std::ostream::operator<<(v3, std::endl<char,std::char_traits<char>>);
+  std::operator>><char>(&std::cin, &str);
+  if ( std::string::length(&str) == 0x18 )
+  {
+    std::vector<unsigned char>::vector<unsigned char>(&v);
+    LOBYTE(v19) = 1;
+    lambda_1b3a4e77a09e1a7ed440bad3aa4c443b_::_lambda_1b3a4e77a09e1a7ed440bad3aa4c443b_(&add, &v);
+    v15 = &str;
+    v14 = std::string::_Unchecked_begin(&str);
+    v13 = std::string::_Unchecked_end(&str);
+    while ( v14 != v13 )
+    {
+      item = *v14;
+      lambda_1b3a4e77a09e1a7ed440bad3aa4c443b_::operator()(&add, item);
+      ++v14;
+    }
+    qmemcpy(key, "rxusoCqxw{yqK`{KZqag{r`i", sizeof(key));
+    lambda_7686c8adb828765130ce2b0d457195d9_::_lambda_7686c8adb828765130ce2b0d457195d9_(
+      &cmp,
+      (unsigned __int8 (*)[24])key);
+    v9 = std::vector<unsigned char>::_Unchecked_begin(&v);
+    v8 = std::vector<unsigned char>::_Unchecked_end(&v);
+    while ( v9 != v8 )
+    {
+      if ( !lambda_7686c8adb828765130ce2b0d457195d9_::operator()(&cmp, *v9) )
+      {
+        v6 = std::operator<<<std::char_traits<char>>(&std::cout, "error");
+        std::ostream::operator<<(v6, std::endl<char,std::char_traits<char>>);
+        LOBYTE(v19) = 0;
+        std::vector<unsigned char>::~vector<unsigned char>(&v);
+        v19 = 0xFFFFFFFF;
+        std::string::~string(&str);
+        return 0;
+      }
+      ++v9;
+    }
+    v7 = std::operator<<<std::char_traits<char>>(&std::cout, "good job");
+    std::ostream::operator<<(v7, std::endl<char,std::char_traits<char>>);
+    LOBYTE(v19) = 0;
+    std::vector<unsigned char>::~vector<unsigned char>(&v);
+    v19 = 0xFFFFFFFF;
+    std::string::~string(&str);
+    result = 0;
+  }
+  else
+  {
+    v4 = std::operator<<<std::char_traits<char>>(&std::cout, "not enought");
+    std::ostream::operator<<(v4, std::endl<char,std::char_traits<char>>);
+    v19 = 0xFFFFFFFF;
+    std::string::~string(&str);
+    result = 0;
+  }
+  return result;
+}
+```
+
+找到关键代码
+
+```assembly
+void __thiscall lambda_1b3a4e77a09e1a7ed440bad3aa4c443b_::operator()(main::__l2::<lambda_1b3a4e77a09e1a7ed440bad3aa4c443b> *this, unsigned __int8 bytee)
+{
+  unsigned __int8 _Val[65]; // [esp+Fh] [ebp-45h] BYREF
+  const main::__l2::<lambda_1b3a4e77a09e1a7ed440bad3aa4c443b> *thisa; // [esp+50h] [ebp-4h]
+
+  thisa = this;
+  _Val[0] = bytee ^ 0x14;
+  std::vector<unsigned char>::push_back(this->v, _Val);
+  ++`_lambda_1b3a4e77a09e1a7ed440bad3aa4c443b_::operator()'::`2'::index;
+}
+```
+
+就是逐个字符异或
+
+```assembly
+flag = ""
+data = "rxusoCqxw{yqK`{KZqag{r`i"
+for i in data:
+    flag += chr(ord(i)^0x14)
+
+print(flag)
+```
+
+flag{Welcome_to_Neusoft}
+
+### Remember Crypt 4
+
+一看名字就知道是rc4
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  unsigned int v3; // eax
+  unsigned int v4; // eax
+  __int64 v5; // rax
+  __int64 v6; // rax
+  __int64 v8; // [rsp+0h] [rbp-F8h] BYREF
+  char v9; // [rsp+20h] [rbp-D8h]
+  int i; // [rsp+24h] [rbp-D4h]
+  __int64 v11; // [rsp+28h] [rbp-D0h]
+  char v12[32]; // [rsp+30h] [rbp-C8h] BYREF
+  char v13[32]; // [rsp+50h] [rbp-A8h] BYREF
+  char v14[96]; // [rsp+70h] [rbp-88h] BYREF
+  __int64 v15; // [rsp+D0h] [rbp-28h]
+
+  strcpy(v13, "12345678abcdefghijklmnopqrspxyz");
+  memset(v14, 0, sizeof(v14));
+  memset(v12, 0, 0x17ui64);
+  sub_1400054D0("%s", v12);
+  v11 = sub_140053EE0(0x408i64);
+  v3 = sub_14006AAE0(v13);
+  sub_140001120(v11, v13, v3);
+  v4 = sub_14006AAE0(v12);
+  sub_140001240(v11, v12, v4);
+  for ( i = 0; i < 0x16; ++i )
+  {
+    v9 = v12[i] ^ 0x22;
+    if ( v9 != byte_14013B000[i] )
+    {
+      v5 = sub_1400015A0(&off_14013B020, "error");
+      sub_1400032A0(v5, sub_140001F10);
+      return sub_140038220((unsigned __int64)&v8 ^ v15);
+    }
+  }
+  v6 = sub_1400015A0(&off_14013B020, "nice job");
+  sub_1400032A0(v6, sub_140001F10);
+  return sub_140038220((unsigned __int64)&v8 ^ v15);
+}
+```
+
+对结果进行了异或操作
+
+先异或，提取出rc4加密后的数据
+
+```assembly
+0xbc 0xc5 0x12 0x7d 0x85 0x23 0x84 0x71
+0x7b 0x39 0x28 0x02 0xd3 0x51 0xf3 0x2c
+0x89 0x2b 0xa6 0x2c 0xaf 0x09 0x22 0x22
+```
+
+rc4密钥为：12345678abcdefghijklmnopqrspxyz
+
+解密得到flag
+
+flag{nice_to_meet_you}nm
