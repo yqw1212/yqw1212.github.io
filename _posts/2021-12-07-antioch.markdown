@@ -1,0 +1,1158 @@
+---
+layout: post
+title:  Antioch(flareon 2021(8th)T3)
+date:   2021-12-07 00:08:01 +0300
+image:  2021-12-07-girl.jpg
+tags:   [ctf,reverse,FlareOn,docker]
+---
+
+观察文件夹，发现每个文件夹中都有一个json文件，文件中包含有一个用户名，提取
+
+> cat */json | jq '.author' | sort
+
+```assembly
+"A Famous Historian"
+"Black Knight"
+"Bridge Keeper"
+"Brother Maynard"
+"Chicken of Bristol"
+"Dennis the Peasant"
+"Dinky"
+"Dragon of Angnor"
+"Green Knight"
+"Inspector End Of Film"
+"King Arthur"
+"Lady of the Lake"
+"Legendary Black Beast of Argh"
+"Miss Islington"
+"Prince Herbert"
+"Rabbit of Caerbannog"
+"Roger the Shrubber"
+"Sir Bedevere"
+"Sir Bors"
+"Sir Ector"
+"Sir Gallahad"
+"Sir Gawain"
+"Sir Lancelot"
+"Sir Not-Appearing-in-this-Film"
+"Sir Robin"
+"Squire Concorde"
+"Squire Patsy"
+"Tim the Enchanter"
+"Trojan Rabbit"
+"Zoot"
+```
+
+ida打开可执行文件
+
+start
+
+```assembly
+__int64 start()
+{
+  void *v0; // rax
+  _BYTE v2[32]; // [rsp+0h] [rbp-B8h] BYREF
+  _WORD v3[76]; // [rsp+20h] [rbp-98h] BYREF
+
+  v0 = sub_4013E0();                            // AntiochOS, version 1.32 (build 1975)
+  output(1u, (__int64)v0, 0x25LL);
+  Type_help_for_help(v3);
+  output(1u, (__int64)v3, 0x13LL);
+  while ( 1 )
+  {
+    v3[0] = 0x203E;
+    output(1u, (__int64)v3, 2LL);
+    if ( !sub_401A10() )
+      break;
+    quit(v2);
+    if ( !(unsigned int)strlcmp((__int64)v3, (__int64)v2, 5LL) )
+      break;
+    help(v2);
+    if ( (unsigned int)strlcmp((__int64)v3, (__int64)v2, 5LL) )
+    {
+      consult(v2);
+      if ( (unsigned int)strlcmp((__int64)v3, (__int64)v2, 8LL) )
+      {
+        approach(v2);
+        if ( !(unsigned int)strlcmp((__int64)v3, (__int64)v2, 9LL) )
+          sub_401640();
+      }
+      else
+      {
+        sub_401460();
+      }
+    }
+    else
+    {
+      sub_401420();                             // Available commands:
+                                                // help: print this help
+                                                // ...AAARGH
+    }
+  }
+  return sub_401A90();
+}
+```
+
+有用的为consult和approach函数
+
+consult
+
+```assembly
+__int64 sub_401460()
+{
+  int v0; // er14
+  __int64 v1; // rax
+  int v2; // er13
+  unsigned __int8 *v3; // rax
+  __int64 *v4; // rdx
+  __int64 i; // rax
+  unsigned __int8 v6; // dl
+  __int64 v8; // [rsp+8h] [rbp-2030h] BYREF
+  __int64 v9[512]; // [rsp+10h] [rbp-2028h] BYREF
+  unsigned __int8 v10[4096]; // [rsp+1010h] [rbp-1028h] BYREF
+  char v11; // [rsp+2010h] [rbp-28h] BYREF
+
+  v0 = 'a';
+  v8 = 'tad..';                                 // .dat
+  memset(v10, 0, sizeof(v10));
+  v1 = (__int64)sub_4010E0();                   // Consult the Book of Armaments!
+  output(1u, v1, 0x1FLL);
+  sub_401A50();
+  do
+  {
+    while ( 1 )
+    {
+      LOBYTE(v8) = v0;
+      v2 = ((__int64 (__fastcall *)(__int64 *))sub_4019D0)(&v8);
+      if ( v2 >= 0 )
+        break;
+      if ( (_BYTE)++v0 == '{' )
+        goto LABEL_7;
+    }
+    sub_401A10();
+    ((void (__fastcall *)(_QWORD, __int64 *))sub_401A30)((unsigned int)v2, v9);
+    v3 = v10;
+    v4 = v9;
+    do
+    {
+      *v3++ ^= *(_BYTE *)v4;
+      v4 = (__int64 *)((char *)v4 + 1);
+    }
+    while ( v3 != (unsigned __int8 *)&v11 );
+    ++v0;
+  }
+  while ( (_BYTE)v0 != '{' );
+LABEL_7:
+  if ( !(_BYTE)xmmword_404100 )
+  {
+    xmmword_404100 = (__int128)_mm_load_si128((const __m128i *)&xmmword_402240);
+    xmmword_404110 = xmmword_404100;
+    xmmword_404120 = xmmword_404100;
+    xmmword_404130 = xmmword_404100;
+    xmmword_404140 = xmmword_404100;
+    xmmword_404150 = xmmword_404100;
+    xmmword_404160 = xmmword_404100;
+    xmmword_404170 = xmmword_404100;
+    xmmword_404180 = xmmword_404100;
+    xmmword_404190 = xmmword_404100;
+    xmmword_4041A0 = xmmword_404100;
+    xmmword_4041B0 = xmmword_404100;
+    xmmword_4041C0 = xmmword_404100;
+    xmmword_4041D0 = xmmword_404100;
+    xmmword_4041E0 = xmmword_404100;
+    xmmword_4041F0 = xmmword_404100;
+    sub_401000(&xmmword_404100);
+  }
+  for ( i = 0LL; i != 0x1000; ++i )
+  {
+    v6 = '\n';
+    if ( (i & 0xF) != 0xF )
+      v6 = *((_BYTE *)&xmmword_404100 + v10[i]);
+    v10[i] = v6;
+  }
+  return output(1u, (__int64)v10, 0x1000LL);
+}
+```
+
+用循环分别读入a~z.dat文件，进行异或操作，然后输出对应的字符，但是我们不知道要读入哪几个a~z.dat文件。
+
+看看approach函数
+
+```assembly
+__int64 sub_401640()
+{
+  __int64 v0; // rbx
+  void *v1; // rax
+  int nemaLen; // eax
+  int v3; // eax
+  unsigned int *v4; // rdx
+  unsigned int v5; // ecx
+  int v6; // eax
+  int v7; // er8
+  char *v8; // rax
+  char v9; // al
+  void *v10; // rax
+  char v12; // [rsp+Fh] [rbp-B9h] BYREF
+  char v13[32]; // [rsp+10h] [rbp-B8h] BYREF
+  char name[152]; // [rsp+30h] [rbp-98h] BYREF
+
+  v0 = 0LL;
+  v12 = 0xA;
+  v1 = sub_401260();                            // Approach the Gorge of Eternal Peril!
+  output(1u, (__int64)v1, 0x25LL);
+  sub_401A50();
+  What_is_your_name(v13);
+  output(1u, (__int64)v13, 0x13LL);
+  nemaLen = sub_401A10();
+  v3 = sub_401B50(name, nemaLen);
+  v4 = (unsigned int *)&unk_40200C;
+  v5 = 0xB59395A9;
+  while ( v5 != v3 )
+  {
+    v0 = (unsigned int)(v0 + 1);
+    if ( (_DWORD)v0 == 0x1E )
+      return output(1u, (__int64)"...AAARGH\n\n", 0xBLL);
+    v5 = *v4;
+    v4 += 3;
+  }
+  What_is_your_quest(v13);
+  output(1u, (__int64)v13, 0x14LL);
+  if ( sub_401A10() > 1 )
+  {
+    What_is_your_favorite_color(v13);
+    output(1u, (__int64)v13, 0x1DLL);
+    v6 = sub_401A10();
+    v7 = sub_401B50(name, v6);
+    v8 = (char *)&dword_402000 + 0xC * v0;
+    if ( *((_DWORD *)v8 + 1) == v7 )
+    {
+      v9 = v8[8];
+      if ( v9 > 0 )
+      {
+        sub_401AF0(v9, name);
+        v10 = sub_4012A0();                     // Right. Off you go. #
+        output(1u, (__int64)v10, 0x14LL);
+        output(1u, (__int64)name, strlen(name));
+        return output(1u, (__int64)&v12, 1LL);
+      }
+    }
+  }
+  return output(1u, (__int64)"...AAARGH\n\n", 0xBLL);
+}
+```
+
+首先问what's your name
+
+将我们输入的名字传入sub_401B50
+
+```assembly
+__int64 __fastcall sub_401B50(char *name, int a2)
+{
+  char *end; // rsi
+  unsigned int v3; // eax
+  char v4; // dl
+
+  if ( a2 <= 0 )
+    return 0LL;
+  end = &name[a2 - 1 + 1];
+  v3 = 0xFFFFFFFF;
+  do
+  {
+    v4 = *name++;
+    v3 = dword_402260[(unsigned __int8)(v3 ^ v4)] ^ (v3 >> 8);
+  }
+  while ( end != name );
+  return ~v3;
+}
+```
+
+查看dword_402260的数据发现为CRC-32的表
+
+```assembly
+.rodata:0000000000402260 dword_402260    dd 0, 77073096h, 0EE0E612Ch, 990951BAh, 76DC419h, 706AF48Fh
+.rodata:0000000000402260                                         ; DATA XREF: sub_401B50+B↑o
+.rodata:0000000000402260                 dd 0E963A535h, 9E6495A3h, 0EDB8832h, 79DCB8A4h, 0E0D5E91Eh
+.rodata:0000000000402260                 dd 97D2D988h, 9B64C2Bh, 7EB17CBDh, 0E7B82D07h, 90BF1D91h
+.rodata:0000000000402260                 dd 1DB71064h, 6AB020F2h, 0F3B97148h, 84BE41DEh, 1ADAD47Dh
+.rodata:0000000000402260                 dd 6DDDE4EBh, 0F4D4B551h, 83D385C7h, 136C9856h, 646BA8C0h
+.rodata:0000000000402260                 dd 0FD62F97Ah, 8A65C9ECh, 14015C4Fh, 63066CD9h, 0FA0F3D63h
+.rodata:0000000000402260                 dd 8D080DF5h, 3B6E20C8h, 4C69105Eh, 0D56041E4h, 0A2677172h
+.rodata:0000000000402260                 dd 3C03E4D1h, 4B04D447h, 0D20D85FDh, 0A50AB56Bh, 35B5A8FAh
+.rodata:0000000000402260                 dd 42B2986Ch, 0DBBBC9D6h, 0ACBCF940h, 32D86CE3h, 45DF5C75h
+.rodata:0000000000402260                 dd 0DCD60DCFh, 0ABD13D59h, 26D930ACh, 51DE003Ah, 0C8D75180h
+.rodata:0000000000402260                 dd 0BFD06116h, 21B4F4B5h, 56B3C423h, 0CFBA9599h, 0B8BDA50Fh
+.rodata:0000000000402260                 dd 2802B89Eh, 5F058808h, 0C60CD9B2h, 0B10BE924h, 2F6F7C87h
+.rodata:0000000000402260                 dd 58684C11h, 0C1611DABh, 0B6662D3Dh, 76DC4190h, 1DB7106h
+.rodata:0000000000402260                 dd 98D220BCh, 0EFD5102Ah, 71B18589h, 6B6B51Fh, 9FBFE4A5h
+.rodata:0000000000402260                 dd 0E8B8D433h, 7807C9A2h, 0F00F934h, 9609A88Eh, 0E10E9818h
+.rodata:0000000000402260                 dd 7F6A0DBBh, 86D3D2Dh, 91646C97h, 0E6635C01h, 6B6B51F4h
+.rodata:0000000000402260                 dd 1C6C6162h, 856530D8h, 0F262004Eh, 6C0695EDh, 1B01A57Bh
+.rodata:0000000000402260                 dd 8208F4C1h, 0F50FC457h, 65B0D9C6h, 12B7E950h, 8BBEB8EAh
+.rodata:0000000000402260                 dd 0FCB9887Ch, 62DD1DDFh, 15DA2D49h, 8CD37CF3h, 0FBD44C65h
+.rodata:0000000000402260                 dd 4DB26158h, 3AB551CEh, 0A3BC0074h, 0D4BB30E2h, 4ADFA541h
+.rodata:0000000000402260                 dd 3DD895D7h, 0A4D1C46Dh, 0D3D6F4FBh, 4369E96Ah, 346ED9FCh
+.rodata:0000000000402260                 dd 0AD678846h, 0DA60B8D0h, 44042D73h, 33031DE5h, 0AA0A4C5Fh
+.rodata:0000000000402260                 dd 0DD0D7CC9h, 5005713Ch, 270241AAh, 0BE0B1010h, 0C90C2086h
+.rodata:0000000000402260                 dd 5768B525h, 206F85B3h, 0B966D409h, 0CE61E49Fh, 5EDEF90Eh
+.rodata:0000000000402260                 dd 29D9C998h, 0B0D09822h, 0C7D7A8B4h, 59B33D17h, 2EB40D81h
+.rodata:0000000000402260                 dd 0B7BD5C3Bh, 0C0BA6CADh, 0EDB88320h, 9ABFB3B6h, 3B6E20Ch
+.rodata:0000000000402260                 dd 74B1D29Ah, 0EAD54739h, 9DD277AFh, 4DB2615h, 73DC1683h
+.rodata:0000000000402260                 dd 0E3630B12h, 94643B84h, 0D6D6A3Eh, 7A6A5AA8h, 0E40ECF0Bh
+.rodata:0000000000402260                 dd 9309FF9Dh, 0A00AE27h, 7D079EB1h, 0F00F9344h, 8708A3D2h
+.rodata:0000000000402260                 dd 1E01F268h, 6906C2FEh, 0F762575Dh, 806567CBh, 196C3671h
+.rodata:0000000000402260                 dd 6E6B06E7h, 0FED41B76h, 89D32BE0h, 10DA7A5Ah, 67DD4ACCh
+.rodata:0000000000402260                 dd 0F9B9DF6Fh, 8EBEEFF9h, 17B7BE43h, 60B08ED5h, 0D6D6A3E8h
+.rodata:0000000000402260                 dd 0A1D1937Eh, 38D8C2C4h, 4FDFF252h, 0D1BB67F1h, 0A6BC5767h
+.rodata:0000000000402260                 dd 3FB506DDh, 48B2364Bh, 0D80D2BDAh, 0AF0A1B4Ch, 36034AF6h
+.rodata:0000000000402260                 dd 41047A60h, 0DF60EFC3h, 0A867DF55h, 316E8EEFh, 4669BE79h
+.rodata:0000000000402260                 dd 0CB61B38Ch, 0BC66831Ah, 256FD2A0h, 5268E236h, 0CC0C7795h
+.rodata:0000000000402260                 dd 0BB0B4703h, 220216B9h, 5505262Fh, 0C5BA3BBEh, 0B2BD0B28h
+.rodata:0000000000402260                 dd 2BB45A92h, 5CB36A04h, 0C2D7FFA7h, 0B5D0CF31h, 2CD99E8Bh
+.rodata:0000000000402260                 dd 5BDEAE1Dh, 9B64C2B0h, 0EC63F226h, 756AA39Ch, 26D930Ah
+.rodata:0000000000402260                 dd 9C0906A9h, 0EB0E363Fh, 72076785h, 5005713h, 95BF4A82h
+.rodata:0000000000402260                 dd 0E2B87A14h, 7BB12BAEh, 0CB61B38h, 92D28E9Bh, 0E5D5BE0Dh
+.rodata:0000000000402260                 dd 7CDCEFB7h, 0BDBDF21h, 86D3D2D4h, 0F1D4E242h, 68DDB3F8h
+.rodata:0000000000402260                 dd 1FDA836Eh, 81BE16CDh, 0F6B9265Bh, 6FB077E1h, 18B74777h
+.rodata:0000000000402260                 dd 88085AE6h, 0FF0F6A70h, 66063BCAh, 11010B5Ch, 8F659EFFh
+.rodata:0000000000402260                 dd 0F862AE69h, 616BFFD3h, 166CCF45h, 0A00AE278h, 0D70DD2EEh
+.rodata:0000000000402260                 dd 4E048354h, 3903B3C2h, 0A7672661h, 0D06016F7h, 4969474Dh
+.rodata:0000000000402260                 dd 3E6E77DBh, 0AED16A4Ah, 0D9D65ADCh, 40DF0B66h, 37D83BF0h
+.rodata:0000000000402260                 dd 0A9BCAE53h, 0DEBB9EC5h, 47B2CF7Fh, 30B5FFE9h, 0BDBDF21Ch
+.rodata:0000000000402260                 dd 0CABAC28Ah, 53B39330h, 24B4A3A6h, 0BAD03605h, 0CDD70693h
+.rodata:0000000000402260                 dd 54DE5729h, 23D967BFh, 0B3667A2Eh, 0C4614AB8h, 5D681B02h
+.rodata:0000000000402260                 dd 2A6F2B94h, 0B40BBE37h, 0C30C8EA1h, 5A05DF1Bh, 2D02EF8Dh
+```
+
+然后将CRC校验后得到的值与硬编码的数据进行比较
+
+接着问了What_is_your_quest，What_is_your_favorite_color
+
+联想到要求输入的名字应该是之前json文件中的名字中的其中一个，但是color我们依然不知道，因为json文件中没有关于这个的内容，可以直接绕过。三个问题都通过后发现会输出一个硬编码的值，这个值应该就是这个用户对应的顺序。
+
+```assembly
+.rodata:0000000000402000 dword_402000    dd 0B59395A9h           ; DATA XREF: LOAD:00000000004000C0↑o
+.rodata:0000000000402000                                         ; sub_401640+110↑o
+.rodata:0000000000402004                 dd 1BB5AB29h
+.rodata:0000000000402008                 dd 0Eh
+.rodata:000000000040200C unk_40200C      db  4Bh ; K             ; DATA XREF: sub_401640+75↑o
+.rodata:000000000040200D                 db 0D0h
+.rodata:000000000040200E                 db 0FDh
+.rodata:000000000040200F                 db  5Eh ; ^
+.rodata:0000000000402010                 db 0C8h
+.rodata:0000000000402011                 db  68h ; h
+.rodata:0000000000402012                 db  84h
+.rodata:0000000000402013                 db  3Fh ; ?
+.rodata:0000000000402014                 db  12h
+.rodata:0000000000402015                 db    0
+.rodata:0000000000402016                 db    0
+.rodata:0000000000402017                 db    0
+.rodata:0000000000402018                 db 0D0h
+.rodata:0000000000402019                 db  85h
+.rodata:000000000040201A                 db 0EDh
+.rodata:000000000040201B                 db 0ECh
+.rodata:000000000040201C                 db  48h ; H
+.rodata:000000000040201D                 db  3Dh ; =
+.rodata:000000000040201E                 db 0D2h
+.rodata:000000000040201F                 db  82h
+.rodata:0000000000402020                 db    2
+.rodata:0000000000402021                 db    0
+.rodata:0000000000402022                 db    0
+.rodata:0000000000402023                 db    0
+.rodata:0000000000402024                 db  14h
+.rodata:0000000000402025                 db  92h
+.rodata:0000000000402026                 db  54h ; T
+.rodata:0000000000402027                 db 0D8h
+.rodata:0000000000402028                 db 0E5h
+.rodata:0000000000402029                 db  2Eh ; .
+.rodata:000000000040202A                 db  47h ; G
+.rodata:000000000040202B                 db    0
+.rodata:000000000040202C                 db  1Dh
+.rodata:000000000040202D                 db    0
+.rodata:000000000040202E                 db    0
+.rodata:000000000040202F                 db    0
+.rodata:0000000000402030                 db  4Dh ; M
+.rodata:0000000000402031                 db    2
+.rodata:0000000000402032                 db  2Fh ; /
+.rodata:0000000000402033                 db  2Ch ; ,
+.rodata:0000000000402034                 db 0AAh
+.rodata:0000000000402035                 db  60h ; `
+.rodata:0000000000402036                 db 0A0h
+.rodata:0000000000402037                 db 0C9h
+.rodata:0000000000402038                 db  0Ch
+.rodata:0000000000402039                 db    0
+.rodata:000000000040203A                 db    0
+.rodata:000000000040203B                 db    0
+.rodata:000000000040203C                 db  32h ; 2
+.rodata:000000000040203D                 db  52h ; R
+.rodata:000000000040203E                 db  8Ah
+.rodata:000000000040203F                 db    1
+.rodata:0000000000402040                 db  35h ; 5
+.rodata:0000000000402041                 db 0D2h
+.rodata:0000000000402042                 db  24h ; $
+.rodata:0000000000402043                 db    0
+.rodata:0000000000402044                 db  0Dh
+.rodata:0000000000402045                 db    0
+.rodata:0000000000402046                 db    0
+.rodata:0000000000402047                 db    0
+.rodata:0000000000402048                 db  33h ; 3
+.rodata:0000000000402049                 db  8Ah
+.rodata:000000000040204A                 db 0B8h
+.rodata:000000000040204B                 db  72h ; r
+.rodata:000000000040204C                 db  13h
+.rodata:000000000040204D                 db  66h ; f
+.rodata:000000000040204E                 db  57h ; W
+.rodata:000000000040204F                 db  81h
+.rodata:0000000000402050                 db  14h
+.rodata:0000000000402051                 db    0
+.rodata:0000000000402052                 db    0
+.rodata:0000000000402053                 db    0
+.rodata:0000000000402054                 db 0E2h
+.rodata:0000000000402055                 db    4
+.rodata:0000000000402056                 db  44h ; D
+.rodata:0000000000402057                 db  67h ; g
+.rodata:0000000000402058                 db  29h ; )
+.rodata:0000000000402059                 db 0E1h
+.rodata:000000000040205A                 db  69h ; i
+.rodata:000000000040205B                 db  51h ; Q
+.rodata:000000000040205C                 db  0Bh
+.rodata:000000000040205D                 db    0
+.rodata:000000000040205E                 db    0
+.rodata:000000000040205F                 db    0
+.rodata:0000000000402060                 db 0B5h
+.rodata:0000000000402061                 db  73h ; s
+.rodata:0000000000402062                 db  7Ah ; z
+.rodata:0000000000402063                 db  30h ; 0
+.rodata:0000000000402064                 db  3Eh ; >
+.rodata:0000000000402065                 db 0E1h
+.rodata:0000000000402066                 db  60h ; `
+.rodata:0000000000402067                 db 0E5h
+.rodata:0000000000402068                 db  1Ch
+.rodata:0000000000402069                 db    0
+.rodata:000000000040206A                 db    0
+.rodata:000000000040206B                 db    0
+.rodata:000000000040206C                 db    4
+.rodata:000000000040206D                 db  87h
+.rodata:000000000040206E                 db  46h ; F
+.rodata:000000000040206F                 db  13h
+.rodata:0000000000402070                 db 0A9h
+.rodata:0000000000402071                 db 0E4h
+.rodata:0000000000402072                 db  58h ; X
+.rodata:0000000000402073                 db  23h ; #
+.rodata:0000000000402074                 db  15h
+.rodata:0000000000402075                 db    0
+.rodata:0000000000402076                 db    0
+.rodata:0000000000402077                 db    0
+.rodata:0000000000402078                 db  1Bh
+.rodata:0000000000402079                 db  47h ; G
+.rodata:000000000040207A                 db 0F6h
+.rodata:000000000040207B                 db  94h
+.rodata:000000000040207C                 db  53h ; S
+.rodata:000000000040207D                 db  1Ah
+.rodata:000000000040207E                 db  34h ; 4
+.rodata:000000000040207F                 db 0D6h
+.rodata:0000000000402080                 db    5
+.rodata:0000000000402081                 db    0
+.rodata:0000000000402082                 db    0
+.rodata:0000000000402083                 db    0
+.rodata:0000000000402084                 db  75h ; u
+.rodata:0000000000402085                 db 0CFh
+.rodata:0000000000402086                 db 0A1h
+.rodata:0000000000402087                 db 0EDh
+.rodata:0000000000402088                 db 0E5h
+.rodata:0000000000402089                 db  91h
+.rodata:000000000040208A                 db 0FAh
+.rodata:000000000040208B                 db 0BAh
+.rodata:000000000040208C                 db  18h
+.rodata:000000000040208D                 db    0
+.rodata:000000000040208E                 db    0
+.rodata:000000000040208F                 db    0
+.rodata:0000000000402090                 db  4Dh ; M
+.rodata:0000000000402091                 db  12h
+.rodata:0000000000402092                 db 0ACh
+.rodata:0000000000402093                 db 0BBh
+.rodata:0000000000402094                 db  1Dh
+.rodata:0000000000402095                 db  64h ; d
+.rodata:0000000000402096                 db  97h
+.rodata:0000000000402097                 db 0A6h
+.rodata:0000000000402098                 db  19h
+.rodata:0000000000402099                 db    0
+.rodata:000000000040209A                 db    0
+.rodata:000000000040209B                 db    0
+.rodata:000000000040209C                 db 0C3h
+.rodata:000000000040209D                 db 0E4h
+.rodata:000000000040209E                 db    7
+.rodata:000000000040209F                 db 0F7h
+.rodata:00000000004020A0                 db  43h ; C
+.rodata:00000000004020A1                 db  56h ; V
+.rodata:00000000004020A2                 db  18h
+.rodata:00000000004020A3                 db 0EFh
+.rodata:00000000004020A4                 db    7
+.rodata:00000000004020A5                 db    0
+.rodata:00000000004020A6                 db    0
+.rodata:00000000004020A7                 db    0
+.rodata:00000000004020A8                 db  6Fh ; o
+.rodata:00000000004020A9                 db  59h ; Y
+.rodata:00000000004020AA                 db    2
+.rodata:00000000004020AB                 db 0D7h
+.rodata:00000000004020AC                 db  15h
+.rodata:00000000004020AD                 db  89h
+.rodata:00000000004020AE                 db 0C2h
+.rodata:00000000004020AF                 db  79h ; y
+.rodata:00000000004020B0                 db  0Ah
+.rodata:00000000004020B1                 db    0
+.rodata:00000000004020B2                 db    0
+.rodata:00000000004020B3                 db    0
+.rodata:00000000004020B4                 db  48h ; H
+.rodata:00000000004020B5                 db    8
+.rodata:00000000004020B6                 db 0A1h
+.rodata:00000000004020B7                 db  86h
+.rodata:00000000004020B8                 db 0DCh
+.rodata:00000000004020B9                 db  8Fh
+.rodata:00000000004020BA                 db  10h
+.rodata:00000000004020BB                 db  59h ; Y
+.rodata:00000000004020BC                 db    1
+.rodata:00000000004020BD                 db    0
+.rodata:00000000004020BE                 db    0
+.rodata:00000000004020BF                 db    0
+.rodata:00000000004020C0                 db  1Ch
+.rodata:00000000004020C1                 db  53h ; S
+.rodata:00000000004020C2                 db  40h ; @
+.rodata:00000000004020C3                 db 0D6h
+.rodata:00000000004020C4                 db 0E8h
+.rodata:00000000004020C5                 db 0E1h
+.rodata:00000000004020C6                 db  3Dh ; =
+.rodata:00000000004020C7                 db 0EFh
+.rodata:00000000004020C8                 db  13h
+.rodata:00000000004020C9                 db    0
+.rodata:00000000004020CA                 db    0
+.rodata:00000000004020CB                 db    0
+.rodata:00000000004020CC                 db 0B3h
+.rodata:00000000004020CD                 db  5Dh ; ]
+.rodata:00000000004020CE                 db  66h ; f
+.rodata:00000000004020CF                 db  7Bh ; {
+.rodata:00000000004020D0                 db 0B0h
+.rodata:00000000004020D1                 db    3
+.rodata:00000000004020D2                 db 0A9h
+.rodata:00000000004020D3                 db 0A3h
+.rodata:00000000004020D4                 db    3
+.rodata:00000000004020D5                 db    0
+.rodata:00000000004020D6                 db    0
+.rodata:00000000004020D7                 db    0
+.rodata:00000000004020D8                 db 0CCh
+.rodata:00000000004020D9                 db  21h ; !
+.rodata:00000000004020DA                 db  13h
+.rodata:00000000004020DB                 db 0ABh
+.rodata:00000000004020DC                 db 0D7h
+.rodata:00000000004020DD                 db 0EAh
+.rodata:00000000004020DE                 db 0EDh
+.rodata:00000000004020DF                 db 0EEh
+.rodata:00000000004020E0                 db    4
+.rodata:00000000004020E1                 db    0
+.rodata:00000000004020E2                 db    0
+.rodata:00000000004020E3                 db    0
+.rodata:00000000004020E4                 db 0D8h
+.rodata:00000000004020E5                 db  66h ; f
+.rodata:00000000004020E6                 db  60h ; `
+.rodata:00000000004020E7                 db  4Fh ; O
+.rodata:00000000004020E8                 db    7
+.rodata:00000000004020E9                 db  3Dh ; =
+.rodata:00000000004020EA                 db  8Ah
+.rodata:00000000004020EB                 db  9Ch
+.rodata:00000000004020EC                 db  11h
+.rodata:00000000004020ED                 db    0
+.rodata:00000000004020EE                 db    0
+.rodata:00000000004020EF                 db    0
+.rodata:00000000004020F0                 db 0CAh
+.rodata:00000000004020F1                 db  47h ; G
+.rodata:00000000004020F2                 db  60h ; `
+.rodata:00000000004020F3                 db  25h ; %
+.rodata:00000000004020F4                 db  9Eh
+.rodata:00000000004020F5                 db 0BEh
+.rodata:00000000004020F6                 db  85h
+.rodata:00000000004020F7                 db  40h ; @
+.rodata:00000000004020F8                 db    9
+.rodata:00000000004020F9                 db    0
+.rodata:00000000004020FA                 db    0
+.rodata:00000000004020FB                 db    0
+.rodata:00000000004020FC                 db 0D3h
+.rodata:00000000004020FD                 db  1Eh
+.rodata:00000000004020FE                 db 0C9h
+.rodata:00000000004020FF                 db  3Fh ; ?
+.rodata:0000000000402100                 db 0C9h
+.rodata:0000000000402101                 db  49h ; I
+.rodata:0000000000402102                 db  95h
+.rodata:0000000000402103                 db  37h ; 7
+.rodata:0000000000402104                 db    8
+.rodata:0000000000402105                 db    0
+.rodata:0000000000402106                 db    0
+.rodata:0000000000402107                 db    0
+.rodata:0000000000402108                 db 0E4h
+.rodata:0000000000402109                 db 0AFh
+.rodata:000000000040210A                 db  24h ; $
+.rodata:000000000040210B                 db 0A4h
+.rodata:000000000040210C                 db  47h ; G
+.rodata:000000000040210D                 db  13h
+.rodata:000000000040210E                 db  87h
+.rodata:000000000040210F                 db 0EFh
+.rodata:0000000000402110                 db  1Bh
+.rodata:0000000000402111                 db    0
+.rodata:0000000000402112                 db    0
+.rodata:0000000000402113                 db    0
+.rodata:0000000000402114                 db 0DAh
+.rodata:0000000000402115                 db    1
+.rodata:0000000000402116                 db    9
+.rodata:0000000000402117                 db  55h ; U
+.rodata:0000000000402118                 db  6Bh ; k
+.rodata:0000000000402119                 db 0ECh
+.rodata:000000000040211A                 db 0FCh
+.rodata:000000000040211B                 db    1
+.rodata:000000000040211C                 db  10h
+.rodata:000000000040211D                 db    0
+.rodata:000000000040211E                 db    0
+.rodata:000000000040211F                 db    0
+.rodata:0000000000402120                 db  2Dh ; -
+.rodata:0000000000402121                 db  9Eh
+.rodata:0000000000402122                 db 0A2h
+.rodata:0000000000402123                 db  10h
+.rodata:0000000000402124                 db 0AAh
+.rodata:0000000000402125                 db  56h ; V
+.rodata:0000000000402126                 db  60h ; `
+.rodata:0000000000402127                 db 0E7h
+.rodata:0000000000402128                 db  16h
+.rodata:0000000000402129                 db    0
+.rodata:000000000040212A                 db    0
+.rodata:000000000040212B                 db    0
+.rodata:000000000040212C                 db  5Fh ; _
+.rodata:000000000040212D                 db 0C8h
+.rodata:000000000040212E                 db 0CBh
+.rodata:000000000040212F                 db  56h ; V
+.rodata:0000000000402130                 db  68h ; h
+.rodata:0000000000402131                 db  1Ah
+.rodata:0000000000402132                 db  6Fh ; o
+.rodata:0000000000402133                 db  35h ; 5
+.rodata:0000000000402134                 db  0Fh
+.rodata:0000000000402135                 db    0
+.rodata:0000000000402136                 db    0
+.rodata:0000000000402137                 db    0
+.rodata:0000000000402138                 db 0A6h
+.rodata:0000000000402139                 db 0E3h
+.rodata:000000000040213A                 db 0DFh
+.rodata:000000000040213B                 db  80h
+.rodata:000000000040213C                 db  36h ; 6
+.rodata:000000000040213D                 db 0B5h
+.rodata:000000000040213E                 db  0Ah
+.rodata:000000000040213F                 db  9Dh
+.rodata:0000000000402140                 db  1Eh
+.rodata:0000000000402141                 db    0
+.rodata:0000000000402142                 db    0
+.rodata:0000000000402143                 db    0
+.rodata:0000000000402144                 db 0E1h
+.rodata:0000000000402145                 db 0D4h
+.rodata:0000000000402146                 db  57h ; W
+.rodata:0000000000402147                 db 0E6h
+.rodata:0000000000402148                 db  30h ; 0
+.rodata:0000000000402149                 db 0FDh
+.rodata:000000000040214A                 db 0E9h
+.rodata:000000000040214B                 db 0B4h
+.rodata:000000000040214C                 db  17h
+.rodata:000000000040214D                 db    0
+.rodata:000000000040214E                 db    0
+.rodata:000000000040214F                 db    0
+.rodata:0000000000402150                 db 0D4h
+.rodata:0000000000402151                 db 0E1h
+.rodata:0000000000402152                 db 0A1h
+.rodata:0000000000402153                 db  2Bh ; +
+.rodata:0000000000402154                 db  18h
+.rodata:0000000000402155                 db 0D9h
+.rodata:0000000000402156                 db  66h ; f
+.rodata:0000000000402157                 db 0BEh
+.rodata:0000000000402158                 db  1Ah
+.rodata:0000000000402159                 db    0
+.rodata:000000000040215A                 db    0
+.rodata:000000000040215B                 db    0
+.rodata:000000000040215C                 db  9Bh
+.rodata:000000000040215D                 db    8
+.rodata:000000000040215E                 db  33h ; 3
+.rodata:000000000040215F                 db  7Dh ; }
+.rodata:0000000000402160                 db  85h
+.rodata:0000000000402161                 db 0F5h
+.rodata:0000000000402162                 db 0C1h
+.rodata:0000000000402163                 db  67h ; g
+.rodata:0000000000402164                 db    6
+.rodata:0000000000402165                 db    0
+.rodata:0000000000402166                 db    0
+.rodata:0000000000402167                 db    0
+```
+
+把这些数据都当成dword来看，三个为一组，写脚本得到每个人的顺序
+
+```assembly
+import crcmod
+
+data_byte = [0xA9, 0x95, 0x93, 0xB5, 0x29, 0xAB, 0xB5, 0x1B, 0x0E, 0x00, 
+             0x00, 0x00, 0x4B, 0xD0, 0xFD, 0x5E, 0xC8, 0x68, 0x84, 0x3F, 
+             0x12, 0x00, 0x00, 0x00, 0xD0, 0x85, 0xED, 0xEC, 0x48, 0x3D, 
+             0xD2, 0x82, 0x02, 0x00, 0x00, 0x00, 0x14, 0x92, 0x54, 0xD8, 
+             0xE5, 0x2E, 0x47, 0x00, 0x1D, 0x00, 0x00, 0x00, 0x4D, 0x02, 
+             0x2F, 0x2C, 0xAA, 0x60, 0xA0, 0xC9, 0x0C, 0x00, 0x00, 0x00, 
+             0x32, 0x52, 0x8A, 0x01, 0x35, 0xD2, 0x24, 0x00, 0x0D, 0x00, 
+             0x00, 0x00, 0x33, 0x8A, 0xB8, 0x72, 0x13, 0x66, 0x57, 0x81, 
+             0x14, 0x00, 0x00, 0x00, 0xE2, 0x04, 0x44, 0x67, 0x29, 0xE1, 
+             0x69, 0x51, 0x0B, 0x00, 0x00, 0x00, 0xB5, 0x73, 0x7A, 0x30, 
+             0x3E, 0xE1, 0x60, 0xE5, 0x1C, 0x00, 0x00, 0x00, 0x04, 0x87, 
+             0x46, 0x13, 0xA9, 0xE4, 0x58, 0x23, 0x15, 0x00, 0x00, 0x00, 
+             0x1B, 0x47, 0xF6, 0x94, 0x53, 0x1A, 0x34, 0xD6, 0x05, 0x00, 
+             0x00, 0x00, 0x75, 0xCF, 0xA1, 0xED, 0xE5, 0x91, 0xFA, 0xBA, 
+             0x18, 0x00, 0x00, 0x00, 0x4D, 0x12, 0xAC, 0xBB, 0x1D, 0x64, 
+             0x97, 0xA6, 0x19, 0x00, 0x00, 0x00, 0xC3, 0xE4, 0x07, 0xF7, 
+             0x43, 0x56, 0x18, 0xEF, 0x07, 0x00, 0x00, 0x00, 0x6F, 0x59, 
+             0x02, 0xD7, 0x15, 0x89, 0xC2, 0x79, 0x0A, 0x00, 0x00, 0x00, 
+             0x48, 0x08, 0xA1, 0x86, 0xDC, 0x8F, 0x10, 0x59, 0x01, 0x00, 
+             0x00, 0x00, 0x1C, 0x53, 0x40, 0xD6, 0xE8, 0xE1, 0x3D, 0xEF, 
+             0x13, 0x00, 0x00, 0x00, 0xB3, 0x5D, 0x66, 0x7B, 0xB0, 0x03, 
+             0xA9, 0xA3, 0x03, 0x00, 0x00, 0x00, 0xCC, 0x21, 0x13, 0xAB, 
+             0xD7, 0xEA, 0xED, 0xEE, 0x04, 0x00, 0x00, 0x00, 0xD8, 0x66, 
+             0x60, 0x4F, 0x07, 0x3D, 0x8A, 0x9C, 0x11, 0x00, 0x00, 0x00, 
+             0xCA, 0x47, 0x60, 0x25, 0x9E, 0xBE, 0x85, 0x40, 0x09, 0x00, 
+             0x00, 0x00, 0xD3, 0x1E, 0xC9, 0x3F, 0xC9, 0x49, 0x95, 0x37, 
+             0x08, 0x00, 0x00, 0x00, 0xE4, 0xAF, 0x24, 0xA4, 0x47, 0x13, 
+             0x87, 0xEF, 0x1B, 0x00, 0x00, 0x00, 0xDA, 0x01, 0x09, 0x55, 
+             0x6B, 0xEC, 0xFC, 0x01, 0x10, 0x00, 0x00, 0x00, 0x2D, 0x9E, 
+             0xA2, 0x10, 0xAA, 0x56, 0x60, 0xE7, 0x16, 0x00, 0x00, 0x00, 
+             0x5F, 0xC8, 0xCB, 0x56, 0x68, 0x1A, 0x6F, 0x35, 0x0F, 0x00, 
+             0x00, 0x00, 0xA6, 0xE3, 0xDF, 0x80, 0x36, 0xB5, 0x0A, 0x9D, 
+             0x1E, 0x00, 0x00, 0x00, 0xE1, 0xD4, 0x57, 0xE6, 0x30, 0xFD, 
+             0xE9, 0xB4, 0x17, 0x00, 0x00, 0x00, 0xD4, 0xE1, 0xA1, 0x2B, 
+             0x18, 0xD9, 0x66, 0xBE, 0x1A, 0x00, 0x00, 0x00, 0x9B, 0x08, 
+             0x33, 0x7D, 0x85, 0xF5, 0xC1, 0x67, 0x06, 0x00, 0x00, 0x00]
+
+data_dword = []
+
+for i in range(0, len(data_byte), 4):
+    data_dword.append(data_byte[i+3]*256*256*256+data_byte[i+2]*256*256+data_byte[i+1]*256+data_byte[i])
+
+# print(data_dword)
+
+names = ["A Famous Historian\n",
+        "Black Knight\n",
+        "Bridge Keeper\n",
+        "Brother Maynard\n",
+        "Chicken of Bristol\n",
+        "Dennis the Peasant\n",
+        "Dinky\n",
+        "Dragon of Angnor\n",
+        "Green Knight\n",
+        "Inspector End Of Film\n",
+        "King Arthur\n",
+        "Lady of the Lake\n",
+        "Legendary Black Beast of Argh\n",
+        "Miss Islington\n",
+        "Prince Herbert\n",
+        "Rabbit of Caerbannog\n",
+        "Roger the Shrubber\n",
+        "Sir Bedevere\n",
+        "Sir Bors\n",
+        "Sir Ector\n",
+        "Sir Gallahad\n",
+        "Sir Gawain\n",
+        "Sir Lancelot\n",
+        "Sir Not-Appearing-in-this-Film\n",
+        "Sir Robin\n",
+        "Squire Concorde\n",
+        "Squire Patsy\n",
+        "Tim the Enchanter\n",
+        "Trojan Rabbit\n",
+        "Zoot\n"]
+
+crc32_func = crcmod.mkCrcFun(0x104C11DB7, initCrc=0x0, xorOut=0xFFFFFFFF)
+for i in range(len(names)):
+    # print(names[i])
+    # print(crc32_func(names[i].encode()))
+    for j in range(0, len(data_dword), 3):
+        if crc32_func(names[i].encode()) == data_dword[j]:
+            print(names[i][:-1], ":", data_dword[j+2])
+            break
+```
+
+输出
+
+```assembly
+A Famous Historian : 17
+Black Knight : 29
+Bridge Keeper : 14
+Brother Maynard : 5
+Chicken of Bristol : 12
+Dennis the Peasant : 27
+Dinky : 28
+Dragon of Angnor : 4
+Green Knight : 10
+Inspector End Of Film : 24        
+King Arthur : 23
+Lady of the Lake : 19
+Legendary Black Beast of Argh : 16
+Miss Islington : 1
+Prince Herbert : 22
+Rabbit of Caerbannog : 20
+Roger the Shrubber : 13
+Sir Bedevere : 6
+Sir Bors : 2
+Sir Ector : 25
+Sir Gallahad : 30
+Sir Gawain : 15
+Sir Lancelot : 18
+Sir Not-Appearing-in-this-Film : 21
+Sir Robin : 7
+Squire Concorde : 9
+Squire Patsy : 26
+Tim the Enchanter : 3
+Trojan Rabbit : 11
+Zoot : 8
+```
+
+排序
+
+```assembly
+1 Miss Islington
+2 Sir Bors
+3 Tim the Enchanter
+4 Dragon of Angnor
+5 Brother Maynard
+6 Sir Bedevere
+7 Sir Robin
+8 Zoot
+9 Squire Concorde
+10 Green Knight
+11 Trojan Rabbit
+12 Chicken of Bristol
+13 Roger the Shrubber
+14 Bridge Keeper
+15 Sir Gawain
+16 Legendary Black Beast of Argh
+17 A Famous Historian
+18 Sir Lancelot
+19 Lady of the Lake
+20 Rabbit of Caerbannog
+21 Sir Not-Appearing-in-this-Film
+22 Prince Herbert
+23 King Arthur
+24 Inspector End Of Film
+25 Sir Ector
+26 Squire Patsy
+27 Dennis the Peasant
+28 Dinky
+29 Black Knight
+30 Sir Gallahad
+```
+
+猜测应该要按照顺序将用户对应的dat文件放在目录下，名字相同的文件顺序在前的文件直接被顺序在后的文件覆盖，手动复制粘贴太麻烦，写脚本
+
+```assembly
+import tarfile
+import os
+
+names = ["Miss Islington",
+         "Sir Bors",
+         "Tim the Enchanter",
+         "Dragon of Angnor",
+         "Brother Maynard",
+         "Sir Bedevere",
+         "Sir Robin",
+         "Zoot",
+         "Squire Concorde",
+         "Green Knight",
+         "Trojan Rabbit",
+         "Chicken of Bristol",
+         "Roger the Shrubber",
+         "Bridge Keeper",
+         "Sir Gawain",
+         "Legendary Black Beast of Argh",
+         "A Famous Historian",
+         "Sir Lancelot",
+         "Lady of the Lake",
+         "Rabbit of Caerbannog",
+         "Sir Not-Appearing-in-this-Film",
+         "Prince Herbert",
+         "King Arthur",
+         "Inspector End Of Film",
+         "Sir Ector",
+         "Squire Patsy",
+         "Dennis the Peasant",
+         "Dinky",
+         "Black Knight",
+         "Sir Gallahad"]
+
+for name in names:
+    # 文件夹
+    if not os.path.isfile("./"+name):
+        t = tarfile.open("./"+name+"/layer.tar")
+        t.extractall("./result/")
+```
+
+将得到的26个.dat文件放在AntiochOS 文件的目录下，运行程序得到flag
+
+```assembly
+└─$ ./AntiochOS
+AntiochOS, version 1.32 (build 1975)
+Type help for help
+> consult 
+Consult the Book of Armaments!
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+....______.....
+...|..____|....
+...|.|__.......
+...|..__|......
+...|.|.........
+...|_|.........
+...............
+...............
+...._..........
+...(_).........
+...._..........
+...|.|.........
+...|.|.........
+...|_|.........
+...............
+...............
+...............
+...............
+...__...__.....
+...\.\././.....
+....\.V./......
+.....\_/.......
+...............
+...............
+...............
+...............
+.....___.......
+..../._.\......
+...|..__/......
+....\___|......
+...............
+...............
+...............
+...............
+....______.....
+...|______|....
+...............
+...............
+...............
+...............
+...._____......
+...|_..._|.....
+.....|.|.......
+.....|.|.......
+...._|.|_......
+...|_____|.....
+...............
+...............
+...............
+...............
+....___........
+.../.__|.......
+...\__.\.......
+...|___/.......
+...............
+...............
+...............
+...............
+....______.....
+...|______|....
+...............
+...............
+...............
+...............
+...._____......
+...|..__.\.....
+...|.|__).|....
+...|.._../.....
+...|.|.\.\.....
+...|_|..\_\....
+...............
+...............
+...._..........
+...(_).........
+...._..........
+...|.|.........
+...|.|.........
+...|_|.........
+...............
+...............
+...............
+...............
+.....__._......
+..../._`.|.....
+...|.(_|.|.....
+....\__,.|.....
+.....__/.|.....
+....|___/......
+...._..........
+...|.|.........
+...|.|__.......
+...|.'_.\......
+...|.|.|.|.....
+...|_|.|_|.....
+...............
+...............
+...._..........
+...|.|.........
+...|.|_........
+...|.__|.......
+...|.|_........
+....\__|.......
+...............
+...............
+...............
+...............
+....______.....
+...|______|....
+...............
+...............
+...............
+...............
+.....____......
+..../.__.\.....
+...|.|..|.|....
+...|.|..|.|....
+...|.|__|.|....
+....\____/.....
+...............
+...............
+...............
+...............
+...._..._......
+...|.|.|.|.....
+...|.|_|.|.....
+....\__,_|.....
+...............
+...............
+...._..........
+...|.|.........
+...|.|_........
+...|.__|.......
+...|.|_........
+....\__|.......
+...............
+...............
+...............
+......____.....
+...../.__.\....
+...././._`.|...
+...|.|.(_|.|...
+....\.\__,_|...
+.....\____/....
+...............
+.....__........
+..../._|.......
+...|.|_........
+...|.._|.......
+...|.|.........
+...|_|.........
+...............
+...............
+...._..........
+...|.|.........
+...|.|.........
+...|.|.........
+...|.|.........
+...|_|.........
+...............
+...............
+...............
+...............
+.....__._......
+..../._`.|.....
+...|.(_|.|.....
+....\__,_|.....
+...............
+...............
+...............
+...............
+...._.__.......
+...|.'__|......
+...|.|.........
+...|_|.........
+...............
+...............
+...............
+...............
+.....___.......
+..../._.\......
+...|..__/......
+....\___|......
+...............
+...............
+...............
+...............
+....______.....
+...|______|....
+...............
+...............
+...............
+...............
+...............
+...............
+.....___.......
+..../._.\......
+...|.(_).|.....
+....\___/......
+...............
+...............
+...............
+...............
+...._.__.......
+...|.'_.\......
+...|.|.|.|.....
+...|_|.|_|.....
+...............
+...............
+...............
+...............
+...............
+...............
+...._..........
+...(_).........
+...............
+...............
+...............
+...............
+.....___.......
+..../.__|......
+...|.(__.......
+....\___|......
+...............
+...............
+...............
+...............
+.....___.......
+..../._.\......
+...|.(_).|.....
+....\___/......
+...............
+...............
+...............
+...............
+...._.__.___...
+...|.'_.`._.\..
+...|.|.|.|.|.|.
+...|_|.|_|.|_|.
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+> 
+```
+
+Five-Is-Right-Out@flare-on.com
