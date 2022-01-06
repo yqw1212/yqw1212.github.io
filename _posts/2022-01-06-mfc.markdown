@@ -1,0 +1,86 @@
+---
+layout: post
+title:  MFC[HDCTF2019]
+date:   2022-01-06 00:08:01 +0300
+image:  2022-01-06-woman.jpg
+tags:   [ctf,reverse,MFC,HDCTF]
+---
+
+是个MFC写的VMProtect保护的32位程序。打开分析MFC事件处理函数的工具[xspy](https://www.52pojie.cn/forum.php?mod=viewthread&tid=193686&highlight=xspy)，同时打开待分析的mfc程序，放大镜拖至待分析程序的窗口。
+下图我们可以注意到有一个消息并不是以宏的形式出现，应该是个作者自定义的消息
+
+![]({{site.baseurl}}/img/2022-01-06-xspy.jpg)
+
+写个程序向MFC程序发送这个消息
+
+用FindWindow函数获取窗口句柄
+
+返回 lpszClassName  为，并且windows名称或标题，lpszWindowName为windows选件类的顶部 **CWnd**。
+
+```assembly
+static CWnd* PASCAL FindWindow(
+   LPCTSTR lpszClassName,
+   LPCTSTR lpszWindowName 
+);
+```
+
+- lpszClassName 
+
+  指向指定窗口的类名的一个Null终止的字符串( **WNDCLASS** 结构）。 如果  lpClassName 是 **NULL**，所有类名匹配。
+
+- lpszWindowName 
+
+  指向指定窗口名称为Null终止的字符串(窗口的标题）。 如果 lpWindowName 是 **NULL**，所有windows命名匹配。
+
+SendMessage函数发送消息到窗口，并返回，直到窗口过程处理消息。
+
+```assembly
+LRESULT SendMessage(
+   UINT message,
+   WPARAM wParam = 0,
+   LPARAM lParam = 0 
+) throw();
+static LRESULT SendMessage(
+   HWND hWnd,
+   UINT message,
+   WPARAM wParam,
+   LPARAM lParam 
+) throw();
+```
+
+exp
+
+```assembly
+#include <iostream>
+#include <Windows.h>
+#include <stdio.h>
+
+int main()
+{
+	HWND h = FindWindowA(NULL, "Flag就在控件里");
+	if (h){
+		SendMessage(h, 0x0464, 0, 0);
+		printf("success");
+	} else {
+		printf("failure");
+	}
+}
+```
+
+![]({{site.baseurl}}/img/2022-01-06-success.jpg)
+
+发现中间的字符串发生了变化，看来是DES加密的密钥，密文就是括号里的字符串了。
+
+得到一个DES的密钥
+
+> {I am a Des key}
+
+密文应该是窗口HWND括号中的内容
+
+> 002B11FA(944c8d100f82f0c18b682f63e4dbaa207a2f1e72581c2f1b)
+
+DES解密
+
+![]({{site.baseurl}}/img/2022-01-06-des.jpg)
+
+flag{thIs_Is_real_kEy_hahaaa}
