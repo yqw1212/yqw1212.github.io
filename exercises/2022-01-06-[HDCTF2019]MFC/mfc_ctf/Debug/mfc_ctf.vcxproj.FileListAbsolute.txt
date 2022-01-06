@@ -1,0 +1,2 @@
+D:\文档\vs\mfc_ctf\Debug\mfc_ctf.exe
+D:\文档\vs\mfc_ctf\Debug\mfc_ctf.pdb
