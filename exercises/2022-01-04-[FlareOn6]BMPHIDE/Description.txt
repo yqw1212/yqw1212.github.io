@@ -1,0 +1,3 @@
+Tyler Dean hiked up Mt. Elbert (Colorado's tallest mountain) at 2am to capture this picture at the perfect time. Never skip leg day. We found this picture and executable on a thumb drive he left at the trail head. Can he be trusted?
+
+Hint:本题解出相应字符串后请用flag{}包裹，形如：flag{123456@flare-on.com}
