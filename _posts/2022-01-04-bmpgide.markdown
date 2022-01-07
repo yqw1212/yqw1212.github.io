@@ -1,0 +1,384 @@
+---
+layout: post
+title:  BMPHIDE[FlareOn6]
+date:   2022-01-04 00:08:01 +0300
+image:  2022-01-04-table.jpg
+tags:   [ctf,reverse,FlareOn]
+---
+
+C#程序，dnSpy打开
+
+```assembly
+private static void Main(string[] args)
+{
+	Program.Init();
+	Program.yy += 18;
+	string filename = args[2];
+	string fullPath = Path.GetFullPath(args[0]);
+	string fullPath2 = Path.GetFullPath(args[1]);
+	byte[] data = File.ReadAllBytes(fullPath2);
+	Bitmap bitmap = new Bitmap(fullPath);
+	byte[] data2 = Program.h(data);
+	Program.i(bitmap, data2);
+	bitmap.Save(filename);
+}
+```
+
+调试发现，Init会触发一个异常
+
+![]({{site.baseurl}}/img/2022-01-04-break1.jpg)
+
+查看Init函数
+
+```assembly
+private static void Init()
+{
+	Program.yy *= 136;
+	Type typeFromHandle = typeof(A);
+	Program.ww += "14";
+	MethodInfo[] methods = typeFromHandle.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+	foreach (MethodInfo methodInfo in methods)
+	{
+		RuntimeHelpers.PrepareMethod(methodInfo.MethodHandle);
+	}
+	A.CalculateStack();
+	Program.ww += "82";
+	MethodInfo m = null;
+	MethodInfo m2 = null;
+	MethodInfo m3 = null;
+	MethodInfo m4 = null;
+	Program.zz = "MzQxOTk=";
+	foreach (MethodInfo methodInfo2 in typeof(Program).GetMethods())
+	{
+		bool flag = methodInfo2.GetMethodBody() != null;
+		if (flag)
+		{
+			byte[] ilasByteArray = methodInfo2.GetMethodBody().GetILAsByteArray();
+			bool flag2 = ilasByteArray.Length > 8;
+			if (flag2)
+			{
+				byte[] array2 = new byte[ilasByteArray.Length - 2];
+				Buffer.BlockCopy(ilasByteArray, 2, array2, 0, ilasByteArray.Length - 2);
+				D d = new D();
+				uint num = d.a<byte>(array2);
+				bool flag3 = num == 3472577156u;
+				if (flag3)
+				{
+					m = methodInfo2;
+				}
+				else
+				{
+					bool flag4 = num == 2689456752u;
+					if (flag4)
+					{
+						m2 = methodInfo2;
+					}
+					else
+					{
+						bool flag5 = num == 3040029055u;
+						if (flag5)
+						{
+							m3 = methodInfo2;
+						}
+						else
+						{
+							bool flag6 = num == 2663056498u;
+							if (flag6)
+							{
+								m4 = methodInfo2;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	A.VerifySignature(m, m2);
+	A.VerifySignature(m3, m4);
+}
+```
+
+发现有个A.CalculateStack();查看该函数
+
+```
+public static void CalculateStack()
+{
+	Module module = typeof(A).Module;
+	ModuleHandle moduleHandle = module.ModuleHandle;
+	A.ver4 = (Environment.Version.Major == 4);
+	bool flag = A.ver4;
+	if (flag)
+	{
+		A.ver5 = (Environment.Version.Revision > 17020);
+	}
+	A.IdentifyLocals();
+}
+```
+
+进入A.IdentifyLocals()
+
+```assembly
+private unsafe static void IdentifyLocals()
+{
+	ulong* ptr = stackalloc ulong[(UIntPtr)16];
+	bool flag = A.ver4;
+	if (flag)
+	{
+		*ptr = 7218835248827755619UL;
+		ptr[1] = 27756UL;
+	}
+	else
+	{
+		*ptr = 8388352820681864045UL;
+		ptr[1] = 1819042862UL;
+	}
+	IntPtr lib = A.LoadLibrary(new string((sbyte*)ptr));
+	*ptr = 127995569530215UL;
+	A.getJit getJit = (A.getJit)Marshal.GetDelegateForFunctionPointer(A.GetProcAddress(lib, new string((sbyte*)ptr)), typeof(A.getJit));
+	IntPtr intPtr = *getJit();
+	IntPtr val = *(IntPtr*)((void*)intPtr);
+	bool flag2 = IntPtr.Size == 8;
+	IntPtr intPtr2;
+	uint flNewProtect;
+	if (flag2)
+	{
+		intPtr2 = Marshal.AllocHGlobal(16);
+		ulong* ptr2 = (ulong*)((void*)intPtr2);
+		*ptr2 = 18446744073709533256UL;
+		ptr2[1] = 10416984890032521215UL;
+		A.VirtualProtect(intPtr2, 12u, 64u, out flNewProtect);
+		Marshal.WriteIntPtr(intPtr2, 2, val);
+	}
+	else
+	{
+		intPtr2 = Marshal.AllocHGlobal(8);
+		ulong* ptr3 = (ulong*)((void*)intPtr2);
+		*ptr3 = 10439625411221520312UL;
+		A.VirtualProtect(intPtr2, 7u, 64u, out flNewProtect);
+		Marshal.WriteIntPtr(intPtr2, 1, val);
+	}
+	A.originalDelegate = (A.locateNativeCallingConvention)Marshal.GetDelegateForFunctionPointer(intPtr2, typeof(A.locateNativeCallingConvention));
+	A.handler = new A.locateNativeCallingConvention(A.IncrementMaxStack);
+	RuntimeHelpers.PrepareDelegate(A.originalDelegate);
+	RuntimeHelpers.PrepareDelegate(A.handler);
+	A.VirtualProtect(intPtr, (uint)IntPtr.Size, 64u, out flNewProtect);
+	Marshal.WriteIntPtr(intPtr, Marshal.GetFunctionPointerForDelegate<A.locateNativeCallingConvention>(A.handler));
+	A.VirtualProtect(intPtr, (uint)IntPtr.Size, flNewProtect, out flNewProtect);
+}
+```
+
+进入A.IncrementMaxStack
+
+```assembly
+private unsafe static uint IncrementMaxStack(IntPtr self, A.ICorJitInfo* comp, A.CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
+{
+	bool flag = info != null;
+	if (flag)
+	{
+		MethodBase methodBase = A.c(info->ftn);
+		bool flag2 = methodBase != null;
+		if (flag2)
+		{
+			bool flag3 = methodBase.MetadataToken == 100663317;
+			if (flag3)
+			{
+				uint flNewProtect;
+				A.VirtualProtect((IntPtr)((void*)info->ILCode), info->ILCodeSize, 4u, out flNewProtect);
+				Marshal.WriteByte((IntPtr)((void*)info->ILCode), 23, 20);
+				Marshal.WriteByte((IntPtr)((void*)info->ILCode), 62, 20);
+				A.VirtualProtect((IntPtr)((void*)info->ILCode), info->ILCodeSize, flNewProtect, out flNewProtect);
+			}
+			else
+			{
+				bool flag4 = methodBase.MetadataToken == 100663316;
+				if (flag4)
+				{
+					uint flNewProtect2;
+					A.VirtualProtect((IntPtr)((void*)info->ILCode), info->ILCodeSize, 4u, out flNewProtect2);
+					Marshal.WriteInt32((IntPtr)((void*)info->ILCode), 6, 309030853);
+					Marshal.WriteInt32((IntPtr)((void*)info->ILCode), 18, 209897853);
+					A.VirtualProtect((IntPtr)((void*)info->ILCode), info->ILCodeSize, flNewProtect2, out flNewProtect2);
+				}
+			}
+		}
+	}
+	return A.originalDelegate(self, comp, info, flags, nativeEntry, nativeSizeOfCode);
+}
+```
+
+看到将程序修改了，修改的部分为methodBase.MetadataToken == 100663317和methodBase.MetadataToken == 100663316，通过右键`转到MD Token`，得知一个是h(),另一个是g()
+
+根据 A.IncrementMaxStack里的方式修改程序
+
+```assembly
+public static byte[] h(byte[] data)
+{
+    byte[] array = new byte[data.Length];
+    int num = 0;
+    for (int i = 0; i < data.Length; i++)
+    {
+        int num2 = (int)Program.g(num++);
+        int num3 = (int)data[i];
+        num3 = (int)Program.e((byte)num3, (byte)num2);
+        num3 = (int)Program.a((byte)num3, 7);
+        int num4 = (int)Program.g(num++);
+        num3 = (int)Program.e((byte)num3, (byte)num4);
+        num3 = (int)Program.c((byte)num3, 3);
+        array[i] = (byte)num3;
+    }
+    return array;
+}
+
+public static byte g(int idx)
+{
+    byte b = (byte)((long)(idx + 1) * (long)((ulong)309030853));
+    byte k = (byte)((idx + 2) * 209897853);
+    return Program.e(b, k);
+}
+```
+
+修改之后将Init里A.CalculateStack()修改IL指令为nop
+
+![]({{site.baseurl}}/img/2022-01-04-nop.jpg)
+
+保存模块，要在MD写入选项中勾选`保留额外的签名数据`
+
+之后就可以调试了，回头看main，重点在
+
+```assembly
+byte[] data2 = Program.h(data);
+Program.i(bitmap, data2);
+```
+
+分析可发现这是一个隐写，隐写的数据在被h处理后经过i写入图片
+
+```assembly
+public static void i(Bitmap bm, byte[] data)
+{
+    int num = Program.j(103);
+    for (int i = Program.j(103); i < bm.Width; i++)
+    {
+        for (int j = Program.j(103); j < bm.Height; j++)
+        {
+            bool flag = num > data.Length - Program.j(231);
+            if (flag)
+            {
+                break;
+            }
+            Color pixel = bm.GetPixel(i, j);
+            int red = ((int)pixel.R & Program.j(27)) | ((int)data[num] & Program.j(228));
+            int green = ((int)pixel.G & Program.j(27)) | (data[num] >> Program.j(230) & Program.j(228));
+            int blue = ((int)pixel.B & Program.j(25)) | (data[num] >> Program.j(100) & Program.j(230));
+            Color color = Color.FromArgb(Program.j(103), red, green, blue);
+            bm.SetPixel(i, j, color);
+            num += Program.j(231);
+        }
+    }
+}
+```
+
+这样基本就可以还原了，不过在Init里还有一处坑
+
+```assembly
+A.VerifySignature(m, m2);
+A.VerifySignature(m3, m4);
+```
+
+调试可发现，这里将a()转为了b()，c()转为了d()，所以之前看到程序里对a和c的调用其实用的都是b和d
+
+看一下这几个函数
+
+```assembly
+public static byte b(byte b, int r)
+{
+    for (int i = 0; i < r; i++)
+    {
+        byte b2 = (b & 128) / 128;
+        b = (b * 2 & byte.MaxValue) + b2;
+    }
+    return b;
+}
+public static byte d(byte b, int r)
+{
+    for (int i = 0; i < r; i++)
+    {
+        byte b2 = (b & 1) * 128;
+        b = (b / 2 & byte.MaxValue) + b2;
+    }
+    return b;
+}
+public static byte g(int idx)
+{
+    byte b = (byte)((long)(idx + 1) * (long)((ulong)309030853));
+    byte k = (byte)((idx + 2) * 209897853);
+    return Program.e(b, k);
+}
+public static byte e(byte b, byte k)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        bool flag = (b >> i & 1) == (k >> i & 1);
+        if (flag)
+        {
+            b = (byte)((int)b & ~(1 << i) & 255);
+        }
+        else
+        {
+            b = (byte)((int)b | (1 << i & 255));
+        }
+    }
+    return b;
+}
+```
+
+b和d是循环移位的操作，e就是个xor，g是个hash，j返回的值是固定的可以直接调出来
+
+之后可以借助这个程序改为解密算法
+
+```assembly
+private static void Main(string[] args)
+{
+    Program.Init();
+    Program.yy += 18;
+    Bitmap bitmap = new Bitmap(args[0]);
+    byte[] output = new byte[bitmap.Width * bitmap.Height];
+    int outidx = 0;
+    int hashCtr = 0;
+    for (int i = 0; i < bitmap.Width; i++)
+    {
+        for (int j = 0; j < bitmap.Height; j++)
+        {
+            Color pixel = bitmap.GetPixel(i, j);
+            byte r = (byte)(pixel.R & 7);
+            byte g = (byte)(pixel.G & 7);
+            byte b = (byte)((int)(pixel.B & 3) << 6 | (int)g << 3 | (int)r);
+            byte g2 = Program.g(hashCtr++);
+            byte g3 = Program.g(hashCtr++);
+            byte newByte = Program.a(b, 3);
+            newByte ^= g3;
+            newByte = Program.c(newByte, 7);
+            newByte ^= g2;
+            output[outidx++] = newByte;
+        }
+    }
+    File.WriteAllBytes(args[1], output);
+}
+```
+
+解密
+
+```assembly
+>bmphide_de.exe image.bmp image_de.bmp
+```
+
+![]({{site.baseurl}}/img/2022-01-04-image_de.jpg)
+
+再解密一次
+
+```assembly
+>bmphide_de.exe image_de.bmp image_de_de.bmp
+```
+
+![]({{site.baseurl}}/img/2022-01-04-image_de_de.jpg)
+
+d0nT_tRu$t_vEr1fy@flare-on.com
