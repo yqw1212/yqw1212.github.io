@@ -1,0 +1,33 @@
+---
+layout: post
+title:  snake[FlareOn6]
+date:   2022-01-08 00:08:01 +0300
+image:  2022-01-08-wine.jpg
+tags:   [ctf,reverse,FlareOn]
+---
+
+NES逆向，查了一下资料使用mos6502架构，ROM代码从0x10开始，并将在0xC000加载到内存中。使用ida只能以binary打开，需要手动处理，不过用处不大。
+
+使用FCEUX模拟器打开该程序，看到是贪吃蛇游戏
+
+经过对ram进行分析，发现0025记载了吃的苹果数量
+
+![]({{site.baseurl}}/img/2022-01-08-0x25.jpg)
+
+在0025处下个断点
+
+![]({{site.baseurl}}/img/2022-01-08-break.jpg)
+
+断在了C830
+
+![]({{site.baseurl}}/img/2022-01-08-c830.jpg)
+
+当吃的苹果到达0x33后，将不再进行跳转，之后对0027加一与4比较，之后对0026赋值为0xf0
+
+所以只要将0025改为0x33，0026改为0xf0，即可获得flag
+
+![]({{site.baseurl}}/img/2022-01-08-set.jpg)
+
+![]({{site.baseurl}}/img/2022-01-08-flag.jpg)
+
+flag{narpas-sword@flare-on.com}
