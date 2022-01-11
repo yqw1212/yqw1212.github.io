@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\文档\\CTF\\buuoj\\逆向\\[FlareOn1]Challenge7\\job\\job.csproj": {}
+  },
+  "projects": {
+    "D:\\文档\\CTF\\buuoj\\逆向\\[FlareOn1]Challenge7\\job\\job.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\文档\\CTF\\buuoj\\逆向\\[FlareOn1]Challenge7\\job\\job.csproj",
+        "projectName": "job",
+        "projectPath": "D:\\文档\\CTF\\buuoj\\逆向\\[FlareOn1]Challenge7\\job\\job.csproj",
+        "packagesPath": "C:\\Users\\yqw\\.nuget\\packages\\",
+        "outputPath": "D:\\文档\\CTF\\buuoj\\逆向\\[FlareOn1]Challenge7\\job\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\yqw\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp3.1"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp3.1": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.200\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
