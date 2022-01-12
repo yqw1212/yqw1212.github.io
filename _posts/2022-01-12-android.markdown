@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  android[FlareOn2]
+title:  Android[FlareOn2]
 date:   2022-01-12 00:08:01 +0300
 image:  2022-01-12-tealights.jpg
 tags:   [ctf,reverse,FlareOn]
