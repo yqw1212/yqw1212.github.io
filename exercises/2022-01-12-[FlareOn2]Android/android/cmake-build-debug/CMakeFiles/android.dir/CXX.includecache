@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+D:/yqw/Documents/c/android/main.cpp
+iostream
+-
+windows.h
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+
