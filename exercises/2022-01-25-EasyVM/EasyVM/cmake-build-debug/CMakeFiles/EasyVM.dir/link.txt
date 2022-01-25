@@ -1,0 +1,3 @@
+"D:\Program Files\JetBrains\CLion 2020.2.4\bin\cmake\win\bin\cmake.exe" -E rm -f CMakeFiles\EasyVM.dir/objects.a
+"D:\Program Files\MinGW\bin\ar.exe" cr CMakeFiles\EasyVM.dir/objects.a @CMakeFiles\EasyVM.dir\objects1.rsp
+"D:\Program Files\MinGW\bin\gcc.exe" -g   -Wl,--whole-archive CMakeFiles\EasyVM.dir/objects.a -Wl,--no-whole-archive  -o EasyVM.exe -Wl,--out-implib,libEasyVM.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\EasyVM.dir\linklibs.rsp
