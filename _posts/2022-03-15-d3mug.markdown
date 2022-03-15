@@ -1,0 +1,3270 @@
+---
+layout: post
+title:  d3mug
+date:   2022-03-15 00:08:01 +0300
+image:  2022-03-15-nature.jpg
+tags:   [ctf,reverse,d3ctf,mobile,android,unity]
+---
+
+```assembly
+Initializing metadata...
+Metadata Version: 29
+Initializing il2cpp file...
+Applying relocations...
+WARNING: find JNI_OnLoad
+ERROR: This file may be protected.
+Il2Cpp Version: 29
+Searching...
+CodeRegistration : 17c8090
+MetadataRegistration : 183c0e8
+Dumping...
+Done!
+Generate struct...
+Done!
+Generate dummy dll...
+Done!
+Press any key to exit...
+```
+
+生成文件
+
+```assembly
+D:.
+│  dump.cs
+│  il2cpp.h
+│  script.json
+│  stringliteral.json
+│
+└───Assembly-CSharp.dll
+    Il2CppDummyDll.dll
+    Mono.Security.dll
+    mscorlib.dll
+    System.Configuration.dll
+    System.Core.dll
+    System.dll
+    System.Xml.dll
+    Unity.2D.Common.Runtime.dll
+    Unity.AdaptivePerformance.dll
+    Unity.Mathematics.dll
+    Unity.Profiling.Core.dll
+    Unity.RenderPipelines.Core.Runtime.dll
+    Unity.Subsystem.Registration.dll
+    Unity.TextMeshPro.dll
+    Unity.Timeline.dll
+    Unity.VisualEffectGraph.Runtime.dll
+    UnityEngine.AndroidJNIModule.dll
+    UnityEngine.AnimationModule.dll
+    UnityEngine.AudioModule.dll
+    UnityEngine.CoreModule.dll
+    UnityEngine.DirectorModule.dll
+    UnityEngine.dll
+    UnityEngine.GridModule.dll
+    UnityEngine.IMGUIModule.dll
+    UnityEngine.InputLegacyModule.dll
+    UnityEngine.InputModule.dll
+    UnityEngine.ParticleSystemModule.dll
+    UnityEngine.Physics2DModule.dll
+    UnityEngine.PhysicsModule.dll
+    UnityEngine.SharedInternalsModule.dll
+    UnityEngine.SpriteShapeModule.dll
+    UnityEngine.SubsystemsModule.dll
+    UnityEngine.TerrainModule.dll
+    UnityEngine.TextCoreFontEngineModule.dll
+    UnityEngine.TextCoreTextEngineModule.dll
+    UnityEngine.TextRenderingModule.dll
+    UnityEngine.TilemapModule.dll
+    UnityEngine.UI.dll
+    UnityEngine.UIElementsModule.dll
+    UnityEngine.UIElementsNativeModule.dll
+    UnityEngine.UIModule.dll
+    UnityEngine.UnityAnalyticsModule.dll
+    UnityEngine.UnityWebRequestModule.dll
+    UnityEngine.VFXModule.dll
+    UnityEngine.VRModule.dll
+    UnityEngine.XRModule.dll
+    __Generated
+```
+
+**dump.cs**这个文件会把`C#`的`dll`代码的类、方法、字段列出来
+
+```assembly
+// Namespace: 
+public class ScoreScene : MonoBehaviour // TypeDefIndex: 4309
+{
+	// Fields
+	public TMP_Text FlagText; // 0x18
+
+	// Methods
+
+	// RVA: 0x62EE40 Offset: 0x62EE40 VA: 0x62EE40
+	public static extern IntPtr get() { }
+
+	// RVA: 0x62EEA8 Offset: 0x62EEA8 VA: 0x62EEA8
+	private void Start() { }
+
+	// RVA: 0x62EF84 Offset: 0x62EF84 VA: 0x62EF84
+	private void Update() { }
+
+	// RVA: 0x62EF88 Offset: 0x62EF88 VA: 0x62EF88
+	public void .ctor() { }
+}
+```
+
+查看Assembly-CSharp.dll文件
+
+发现ScoreScene类
+
+```assembly
+using System;
+using System.Runtime.InteropServices;
+using Il2CppDummyDll;
+using TMPro;
+using UnityEngine;
+
+// Token: 0x02000013 RID: 19
+[Token(Token = "0x2000013")]
+public class ScoreScene : MonoBehaviour
+{
+	// Token: 0x06000078 RID: 120
+	[Token(Token = "0x6000078")]
+	[Address(RVA = "0x62EE40", Offset = "0x62EE40", VA = "0x62EE40")]
+	[PreserveSig]
+	public static extern IntPtr get();
+
+	// Token: 0x06000079 RID: 121 RVA: 0x00002050 File Offset: 0x00000250
+	[Token(Token = "0x6000079")]
+	[Address(RVA = "0x62EEA8", Offset = "0x62EEA8", VA = "0x62EEA8")]
+	private void Start()
+	{
+	}
+
+	// Token: 0x0600007A RID: 122 RVA: 0x00002050 File Offset: 0x00000250
+	[Token(Token = "0x600007A")]
+	[Address(RVA = "0x62EF84", Offset = "0x62EF84", VA = "0x62EF84")]
+	private void Update()
+	{
+	}
+
+	// Token: 0x0600007B RID: 123 RVA: 0x00002050 File Offset: 0x00000250
+	[Token(Token = "0x600007B")]
+	[Address(RVA = "0x62EF88", Offset = "0x62EF88", VA = "0x62EF88")]
+	public ScoreScene()
+	{
+	}
+
+	// Token: 0x0400004C RID: 76
+	[Token(Token = "0x400004C")]
+	[Il2CppDummyDll.FieldOffset(Offset = "0x18")]
+	public TMP_Text FlagText;
+}
+```
+
+看到FlagText
+
+#### 查看script.json文件
+
+```assembly
+{
+      "Address": 6483520,
+      "Name": "ScoreScene$$get",
+      "Signature": "intptr_t ScoreScene__get (const MethodInfo* method);",
+      "TypeSignature": "ii"
+    },
+    {
+      "Address": 6483624,
+      "Name": "ScoreScene$$Start",
+      "Signature": "void ScoreScene__Start (ScoreScene_o* __this, const MethodInfo* method);",
+      "TypeSignature": "vii"
+    },
+    {
+      "Address": 6483844,
+      "Name": "ScoreScene$$Update",
+      "Signature": "void ScoreScene__Update (ScoreScene_o* __this, const MethodInfo* method);",
+      "TypeSignature": "vii"
+    },
+    {
+      "Address": 6483848,
+      "Name": "ScoreScene$$.ctor",
+      "Signature": "void ScoreScene___ctor (ScoreScene_o* __this, const MethodInfo* method);",
+      "TypeSignature": "vii"
+    },
+```
+
+使用Il2CppDumper-v6.7.8工具中的ida_py3.py脚本将libil2cpp.so符号表恢复。
+
+可以发现GameManager__update调用的就是d3mug.so中的update
+
+```assembly
+__int64 __fastcall GameManager__update(unsigned int a1)
+{
+  __int64 (__fastcall *v1)(_QWORD); // x8
+  __int64 v4[5]; // [xsp+0h] [xbp-50h] BYREF
+  int v5; // [xsp+28h] [xbp-28h]
+  char v6; // [xsp+2Ch] [xbp-24h]
+
+  v1 = (__int64 (__fastcall *)(_QWORD))qword_198F178;
+  if ( !qword_198F178 )
+  {
+    v4[0] = (__int64)"d3mug";
+    v4[1] = 5LL;
+    v4[2] = (__int64)"update";
+    v4[3] = 6LL;
+    v5 = 4;
+    v4[4] = 0x200000000LL;
+    v6 = 0;
+    v1 = (__int64 (__fastcall *)(_QWORD))sub_5609A4((__int64)v4);
+    qword_198F178 = (__int64)v1;
+  }
+  return v1(a1);
+}
+```
+
+对GameManager\_\_update进行交叉引用发现是GameManager\_\_NoteHit或GameManager\_\_NoteMissed最后调用了GameManager__update
+
+GameManager\_\_NoteHit
+
+```assembly
+__int64 __fastcall GameManager__NoteHit(__int64 a1, int a2, float a3)
+{
+  __int64 v4; // x19
+  __int64 v5; // x0
+  __int64 v6; // x0
+  unsigned int v7; // w0
+  int v9; // [xsp+Ch] [xbp-14h] BYREF
+
+  v9 = 0;
+  if ( a2 >= 1 )
+  {
+    v4 = *(_QWORD *)(a1 + 0x20);
+    if ( v4 )
+      goto LABEL_3;
+LABEL_8:
+    sub_560668();
+  }
+  v4 = *(_QWORD *)(a1 + 0x18);
+  if ( !v4 )
+    goto LABEL_8;
+LABEL_3:
+  v5 = (*(__int64 (__fastcall **)(__int64, _QWORD))(*(_QWORD *)v4 + 0x548LL))(v4, *(_QWORD *)(*(_QWORD *)v4 + 0x550LL));
+  v9 = System_Int32__Parse(v5, 0LL) + 1;
+  v6 = System_Int32__ToString(&v9, 0LL);
+  (*(void (__fastcall **)(__int64, __int64, _QWORD))(*(_QWORD *)v4 + 0x558LL))(
+    v4,
+    v6,
+    *(_QWORD *)(*(_QWORD *)v4 + 0x560LL));
+  if ( (float)(a3 * 1000.0) >= 0.0 )
+    v7 = (unsigned int)(float)(a3 * 1000.0);
+  else
+    v7 = (int)(float)(a3 * 1000.0);
+  return GameManager__update(v7);    // 调用libd3mug.so的update函数，参数为note时间戳的低位字节
+}
+```
+
+GameManager\_\_NoteMissed
+
+```assembly
+__int64 __fastcall GameManager__NoteMissed(__int64 a1)
+{
+  __int64 v1; // x19
+  __int64 v2; // x0
+  __int64 v3; // x0
+  int v5; // [xsp+Ch] [xbp-14h] BYREF
+
+  v5 = 0;
+  v1 = *(_QWORD *)(a1 + 0x28);
+  if ( !v1 )
+    sub_560668();
+  v2 = (*(__int64 (__fastcall **)(_QWORD, _QWORD))(*(_QWORD *)v1 + 0x548LL))(
+         *(_QWORD *)(a1 + 0x28),
+         *(_QWORD *)(*(_QWORD *)v1 + 0x550LL));
+  v5 = System_Int32__Parse(v2, 0LL) + 1;
+  v3 = System_Int32__ToString(&v5, 0LL);
+  (*(void (__fastcall **)(__int64, __int64, _QWORD))(*(_QWORD *)v1 + 0x558LL))(
+    v1,
+    v3,
+    *(_QWORD *)(*(_QWORD *)v1 + 0x560LL));
+  return GameManager__update(0);
+}
+```
+
+查看GameManager\_\_NoteHit的交叉引用
+
+```assembly
+__int64 __fastcall NoteObject__OnClicked(__int64 a1)
+{
+  __int64 result; // x0
+  __int64 v3; // x8
+  float v4; // s0
+  __int64 v5; // x19
+
+  if ( (byte_198F1A5 & 1) == 0 )
+  {
+    sub_56055C(&UnityEngine_Debug_TypeInfo);
+    sub_56055C(&GameManager_TypeInfo);
+    sub_56055C(&MusicController_TypeInfo);
+    sub_56055C(&UnityEngine_Object_TypeInfo);
+    sub_56055C(&StringLiteral_1123);  // Clicked.
+    byte_198F1A5 = 1;
+  }
+  if ( !*((_DWORD *)UnityEngine_Debug_TypeInfo + 0x38) )
+    j_il2cpp_runtime_class_init_0(UnityEngine_Debug_TypeInfo);
+  result = UnityEngine_Debug__Log(StringLiteral_1123, 0LL);  // Clicked.
+  if ( *(_BYTE *)(a1 + 0x18) )
+  {
+    v3 = **((_QWORD **)MusicController_TypeInfo + 0x17);
+    if ( !v3 || (result = **((_QWORD **)GameManager_TypeInfo + 0x17)) == 0 )
+      sub_560668(result);
+    v4 = *(double *)(v3 + 0x20);
+    GameManager__NoteHit(result, vabds_f32(v4, *(float *)(a1 + 0x1C)) < 0.02, v4);
+    v5 = UnityEngine_Component__get_gameObject(a1, 0LL);
+    if ( !*((_DWORD *)UnityEngine_Object_TypeInfo + 0x38) )
+      j_il2cpp_runtime_class_init_0(UnityEngine_Object_TypeInfo);
+    result = UnityEngine_Object__Destroy_16863172(v5, 0LL);
+  }
+  return result;
+}
+```
+
+vabds_f32(Single, Single)
+
+Floating-point Absolute Difference (vector). This instruction subtracts the floating-point values in the elements of the second source SIMD&FP register, from the corresponding floating-point values in the elements of the first source SIMD&FP register, places the absolute value of each result in a vector, and writes the vector to the destination SIMD&FP register.
+
+查看NoteObject__OnClicked的交叉引用
+
+```assembly
+__int64 TouchListener__Update()
+{
+  long double v0; // q10
+  long double v1; // q11
+  __int64 result; // x0
+  __int64 v3; // x8
+  __int64 v4; // x19
+  unsigned __int64 v5; // x23
+  char *v6; // x20
+  __int64 v7; // x22
+  long double v8; // q8
+  long double v9; // q1
+  long double v10; // q9
+  _DWORD *v11; // x8
+  __int64 v12; // x0
+  __int64 v13; // x0
+  __int64 v14; // x0
+  __int64 v15; // x0
+  __int64 v16; // x0
+  __int128 v17[2]; // [xsp+10h] [xbp-150h] BYREF
+  int v18; // [xsp+30h] [xbp-130h]
+  __int128 v19; // [xsp+38h] [xbp-128h]
+  __int128 v20; // [xsp+48h] [xbp-118h]
+  int v21; // [xsp+58h] [xbp-108h]
+  __int128 v22; // [xsp+60h] [xbp-100h] BYREF
+  __int128 v23; // [xsp+70h] [xbp-F0h]
+  int v24; // [xsp+80h] [xbp-E0h]
+  __int128 dest[4]; // [xsp+90h] [xbp-D0h] BYREF
+  int v26; // [xsp+D0h] [xbp-90h]
+
+  if ( (byte_198F1B9 & 1) == 0 )
+  {
+    sub_56055C((__int64)&Method_UnityEngine_GameObject_GetComponent_NoteObject___);
+    sub_56055C((__int64)&UnityEngine_Physics2D_TypeInfo);
+    sub_56055C((__int64)&StringLiteral_2226);  // Note
+    byte_198F1B9 = 1;
+  }
+  v26 = 0;
+  v24 = 0;
+  dest[2] = 0u;
+  dest[3] = 0u;
+  dest[0] = 0u;
+  dest[1] = 0u;
+  v22 = 0u;
+  v23 = 0u;
+  result = UnityEngine_Input__get_touchCount(0LL);
+  if ( (int)result >= 1 )
+  {
+    result = UnityEngine_Input__get_touches(0LL);
+    if ( !result )
+LABEL_24:
+      sub_560668();
+    v3 = *(_QWORD *)(result + 0x18);
+    v4 = result;
+    if ( (int)v3 >= 1 )
+    {
+      v5 = 0LL;
+      v6 = (char *)(result + 0x20);
+      do
+      {
+        if ( v5 >= (unsigned int)v3 )
+          sub_560670();
+        memmove(dest, v6, 0x44u);
+        result = UnityEngine_Touch__get_phase(dest, 0LL);
+        if ( !(_DWORD)result )
+        {
+          v7 = UnityEngine_Camera__get_main(0LL);
+          UnityEngine_Input__get_mousePosition(0LL);
+          if ( !v7 )
+            goto LABEL_24;
+          v8 = UnityEngine_Camera__ScreenToWorldPoint_16728828(v7, 0LL);
+          v10 = v9;
+          if ( !byte_198F1BE )
+          {
+            sub_56055C((__int64)&UnityEngine_Vector2_TypeInfo);
+            byte_198F1BE = 1;
+          }
+          v11 = (_DWORD *)*((_QWORD *)UnityEngine_Vector2_TypeInfo + 0x17);
+          LODWORD(v1) = *v11;
+          LODWORD(v0) = v11[1];
+          if ( !*((_DWORD *)UnityEngine_Physics2D_TypeInfo + 0x38) )
+            j_il2cpp_runtime_class_init_0(UnityEngine_Physics2D_TypeInfo);
+          UnityEngine_Physics2D__Raycast(0LL, v8, v10, v1, v0);
+          v24 = v21;
+          v22 = v19;
+          v23 = v20;
+          v17[0] = v19;
+          v17[1] = v20;
+          v18 = v21;
+          result = UnityEngine_RaycastHit2D__op_Implicit(v17, 0LL);
+          if ( (result & 1) != 0 )
+          {
+            v12 = UnityEngine_RaycastHit2D__get_transform(&v22, 0LL);
+            if ( !v12 )
+              goto LABEL_24;
+            v13 = UnityEngine_Component__get_tag(v12, 0LL);
+            result = System_String__op_Equality(v13, StringLiteral_2226, 0LL); // Note
+            if ( (result & 1) != 0 )
+            {
+              v14 = UnityEngine_RaycastHit2D__get_transform(&v22, 0LL);
+              if ( !v14 )
+                goto LABEL_24;
+              v15 = UnityEngine_Component__get_gameObject(v14, 0LL);
+              if ( !v15 )
+                goto LABEL_24;
+              v16 = UnityEngine_GameObject__GetComponent_object_(
+                      v15,
+                      Method_UnityEngine_GameObject_GetComponent_NoteObject___);
+              if ( !v16 )
+                goto LABEL_24;
+              result = NoteObject__OnClicked(v16);
+            }
+          }
+        }
+        LODWORD(v3) = *(_DWORD *)(v4 + 0x18);
+        ++v5;
+        v6 += 0x44;
+      }
+      while ( (__int64)v5 < (int)v3 );
+    }
+  }
+  return result;
+}
+```
+
+查看GameManager\_\_NoteMissed的交叉引用
+
+```assembly
+__int64 __fastcall NoteObject__OnTriggerExit2D(__int64 a1, __int64 a2)
+{
+  __int64 v4; // x0
+  __int64 result; // x0
+  __int64 v6; // x0
+  __int64 v7; // x19
+
+  if ( (byte_198F1A4 & 1) == 0 )
+  {
+    sub_56055C((__int64)&GameManager_TypeInfo);
+    sub_56055C((__int64)&UnityEngine_Object_TypeInfo);
+    sub_56055C((__int64)&StringLiteral_2019);  // Line
+    byte_198F1A4 = 1;
+  }
+  if ( !a2 )
+    goto LABEL_10;
+  v4 = UnityEngine_Component__get_tag(a2, 0LL);
+  result = System_String__op_Equality(v4, StringLiteral_2019, 0LL);  // Line
+  if ( (result & 1) == 0 )
+    return result;
+  *(_BYTE *)(a1 + 0x18) = 0;
+  v6 = **((_QWORD **)GameManager_TypeInfo + 0x17);
+  if ( !v6 )
+LABEL_10:
+    sub_560668();
+  GameManager__NoteMissed(v6);
+  v7 = UnityEngine_Component__get_gameObject(a1, 0LL);
+  if ( !*((_DWORD *)UnityEngine_Object_TypeInfo + 0x38) )
+    j_il2cpp_runtime_class_init_0(UnityEngine_Object_TypeInfo);
+  return UnityEngine_Object__Destroy_16863172(v7, 0LL);
+}
+```
+
+ScoreScene__Start
+
+```assembly
+__int64 __fastcall ScoreScene__Start(__int64 a1)
+{
+  __int64 v2; // x20
+  __int64 v3; // x0
+  __int64 v4; // x20
+  char v5; // w0
+  __int64 v6; // x8
+  __int64 v7; // x0
+  __int64 v8; // x1
+  __int64 (__fastcall *v9)(__int64, __int64, _QWORD); // x3
+
+  if ( (byte_198F1B8 & 1) == 0 )
+  {
+    sub_56055C(&System_Runtime_InteropServices_Marshal_TypeInfo);
+    sub_56055C(&StringLiteral_1242);            // D3CTF
+    sub_56055C(&StringLiteral_2327);            // Oops, flag is corrupted, try again.
+    byte_198F1B8 = 1;
+  }
+  v2 = ScoreScene__get();                       // // 调用libd3mug.so的get函数获取flag
+  if ( !*((_DWORD *)System_Runtime_InteropServices_Marshal_TypeInfo + 0x38) )
+    j_il2cpp_runtime_class_init_0(System_Runtime_InteropServices_Marshal_TypeInfo);
+  v3 = System_Runtime_InteropServices_Marshal__PtrToStringAnsi(v2, 0LL);
+  if ( !v3 || (v4 = v3, v5 = System_String__StartsWith(v3, StringLiteral_1242, 0LL), (v6 = *(_QWORD *)(a1 + 0x18)) == 0) )// D3CTF
+    sub_560668();
+  if ( (v5 & 1) != 0 )
+  {
+    v7 = *(_QWORD *)(a1 + 0x18);
+    v8 = v4;
+    v9 = *(__int64 (__fastcall **)(__int64, __int64, _QWORD))(*(_QWORD *)v6 + 0x558LL);
+  }
+  else
+  {
+    v7 = *(_QWORD *)(a1 + 0x18);
+    v9 = *(__int64 (__fastcall **)(__int64, __int64, _QWORD))(*(_QWORD *)v6 + 0x558LL);
+    v8 = StringLiteral_2327;                    // Oops, flag is corrupted, try again.
+  }
+  return v9(v7, v8, *(_QWORD *)(*(_QWORD *)v6 + 0x560LL));
+}
+```
+
+游戏在运行时通过 NoteObject 的状态通知 GameManager 调用 NoteHit 函数或者 NoteMissed 函数，这两个函数会通过 NoteObject 的参数获取到当前的音乐时间，然后调用一个外部的 update 函数.
+
+update会检测server::instance，如果没有就初始化(这个初始化的值是不变的)，如果已经初始化，就调用Server::run，这个函数会用update传入的那个time，去更新instance(利用instance本身的值来进行改变，time只是作为一个下标)，而且最后check的地方，就是调用的ScoreScene__get，也就是d3mug.so中的get，get最后的instance，然后转换成文本比较是否是D3CTF开头
+
+GameManager\_\_loadBeatmap_d\_\_8\_\_MoveNext
+
+```assembly
+__int64 __fastcall GameManager__loadBeatmap_d__8__MoveNext(__int64 a1)
+{
+  int v2; // w9
+  __int64 v3; // x8
+  __int64 v4; // x19
+  __int64 result; // x0
+  __int64 v6; // x20
+  __int64 v7; // x21
+  __int64 v8; // x0
+  __int64 v9; // x0
+  __int64 v10; // x22
+  __int64 v11; // x0
+  __int64 v12; // x0
+  __int64 v13; // x0
+  __int64 v14; // x21
+  __int64 v15; // x0
+  __int64 v16; // x0
+  __int64 v17; // x1
+  __int64 v18; // x0
+  __int64 v19; // x0
+  __int64 v20; // x20
+  __int64 v21; // x19
+  __int64 v22; // x8
+
+  if ( (byte_198F182 & 1) == 0 )
+  {
+    sub_56055C((__int64)&MusicController_TypeInfo);
+    sub_56055C((__int64)&Method_UnityEngine_Resources_Load_AudioClip___);
+    sub_56055C((__int64)&Method_UnityEngine_Resources_Load_TextAsset___);
+    sub_56055C((__int64)&UnityEngine_WaitForSeconds_TypeInfo);
+    sub_56055C((__int64)&StringLiteral_442);    // /audio
+    sub_56055C((__int64)&StringLiteral_898);    // Beatmaps/ChromeVOX
+    sub_56055C((__int64)&StringLiteral_449);    // /timepoints
+    sub_56055C((__int64)&StringLiteral_446);    // /hitpoints
+    byte_198F182 = 1;
+  }
+  v2 = *(_DWORD *)(a1 + 0x10);
+  v3 = *(_QWORD *)(a1 + 0x20);
+  if ( v2 == 2 )
+  {
+    *(_DWORD *)(a1 + 0x10) = 0xFFFFFFFF;
+    if ( v3 )
+    {
+      v22 = *(_QWORD *)(v3 + 0x30);
+      if ( v22 )
+      {
+        result = 0LL;
+        *(_BYTE *)(v22 + 0x34) = 1;
+        return result;
+      }
+    }
+LABEL_20:
+    sub_560668();
+  }
+  if ( v2 == 1 )
+  {
+    *(_DWORD *)(a1 + 0x10) = 0xFFFFFFFF;
+    if ( v3 )
+    {
+      v6 = StringLiteral_898;                   // Beatmaps/ChromeVOX
+      v7 = *(_QWORD *)(v3 + 0x30);
+      v8 = System_String__Concat_12584868(StringLiteral_898, StringLiteral_449, 0LL);// Beatmaps/ChromeVOX /timepoints
+      v9 = UnityEngine_Resources__Load_object_(v8, Method_UnityEngine_Resources_Load_TextAsset___);
+      if ( v9 )
+      {
+        v10 = UnityEngine_TextAsset__get_text(v9, 0LL);
+        v11 = System_String__Concat_12584868(v6, StringLiteral_446, 0LL);// /hitpoints
+        v12 = UnityEngine_Resources__Load_object_(v11, Method_UnityEngine_Resources_Load_TextAsset___);
+        if ( v12 )
+        {
+          v13 = UnityEngine_TextAsset__get_text(v12, 0LL);
+          if ( v7 )
+          {
+            BeatScroller__ParseBeatTampoMap(v7, v10, v13);
+            v14 = **((_QWORD **)MusicController_TypeInfo + 0x17);
+            v15 = System_String__Concat_12584868(v6, StringLiteral_442, 0LL);// /audio
+            v16 = UnityEngine_Resources__Load_object_(v15, Method_UnityEngine_Resources_Load_AudioClip___);
+            if ( v14 )
+            {
+              v17 = v16;
+              v18 = *(_QWORD *)(v14 + 0x18);
+              if ( v18 )
+              {
+                UnityEngine_AudioSource__set_clip(v18, v17, 0LL);
+                if ( **((_QWORD **)MusicController_TypeInfo + 0x17) )
+                {
+                  MusicController__PlayAsScheduled();
+                  v19 = sub_560658(UnityEngine_WaitForSeconds_TypeInfo);
+                  if ( v19 )
+                  {
+                    v20 = v19;
+                    UnityEngine_WaitForSeconds___ctor(v19, 0LL, 3.0);
+                    *(_QWORD *)(a1 + 0x18) = v20;
+                    v21 = a1 + 0x18;
+                    sub_560510(v21, v20);
+                    *(_DWORD *)(v21 - 8) = 2;
+                    return 1LL;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    goto LABEL_20;
+  }
+  if ( v2 )
+    return 0LL;
+  *(_QWORD *)(a1 + 0x18) = 0LL;
+  v4 = a1 + 0x18;
+  *(_DWORD *)(v4 - 8) = 0xFFFFFFFF;
+  sub_560510(v4, 0LL);
+  result = 1LL;
+  *(_DWORD *)(v4 - 8) = 1;
+  return result;
+}
+```
+
+看到有资源文件，使用AssetStudio提取，搜索hitpoints，发现有3个，我们通过代码中的字符串得知题目只使用
+了Chrome VOX的那一个，然后直接调库update最后get出来的就是flag。
+
+```assembly
+3,89
+
+4,512
+
+1,512
+
+2,512
+
+3,652
+
+1,934
+
+4,1075
+
+2,1075
+
+1,1357
+
+3,1497
+
+2,1638
+
+4,1779
+
+1,1920
+
+3,2202
+
+4,2202
+
+2,2483
+
+1,2765
+
+4,2765
+
+3,3047
+
+4,3328
+
+2,3328
+
+1,3469
+
+2,3751
+
+3,3892
+
+4,3892
+
+1,4033
+
+2,4033
+
+3,4173
+
+2,4314
+
+1,4455
+
+2,4596
+
+1,4737
+
+4,4737
+
+3,4737
+
+2,5019
+
+3,5019
+
+1,5019
+
+4,5159
+
+1,5300
+
+2,5441
+
+3,5441
+
+2,5582
+
+4,5582
+
+2,5723
+
+1,5723
+
+3,5864
+
+4,5864
+
+1,6004
+
+2,6145
+
+4,6145
+
+3,6286
+
+1,6427
+
+4,6427
+
+2,6568
+
+3,6709
+
+1,6709
+
+4,6850
+
+2,6990
+
+3,6990
+
+1,7131
+
+4,7272
+
+2,7272
+
+3,7413
+
+1,7554
+
+4,7554
+
+2,7695
+
+4,7835
+
+3,7835
+
+2,7976
+
+1,7976
+
+4,8117
+
+1,8258
+
+3,8258
+
+2,8399
+
+4,8399
+
+3,8540
+
+1,8681
+
+4,8681
+
+2,8681
+
+2,8821
+
+3,8821
+
+4,8962
+
+3,9033
+
+2,9103
+
+1,9103
+
+4,9103
+
+3,9244
+
+1,9244
+
+2,9385
+
+4,9385
+
+3,9526
+
+4,9526
+
+1,9526
+
+2,9526
+
+1,9666
+
+3,9666
+
+2,9807
+
+4,9807
+
+3,9807
+
+1,9948
+
+2,9948
+
+4,10089
+
+3,10089
+
+2,10230
+
+3,10230
+
+1,10371
+
+2,10371
+
+4,10371
+
+3,10511
+
+4,10511
+
+1,10652
+
+2,10652
+
+3,10864
+
+2,10934
+
+1,10934
+
+4,11075
+
+2,11216
+
+1,11216
+
+3,11357
+
+4,11357
+
+1,11497
+
+2,11497
+
+4,11497
+
+3,11638
+
+2,11638
+
+4,11779
+
+3,11779
+
+1,11920
+
+2,12061
+
+3,12061
+
+4,12061
+
+1,12202
+
+2,12342
+
+3,12342
+
+4,12483
+
+2,12483
+
+1,12624
+
+3,12624
+
+4,12624
+
+2,12765
+
+1,12906
+
+3,12906
+
+4,12906
+
+1,13610
+
+4,14033
+
+3,14080
+
+2,14127
+
+1,14314
+
+4,14455
+
+3,14455
+
+2,14596
+
+1,14596
+
+3,14596
+
+4,14737
+
+3,14737
+
+1,14878
+
+3,14878
+
+2,15019
+
+4,15019
+
+1,15159
+
+2,15159
+
+1,15300
+
+2,15300
+
+3,15441
+
+4,15441
+
+2,15582
+
+3,15582
+
+1,15723
+
+2,15723
+
+4,15723
+
+3,15864
+
+4,15899
+
+1,15934
+
+2,15969
+
+4,16004
+
+3,16004
+
+4,16145
+
+3,16145
+
+4,16286
+
+3,16286
+
+1,16286
+
+2,16333
+
+3,16380
+
+4,16427
+
+4,16568
+
+3,16568
+
+2,16568
+
+1,16568
+
+4,16850
+
+2,16850
+
+3,16850
+
+1,16990
+
+3,16990
+
+2,17131
+
+1,17131
+
+4,17272
+
+3,17272
+
+1,17413
+
+4,17483
+
+2,17554
+
+3,17624
+
+4,17695
+
+1,17695
+
+3,17765
+
+1,17835
+
+2,17906
+
+3,17976
+
+4,17976
+
+2,18047
+
+1,18047
+
+3,18117
+
+4,18117
+
+1,18258
+
+2,18293
+
+4,18328
+
+3,18364
+
+1,18399
+
+2,18434
+
+4,18469
+
+3,18504
+
+1,18540
+
+2,18540
+
+4,18962
+
+1,19103
+
+3,19244
+
+2,19385
+
+4,19526
+
+1,19666
+
+4,19807
+
+3,19948
+
+3,20089
+
+2,20089
+
+1,20230
+
+4,20230
+
+3,20511
+
+2,20511
+
+1,20793
+
+2,20793
+
+4,20793
+
+3,20793
+
+2,20934
+
+4,21075
+
+1,21075
+
+3,21075
+
+2,21216
+
+1,21216
+
+4,21357
+
+2,21497
+
+3,21497
+
+1,21638
+
+4,21638
+
+2,21779
+
+3,21779
+
+1,21920
+
+2,22061
+
+4,22061
+
+3,22202
+
+1,22202
+
+2,22342
+
+4,22342
+
+3,22483
+
+2,22624
+
+1,22624
+
+4,22765
+
+3,22765
+
+2,22906
+
+1,22906
+
+2,23047
+
+3,23047
+
+4,23188
+
+1,23188
+
+2,23328
+
+3,23328
+
+4,23469
+
+1,23469
+
+3,23610
+
+4,23751
+
+2,23751
+
+1,23892
+
+3,23892
+
+4,24033
+
+2,24033
+
+1,24173
+
+4,24314
+
+3,24314
+
+2,24455
+
+1,24455
+
+4,24596
+
+3,24596
+
+1,24737
+
+2,24737
+
+3,24878
+
+2,24878
+
+4,24878
+
+3,25019
+
+4,25019
+
+1,25019
+
+2,25159
+
+3,25159
+
+1,25159
+
+3,25300
+
+1,25300
+
+4,25300
+
+3,25441
+
+2,25441
+
+1,25582
+
+3,25582
+
+4,25582
+
+2,25723
+
+4,25723
+
+1,25864
+
+3,25864
+
+2,26004
+
+3,26004
+
+2,26145
+
+1,26145
+
+4,26145
+
+3,26286
+
+4,26286
+
+3,26427
+
+1,26427
+
+1,26568
+
+2,26568
+
+3,26709
+
+4,26709
+
+2,26850
+
+1,26990
+
+4,26990
+
+3,27131
+
+2,27272
+
+1,27272
+
+4,27272
+
+3,27413
+
+4,27413
+
+2,27483
+
+1,27483
+
+3,27554
+
+4,27554
+
+1,27695
+
+2,27695
+
+2,27835
+
+3,27835
+
+4,27835
+
+1,27906
+
+4,27976
+
+3,28047
+
+1,28117
+
+4,28188
+
+2,28258
+
+3,28328
+
+1,28399
+
+2,28469
+
+3,28540
+
+4,28540
+
+2,28610
+
+1,28610
+
+3,28681
+
+4,28681
+
+1,28681
+
+3,28962
+
+2,28962
+
+2,29103
+
+4,29103
+
+1,29103
+
+3,29244
+
+1,29385
+
+4,29385
+
+2,29385
+
+3,29526
+
+4,29526
+
+1,29526
+
+4,29666
+
+1,29666
+
+2,29737
+
+3,29807
+
+1,29807
+
+4,29807
+
+3,29948
+
+1,30089
+
+2,30089
+
+4,30089
+
+3,30230
+
+2,30371
+
+4,30371
+
+2,30511
+
+3,30652
+
+1,30652
+
+4,30652
+
+4,30793
+
+2,30934
+
+3,30934
+
+1,31075
+
+2,31216
+
+3,31216
+
+4,31216
+
+1,31357
+
+4,31497
+
+2,31497
+
+3,31638
+
+2,31779
+
+1,31779
+
+4,31779
+
+3,31920
+
+2,31920
+
+1,32061
+
+4,32061
+
+3,32202
+
+1,32342
+
+2,32342
+
+4,32342
+
+3,32483
+
+1,32624
+
+4,32624
+
+2,32765
+
+3,32906
+
+1,32906
+
+4,32906
+
+1,33047
+
+3,33188
+
+2,33188
+
+4,33188
+
+4,33328
+
+1,33469
+
+3,33469
+
+2,33469
+
+2,33610
+
+3,33751
+
+4,33751
+
+1,33751
+
+2,33892
+
+1,33892
+
+3,33962
+
+4,33962
+
+2,34033
+
+1,34033
+
+2,34173
+
+3,34173
+
+1,34314
+
+3,34314
+
+4,34314
+
+4,34455
+
+1,34596
+
+2,34596
+
+3,34596
+
+1,34737
+
+2,34878
+
+3,34878
+
+4,34878
+
+3,35019
+
+2,35159
+
+1,35159
+
+4,35159
+
+2,35300
+
+1,35441
+
+3,35441
+
+4,35441
+
+4,35582
+
+2,35723
+
+1,35723
+
+3,35723
+
+1,35864
+
+2,36004
+
+3,36004
+
+4,36004
+
+3,36145
+
+2,36286
+
+1,36286
+
+4,36286
+
+2,36427
+
+3,36427
+
+4,36427
+
+4,36568
+
+3,36568
+
+1,36568
+
+2,36709
+
+3,36850
+
+4,36850
+
+1,36850
+
+2,36990
+
+1,36990
+
+3,37061
+
+4,37061
+
+2,37131
+
+1,37131
+
+4,37272
+
+3,37272
+
+1,37272
+
+2,37413
+
+1,37413
+
+4,37413
+
+3,37554
+
+2,37695
+
+1,37695
+
+4,37695
+
+3,37976
+
+1,37976
+
+4,37976
+
+1,38258
+
+2,38258
+
+3,38258
+
+4,38399
+
+1,38399
+
+2,38469
+
+3,38469
+
+1,38540
+
+4,38540
+
+2,38821
+
+1,38821
+
+4,38821
+
+3,38962
+
+1,38962
+
+2,39103
+
+1,39244
+
+3,39244
+
+2,39385
+
+4,39385
+
+3,39526
+
+1,39666
+
+2,39666
+
+4,39807
+
+3,39807
+
+1,39948
+
+4,40089
+
+2,40089
+
+1,40230
+
+3,40230
+
+2,40371
+
+4,40511
+
+3,40511
+
+1,40652
+
+2,40793
+
+3,40793
+
+4,40793
+
+3,40934
+
+4,40934
+
+3,41075
+
+1,41075
+
+2,41075
+
+4,41216
+
+3,41357
+
+2,41357
+
+1,41497
+
+2,41638
+
+4,41638
+
+1,41779
+
+3,41779
+
+2,41920
+
+3,42061
+
+1,42061
+
+4,42202
+
+2,42202
+
+3,42342
+
+1,42483
+
+4,42483
+
+2,42483
+
+3,42624
+
+2,42695
+
+1,42765
+
+3,42765
+
+4,42765
+
+2,42906
+
+1,42906
+
+3,42976
+
+4,42976
+
+2,43047
+
+1,43047
+
+3,43188
+
+2,43188
+
+1,43328
+
+3,43328
+
+4,43328
+
+2,43469
+
+1,43469
+
+2,43610
+
+3,43610
+
+4,43610
+
+4,43751
+
+1,43751
+
+2,43892
+
+1,43892
+
+3,43892
+
+4,44033
+
+2,44033
+
+3,44173
+
+4,44173
+
+1,44173
+
+1,44314
+
+2,44314
+
+3,44385
+
+4,44385
+
+2,44455
+
+1,44455
+
+3,44596
+
+4,44596
+
+2,44596
+
+1,44737
+
+3,44737
+
+4,44737
+
+2,44878
+
+3,44878
+
+3,45019
+
+4,45019
+
+1,45019
+
+2,45159
+
+1,45159
+
+3,45230
+
+4,45230
+
+2,45300
+
+1,45300
+
+3,45441
+
+4,45441
+
+2,45511
+
+1,45582
+
+3,45582
+
+4,45582
+
+1,45723
+
+2,45723
+
+3,45793
+
+4,45864
+
+2,45864
+
+1,45864
+
+3,46004
+
+4,46004
+
+1,46075
+
+2,46145
+
+3,46145
+
+4,46145
+
+1,46286
+
+4,46286
+
+2,46286
+
+3,46427
+
+1,46427
+
+2,46427
+
+4,46568
+
+3,46568
+
+1,46568
+
+2,46709
+
+3,46709
+
+4,46709
+
+1,46850
+
+2,46990
+
+4,46990
+
+3,46990
+
+1,47131
+
+3,47131
+
+4,47272
+
+2,47272
+
+3,47413
+
+2,47413
+
+1,47554
+
+3,47554
+
+4,47554
+
+2,47835
+
+1,47835
+
+4,47835
+
+3,47906
+
+2,47976
+
+3,48047
+
+4,48117
+
+1,48117
+
+2,48188
+
+4,48258
+
+3,48328
+
+1,48399
+
+4,48469
+
+2,48540
+
+3,48610
+
+1,48681
+
+4,48681
+
+2,48751
+
+4,48821
+
+3,48892
+
+2,48962
+
+1,49033
+
+4,49103
+
+2,49173
+
+3,49244
+
+4,49244
+
+1,49314
+
+2,49385
+
+4,49455
+
+3,49526
+
+2,49596
+
+4,49666
+
+1,49737
+
+2,49807
+
+3,49807
+
+4,49948
+
+3,49948
+
+1,50089
+
+2,50089
+
+4,50159
+
+3,50230
+
+2,50300
+
+3,50371
+
+1,50371
+
+4,50441
+
+2,50511
+
+3,50582
+
+4,50652
+
+2,50723
+
+4,50793
+
+1,50793
+
+3,50864
+
+2,50934
+
+1,51004
+
+4,51075
+
+2,51145
+
+1,51216
+
+3,51216
+
+4,51286
+
+2,51357
+
+3,51427
+
+1,51497
+
+4,51497
+
+2,51497
+
+3,51638
+
+4,51638
+
+1,51779
+
+3,51779
+
+2,51779
+
+1,51920
+
+4,51920
+
+3,51920
+
+1,52061
+
+2,52061
+
+4,52061
+
+3,52202
+
+4,52342
+
+1,52342
+
+2,52342
+
+3,52413
+
+1,52483
+
+2,52554
+
+1,52624
+
+4,52624
+
+3,52624
+
+2,52695
+
+4,52765
+
+3,52835
+
+1,52906
+
+4,52976
+
+2,53047
+
+3,53117
+
+1,53188
+
+4,53188
+
+2,53188
+
+3,53258
+
+2,53328
+
+4,53399
+
+1,53469
+
+2,53540
+
+3,53610
+
+4,53681
+
+2,53751
+
+1,53751
+
+3,53751
+
+4,53821
+
+1,53892
+
+3,53962
+
+2,54033
+
+4,54103
+
+1,54173
+
+2,54244
+
+3,54314
+
+4,54314
+
+1,54314
+
+2,54455
+
+1,54455
+
+3,54526
+
+4,54526
+
+2,54596
+
+1,54596
+
+1,54737
+
+4,54737
+
+2,54807
+
+3,54807
+
+1,54878
+
+4,54878
+
+3,55019
+
+4,55019
+
+2,55089
+
+1,55089
+
+3,55159
+
+4,55159
+
+2,55300
+
+1,55300
+
+2,55441
+
+4,55441
+
+3,55441
+
+1,55582
+
+3,55582
+
+2,55723
+
+1,55723
+
+4,55723
+
+3,55864
+
+2,56004
+
+4,56004
+
+3,56051
+
+1,56098
+
+2,56145
+
+4,56192
+
+3,56239
+
+2,56286
+
+1,56286
+
+1,56568
+
+2,56603
+
+3,56638
+
+4,56673
+
+1,56709
+
+2,56744
+
+3,56779
+
+4,56814
+
+2,56850
+
+1,56850
+
+3,56990
+
+1,56990
+
+3,57131
+
+4,57131
+
+2,57131
+
+1,57272
+
+4,57272
+
+2,57413
+
+1,57413
+
+4,57554
+
+3,57554
+
+2,57695
+
+1,57695
+
+4,57695
+
+3,57835
+
+2,57835
+
+1,57976
+
+4,57976
+
+3,58117
+
+2,58188
+
+1,58258
+
+4,58258
+
+3,58399
+
+2,58399
+
+1,58540
+
+4,58540
+
+2,58681
+
+3,58681
+
+3,58821
+
+4,58821
+
+2,58962
+
+1,58962
+
+1,59103
+
+4,59103
+
+3,59103
+
+4,59244
+
+3,59385
+
+2,59385
+
+1,59385
+
+1,59526
+
+3,59666
+
+2,59666
+
+3,59807
+
+2,59948
+
+1,59948
+
+4,59948
+
+1,60230
+
+4,60230
+
+2,60300
+
+3,60371
+
+4,60441
+
+1,60511
+
+2,60582
+
+4,60652
+
+3,60723
+
+2,60793
+
+1,60793
+
+4,60934
+
+2,61075
+
+3,61216
+
+4,61357
+
+1,61357
+
+3,61404
+
+2,61450
+
+1,61638
+
+4,61779
+
+3,61779
+
+2,61920
+
+1,61920
+
+3,61920
+
+4,62061
+
+3,62061
+
+2,62202
+
+3,62202
+
+1,62342
+
+4,62342
+
+1,62483
+
+2,62483
+
+1,62624
+
+2,62624
+
+3,62765
+
+4,62765
+
+2,62906
+
+3,62906
+
+1,63047
+
+3,63047
+
+4,63047
+
+3,63188
+
+4,63223
+
+1,63258
+
+2,63293
+
+4,63328
+
+3,63328
+
+2,63469
+
+3,63469
+
+4,63610
+
+3,63610
+
+1,63610
+
+2,63657
+
+3,63704
+
+4,63751
+
+4,63892
+
+3,63892
+
+2,63892
+
+1,63892
+
+4,64173
+
+2,64173
+
+3,64173
+
+1,64314
+
+3,64314
+
+2,64455
+
+1,64455
+
+4,64596
+
+3,64596
+
+1,64737
+
+3,64737
+
+2,64878
+
+4,64878
+
+3,65019
+
+4,65019
+
+1,65159
+
+2,65159
+
+3,65300
+
+4,65300
+
+1,65300
+
+2,65441
+
+1,65488
+
+4,65535
+
+3,65582
+
+2,65629
+
+3,65676
+
+4,65723
+
+1,65770
+
+2,65817
+
+3,65864
+
+4,65864
+
+1,65864
+
+2,66145
+
+1,66145
+
+4,66145
+
+3,66286
+
+4,66286
+
+3,66427
+
+4,66427
+
+1,66427
+
+3,66568
+
+2,66568
+
+1,66709
+
+2,66709
+
+4,66709
+
+3,66850
+
+2,66850
+
+1,66990
+
+2,66990
+
+3,67131
+
+4,67131
+
+1,67272
+
+3,67272
+
+4,67413
+
+2,67413
+
+3,67554
+
+1,67554
+
+4,67554
+
+2,67601
+
+3,67648
+
+2,67695
+
+1,67742
+
+4,67788
+
+3,67835
+
+2,67835
+
+4,67976
+
+1,68117
+
+2,68117
+
+3,68117
+
+4,68258
+
+3,68258
+
+2,68399
+
+1,68399
+
+1,68540
+
+4,68540
+
+2,68681
+
+3,68681
+
+4,68681
+
+2,68821
+
+1,68821
+
+3,68962
+
+2,68962
+
+4,69103
+
+3,69103
+
+1,69244
+
+4,69244
+
+4,69385
+
+3,69385
+
+2,69526
+
+1,69526
+
+3,69666
+
+2,69666
+
+1,69807
+
+3,69807
+
+4,69807
+
+2,69948
+
+1,69948
+
+4,70089
+
+3,70159
+
+2,70230
+
+1,70371
+
+2,70371
+
+3,70371
+
+4,70511
+
+3,70547
+
+2,70582
+
+1,70617
+
+4,70652
+
+2,70793
+
+3,70793
+
+3,70934
+
+1,70934
+
+4,70934
+
+1,71075
+
+2,71075
+
+4,71216
+
+2,71216
+
+3,71357
+
+1,71357
+
+3,71497
+
+4,71497
+
+3,71638
+
+2,71638
+
+1,71779
+
+4,71779
+
+3,71920
+
+4,71920
+
+1,72061
+
+4,72061
+
+2,72061
+
+3,72202
+
+2,72202
+
+3,72342
+
+1,72342
+
+2,72483
+
+4,72483
+
+3,72624
+
+2,72624
+
+1,72730
+
+2,72765
+
+3,72800
+
+4,72835
+
+1,72906
+
+2,72941
+
+4,72976
+
+3,73011
+
+1,73047
+
+2,73082
+
+4,73117
+
+3,73152
+
+2,73188
+
+1,73188
+
+3,73328
+
+4,73328
+
+2,73469
+
+1,73469
+
+3,73610
+
+1,73610
+
+4,73751
+
+2,73751
+
+3,73892
+
+1,74033
+
+4,74033
+
+2,74173
+
+4,74244
+
+1,74314
+
+3,74314
+
+2,74314
+
+4,74385
+
+1,74455
+
+3,74526
+
+1,74596
+
+2,74631
+
+3,74666
+
+4,74702
+
+1,74737
+
+2,74772
+
+3,74807
+
+4,74842
+
+1,74878
+
+2,74878
+
+3,75019
+
+4,75019
+
+1,75159
+
+2,75159
+
+1,75300
+
+4,75300
+
+2,75441
+
+3,75441
+
+4,75441
+
+3,75582
+
+2,75582
+
+1,75723
+
+2,75723
+
+3,75864
+
+4,75864
+
+1,76004
+
+4,76004
+
+2,76004
+
+2,76145
+
+1,76216
+
+4,76216
+
+3,76427
+
+4,76427
+
+2,76568
+
+1,76568
+
+4,76568
+
+3,76709
+
+4,76709
+
+1,76850
+
+2,76920
+
+3,76990
+
+4,77131
+
+3,77166
+
+2,77202
+
+1,77237
+
+3,77272
+
+4,77272
+
+2,77413
+
+3,77413
+
+2,77554
+
+1,77554
+
+1,77695
+
+2,77730
+
+3,77765
+
+4,77800
+
+1,77835
+
+2,77835
+
+3,77976
+
+2,77976
+
+4,78117
+
+3,78117
+
+1,78258
+
+2,78258
+
+4,78399
+
+2,78540
+
+1,78681
+
+2,78681
+
+3,78821
+
+4,78821
+
+1,79103
+
+2,79138
+
+4,79173
+
+3,79209
+
+1,79244
+
+2,79279
+
+4,79314
+
+3,79350
+
+2,79385
+
+1,79385
+
+4,79526
+
+1,79807
+
+4,79948
+
+1,80230
+
+4,80371
+
+4,80652
+
+2,80793
+
+1,81075
+
+4,81357
+
+1,81638
+
+4,81920
+
+1,82202
+
+3,82342
+
+4,82624
+
+3,82765
+
+2,82906
+
+1,83328
+
+4,83610
+
+2,83751
+```
+
+frida hook得到最后的server::instance，也就是flag
+
+连接手机，打开frida server
+
+```assembly
+import frida
+import sys
+
+PACKAGE = 'com.DefaultCompany.com.unity.template.mobile2D'
+
+if __name__ == '__main__':
+    jscode = open('./script.js', 'r').read() # 获取js脚本内容
+    # get_usb_device获取设备（就是你手机）
+    # attach（翻译：链接）我所理解是连接给定包名的app的进程，为什么是我所理解，因为官网没有写
+    process = frida.get_usb_device().attach(PACKAGE) # 获取给定包名的app进程
+    print(process) # 打印看看是嘛玩意儿
+    script = process.create_script(jscode) # 这里是把你的js脚本给塞进了process，源码在这https://github.com/frida/frida-python/blob/master/frida/core.py#L147
+    # script.on('message', on_message)
+    print('[*] Running CTF')
+    script.load() # 加载脚本，https://github.com/frida/frida-python/blob/master/frida/core.py#L191
+    sys.stdin.read()
+```
+
+> frida -U com.DefaultCompany.com.unity.template.mobile2D -l so.js --no-pause
+
+script.js
+
+```assembly
+let UpdateFunc = new NativeFunction(Module.findExportByName("libd3mug.so", "update"),
+'void', ['int'])
+for (let i = 0; i < hitpoints.length; i++)
+UpdateFunc(hitpoints[i]);
+let GetFunc = new NativeFunction(Module.findExportByName("libd3mug.so", "get"), 'pointer',
+[]);
+var result = GetFunc();
+console.log(ptr(result));
+```
+
+或者
+
+```assembly
+const hitdata = ``; // beatmaps/chromevox/hitpoints
+const timeList = hitdata.split("\n").map((v, idx, arr) => {
+    return parseInt(v.split(",")[1], 10);
+});
+function awaitHook(){
+    
+    var ptr = Module.findBaseAddress("libd3mug.so");
+    console.log(ptr);
+    const update = new NativeFunction(ptr.add(0x0000780), "pointer", ["char"]);
+    const instance = ptr.add(0x02D18);
+    // running
+    instance.writePointer(new NativePointer(0)); // init.
+    for (const t of timeList) {
+        update(t);
+    }
+    console.log(instance.readPointer().readCString());
+}
+setImmediate(function(){
+    setTimeout(awaitHook,10);
+})
+```
+
+Process.enumerateModulesSync()
+
+frida-ps -Uai查看进行pid
+
+```assembly
+import frida
+import sys
+
+jscode = """
+console.log("111");
+var trueValue =[0, 0, 0, 146, 292, 292, 439, 512, 585, 585, 658, 731, 804, 878, 1024, 1170, 1170, 1317, 1463, 1463, 1609, 1682, 1756, 1756, 1902, 2048, 2195, 2341, 2341, 2487, 2634, 2634, 2780, 2853, 2926, 2926, 3073, 3146, 3219, 3219, 3365, 3439, 3512, 3512, 3658, 3804, 3878, 3951, 4024, 4097, 4097, 4243, 4390, 4682, 4682, 4682, 4829, 4975, 4975, 5121, 5195, 5268, 5341, 5414, 5487, 5560, 5560, 5853, 5853, 5999, 6146, 6146, 6292, 6365, 6439, 6439, 6585, 6731, 6731, 6731, 7024, 7024, 7170, 7317, 7317, 7463, 7536, 7609, 7609, 7682, 7756, 7829, 7902, 7902, 7975, 8048, 8121, 8195, 8341, 8487, 8634, 8780, 9073, 9073, 9073, 9219, 9365, 9365, 9512, 9658, 9658, 9804, 9878, 9951, 9951, 10097, 10243, 10243, 10243, 10390, 10463, 10536, 10536, 10682, 10829, 10829, 10975, 11121, 11121, 11268, 11414, 11414, 11560, 11707, 11707, 11853, 11999, 11999, 11999, 12146, 12292, 12292, 12439, 12439, 12585, 12585, 12585, 12731, 12878, 12951, 13024, 13097, 13170, 13170, 13317, 13463, 13463, 13463, 13609, 13756, 13756, 13756, 13902, 14048, 14048, 14195, 14341, 14487, 14634, 14634, 14926, 14926, 14926, 15219, 15219, 15219, 15365, 15365, 15512, 15512, 15658, 15804, 15804, 15951, 16024, 16097, 16097, 16170, 16243, 16317, 16390, 16390, 16536, 16682, 16682, 16829, 16902, 16975, 16975, 17121, 17268, 17268, 17268, 17414, 17560, 17634, 17707, 17780, 17853, 17926, 17999, 18073, 18146, 18146, 18292, 18439, 18439, 18731, 18731, 18731, 18878, 19024, 19024, 19024, 19170, 19243, 19317, 19463, 19609, 19609, 19609, 19756, 19829, 19902, 20048, 20195, 20195, 20341, 20487, 20487, 20634, 20780, 20780, 20926, 21073, 21073, 21219, 21365, 21365, 21365, 21512, 21585, 21658, 21658, 21804, 21951, 21951, 21951, 22097, 22243, 22317, 22390, 22463, 22536, 22536, 22609, 22682, 22756, 22829, 22829, 22975, 23121, 23121, 23268, 23414, 23560, 23707, 23780, 23853, 23926, 23999, 23999, 24073, 24146, 24219, 24292, 24365, 24439, 24512, 24585, 24585, 24731, 24731, 24878, 24878, 24878, 25024, 25170, 25170, 25317, 25390, 25463, 25463, 25609, 25756, 25756, 25756, 25902, 25902, 26048, 26048, 26195, 26195, 26341, 26341, 26414, 26487, 26487, 26560, 26634, 26634, 26780, 26780, 26926, 27219, 27512, 27585, 27658, 27731, 27804, 27804, 28097, 28097, 28390, 28682, 28682, 28975, 29268, 29268, 29560, 29560, 29853, 29853, 30146, 30439, 30439, 30731, 31024, 31024, 31317, 31609, 31609, 31902, 32195, 32195, 32487, 32780, 32780, 32780, 33365, 33365, 33365, 33951, 33951, 34243, 34536, 34536, 34829, 35121, 35121, 35414, 35707, 35707, 35707, 35999, 36292, 36585, 36878, 36878, 37024, 37024, 37170, 37170, 37463, 37463, 37463, 37609, 37756, 37756, 37902, 38048, 38048, 38195, 38341, 38341, 38487, 38634, 38634, 38780, 38926, 39073, 39219, 39365, 39512, 39658, 39804, 39804, 39951, 40097, 40097, 40243, 40390, 40390, 40536, 40682, 40829, 40975, 40975, 41121, 41268, 41414, 41560, 41707, 41853, 41999, 42146, 42146, 42292, 42292, 42439, 42585, 42731, 42731, 42878, 42878, 43024, 43170, 43317, 43317, 43463, 43463, 43609, 43609, 43682, 43756, 43756, 43829, 43902, 43902, 44048, 44048, 44195, 44195, 44341, 44341, 44487, 44560, 44634, 44707, 44780, 44853, 44926, 44999, 45073, 45146, 45219, 45292, 45365, 45439, 45512, 45585, 45658, 45658, 45804, 45951, 45951, 46097, 46243, 46243, 46536, 46536, 46536, 46829, 46829, 46902, 46975, 47121, 47121, 47268, 47414, 47414, 47560, 47634, 47707, 47707, 47853, 47926, 47999, 47999, 48146, 48292, 48292, 48439, 48585, 48585, 48731, 48878, 48878, 49024, 49170, 49170, 49243, 49317, 49463, 49463, 49609, 49756, 49756, 49902, 49975, 50048, 50048, 50121, 50195, 50268, 50341, 50341, 50487, 50487, 50707, 50707, 50926, 50926, 51073, 51219, 51365, 51512, 51512, 51585, 51658, 51804, 51804, 51951, 52097, 52097, 52170, 52243, 52317, 52390, 52390, 52536, 52609, 52682, 52682, 52829, 52975, 52975, 53121, 53268, 53268, 53414, 53560, 53560, 53707, 53853, 53853, 53926, 53999, 54073, 54146, 54146, 54219, 54292, 54365, 54439, 54439, 54512, 54585, 54658, 54731, 54731, 54878, 54878, 55024, 55024, 55024, 55317, 55317, 55317, 55609, 55609, 55609, 55902, 55902, 55902, 56195, 56268, 56341, 56487, 56487, 56634, 56780, 56780, 56926, 56999, 57073, 57073, 57219, 57292, 57365, 57365, 57512, 57658, 57658, 57804, 57951, 57951, 58097, 58243, 58243, 58390, 58536, 58536, 58609, 58682, 58829, 58829, 58975, 59121, 59121, 59268, 59341, 59414, 59414, 59560, 59634, 59707, 59707, 59853, 59926, 59999, 59999, 60073, 60292, 60292, 60439, 60585, 60585, 60731, 60878, 60878, 60951, 61024, 61024, 61170, 61170, 61317, 61317, 61463, 61463, 61463, 61536, 61609, 61609, 61756, 61756, 61902, 61902, 62048, 62048, 62048, 62121, 62195, 62195, 62341, 62341, 62414, 62487, 62560, 62634, 62634, 62780, 62780, 62926, 62926, 63073, 63073, 63219, 63219, 63292, 63365, 63439, 63512, 63512, 63585, 63658, 63731, 63804, 63804, 63878, 63951, 64024, 64097, 64097, 64170, 64243, 64317, 64390, 64390, 64536, 64536, 64609, 64682, 64829, 64975, 65121, 65268, 65414, 65560, 65560, 65707, 65853, 65999, 66146, 66146, 66439, 66585, 66878, 67170, 67317, 67317, 67609, 67902, 68048, 68195, 68341, 68487, 68487, 68780, 68926, 69073, 69219, 69365, 69512, 69658, 69658, 69804, 69951, 70243, 70390, 70536, 70682, 70829, 70829, 71121, 71268, 71560, 71853, 71999, 71999, 72292, 72585, 72731, 72878, 73024, 73170, 73317, 73463, 73609, 73609, 73756, 73975, 74195, 74341, 74341, 74634, 74707, 74780, 74926, 74926, 75073, 75073, 75219, 75219, 75219, 75365, 75512, 75512, 75658, 75658, 75804, 75804, 75804, 75951, 76097, 76097, 76390, 76390, 76390, 76536, 76682, 76682, 76829, 76829, 76975, 76975, 76975, 77268, 77268, 77414, 77560, 77560, 77561, 77707, 77853, 77853, 77999, 77999, 78146, 78146, 78146, 78292, 78439, 78439, 78731, 78732, 78732, 78878, 79024, 79024, 79170, 79171, 79317, 79317, 79463, 79609, 79609, 79756, 79902, 79902, 80048, 80195, 80341, 80341, 80487, 80487, 80634, 80780, 80780, 80926, 80926, 81073, 81073, 81073, 81219, 81365, 81512, 81512, 81658, 81658, 81658, 81951, 81951, 81951, 82097, 82243, 82243, 82390, 82536, 82682, 82682, 82829, 82829, 82829, 82975, 83121, 83121, 83268, 83414, 83414, 83560, 83707, 83853, 83853, 83999, 83999, 83999, 84292, 84292, 84365, 84439, 84512, 84585, 84585, 84731, 84804, 84878, 84878, 84951, 85024, 85097, 85170, 85170, 85317, 85390, 85463, 85463, 85536, 85609, 85682, 85756, 85756, 85829, 85902, 85975, 86048, 86048, 86121, 86195, 86268, 86341, 86341, 86487, 86634, 86634, 86707, 86780, 86853, 86926, 86926, 87073, 87146, 87219, 87219, 87292, 87365, 87439, 87512, 87512, 87658, 87804, 87804, 87878, 87951, 88024, 88097, 88097, 88170, 88243, 88317, 88390, 88390, 88536, 88609, 88682, 88682, 88829, 88975, 88975, 89121, 89121, 89268, 89268, 89414, 89414, 89560, 89560, 89707, 89707, 89853, 89853, 89999, 89999, 90146, 90146, 90292, 90292, 90439, 90439, 90585, 90585, 90731, 90731, 90878, 90878, 91024, 91024, 91170, 91170, 91317, 91317, 91390, 91463, 91536, 91609, 91682, 91756, 91829, 91902, 91975, 92048, 92121, 92195, 92268, 92341, 92634, 92780, 92926, 93219, 93365, 93365, 93365, 93365, 93658, 93658, 93804, 93878, 93951, 93951, 94097, 94243, 94317, 94390, 94463, 94536, 94536, 94682, 94829, 94829, 94975, 95121, 95121, 95268, 95414, 95487, 95560, 95634, 95707, 95707, 95853, 95853, 95999, 95999, 96146, 96292, 96292, 96292, 96439, 96585, 96585, 96658, 96731, 96804, 96878, 96878, 97024, 97170, 97170, 97317, 97390, 97463, 97463, 97609, 97756, 97756, 97829, 97902, 98048, 98048, 98048, 98195, 98341, 98341, 98487, 98560, 98634, 98634, 98780, 98926, 98926, 99073, 99219, 99219, 99365, 99512, 99512, 99658, 99804, 99804, 99951, 100097, 100170, 100243, 100317, 100390, 100390, 100536, 100682, 100682, 100829, 100975, 100975, 100975, 101121, 101268, 101268, 101341, 101414, 101487, 101560, 101560, 101707, 101853, 101853, 101926, 101999, 102073, 102146, 102146, 102292, 102439, 102439, 102439, 102585, 102658, 102731, 102731, 102878, 103024, 103024, 103024, 103170, 103243, 103317, 103317, 103317, 103463, 103609, 103682, 103756, 103829, 103902, 103902, 104048, 104195, 104195, 104341, 104487, 104487, 104487, 104634, 104780, 104853, 104926, 104999, 105073, 105073, 105219, 105365, 105365, 105512, 105658, 105658, 105658, 105804, 105951, 105951, 106097, 106170, 106243, 106243, 106317, 106390, 106536, 106536, 106682, 106756, 106829, 106829, 106829, 106975, 107121, 107121, 107268, 107268, 107414, 107414, 107414, 107560, 107707, 107707, 107707, 107853, 107999, 107999, 107999, 108146, 108292, 108292, 108439, 108585, 108585, 108731, 108878, 108878, 108878, 109024, 109170, 109170, 109317, 109463, 109463, 109536, 109609, 109682, 109756, 109756, 109902, 110048, 110048, 110048, 110195, 110195, 110341, 110341, 110341, 110487, 110487, 110634, 110634, 110634, 110780, 110780, 110926, 110926, 110926, 111073, 111073, 111219, 111219, 111219, 111365, 111512, 111658, 111731, 111804, 111878, 111951, 112024, 112097, 112097, 112097, 112390, 112390, 112536, 112682, 112682, 112682, 112829, 112975, 112975, 113121, 113268, 113268, 113414, 113560, 113560, 113707, 113853, 113853, 113999, 114146, 114219, 114292, 114365, 114439, 114439, 114585, 114731, 114731, 114878, 115024, 115024, 115024, 115170, 115317, 115317, 115463, 115536, 115609, 115609, 115756, 115902, 115902, 115975, 116048, 116121, 116195, 116195, 116268, 116341, 116414, 116487, 116487, 116560, 116634, 116707, 116780, 116780, 116926, 117073, 117073, 117219, 117365, 117365, 117512, 117658, 117658, 117804, 117878, 117951, 117951, 118097, 118243, 118243, 118390, 118536, 118536, 118682, 118829, 118902, 118975, 119048, 119121, 119121, 119268, 119414, 119414, 119560, 119707, 119707, 119853, 119999, 119999, 120146, 120292, 120292, 120439, 120439, 120731, 121024, 121170, 121463, 121536, 121609, 121682, 121756, 121756, 121756, 121902, 122048, 122048, 122048, 122195, 122341, 122341, 122341, 122487, 122560, 122634, 122634, 122634, 122780, 122926, 122926, 122926, 123073, 123219, 123219, 123219, 123365, 123512, 123512, 123512, 123585, 123658, 123731, 123804, 123804, 123804, 123951, 124097, 124097, 124097, 124243, 124390, 124390, 124390, 124536, 124682, 124682, 124682, 124829, 124975, 124975, 124975, 125121, 125268, 125268, 125268, 125414, 125487, 125560, 125560, 125560, 125707, 125853, 125853, 125853, 125999, 126146, 126146, 126146, 126292, 126439, 126439, 126439, 126585, 126585, 126731, 126731, 126878, 126878, 127024, 127024, 127024, 127170, 127170, 127317, 127317, 127463, 127463, 127609, 127609, 127609, 127756, 127756, 127902, 127902, 128048, 128048, 128195, 128195, 128268, 128341, 128341, 128414, 128487, 128487, 128560, 128634, 128707, 128780, 128780, 128853, 128926, 128999, 129073, 129146, 129219, 129292, 129365, 129365, 129439, 129512, 129585, 129658, 129731, 129804, 129878, 129951, 129951, 130024, 130097, 130170, 130243, 130243, 130317, 130390, 130463, 130536, 130536, 130682, 130756, 130829, 130829, 130829, 130975, 130975, 131121, 131195, 131268, 131341, 131560, 131707, 131707, 131780, 131853, 131926, 132146, 132292, 132365, 132439, 132512, 132731, 132878, 132878, 132951, 133024, 133097, 133463, 133463, 133756, 134048, 134048, 134048, 134341, 134634, 134634, 134926, 134926, 135219, 135219, 135219, 135512, 135512, 135658, 135658, 135804, 135804, 135951, 135951, 136097, 136097, 136243, 136243, 136390, 136390, 136536, 136536, 136609, 136682, 136682, 136829, 136829, 136902, 136975, 136975, 137121, 137121, 137268, 137268, 137414, 137414, 137560, 137560, 137707, 137707, 137780, 137853, 137926, 137999, 137999, 138073, 138146, 138146, 138219, 138292, 138365, 138439, 138439, 138512, 138585, 138658, 138731, 138731, 138804, 138878, 138951, 139024, 139024, 139097, 139170, 139243, 139317, 139317, 139463, 139463, 139609, 139609, 139756, 139756, 139902, 139902, 140195, 140195, 140195, 140195]
+var UpdatePtr = new NativeFunction(Module.findExportByName("libd3mug.so", "update"), 'void',  ['int']) 
+for (var i = 0; i < trueValue.length; i++)
+{     UpdatePtr(trueValue[i]) } 
+var GetFlag = new NativeFunction(Module.findExportByName("libd3mug.so", "get"), 'pointer', []);
+var result = GetFlag();
+console.log(ptr(result));
+console.log(hexdump(result, { length: 32 }));
+"""
+def printMessage(message,data):
+    if message['type'] == 'send':
+        print(' {0}'.format(message['payload']))
+    else:
+        print(message)
+# 5155
+# process = frida.get_usb_device(timeout=1000).attach("com.DefaultCompany.com.unity.template.mobile2D") # pid 不知道为什么用应用名和包名attach不上
+process = frida.get_usb_device(timeout=1000).attach(5155) # pid 不知道为什么用应用名和包名attach不上
+script = process.create_script(jscode)
+script.on('message',printMessage)
+script.load()
+sys.stdin.read()
+```
+
+> {'type': 'error', 'description': 'Error: expected a pointer', 'stack': 'Error: expected a pointer\n    at <eval> (/script1.js:4)', 'fileName': '/script1.js', 'lineNumber': 4, 'columnNumber': 1}
+
+但是需要在真机运行，虚拟机运行会报错，因为虚拟机无法调试so文件
+
+方法二：
+
+如果要静态分析解题也是可行的，libd3mug.so中的算法是一个类似于feistel的东西，通过一个静态的种子初始化
+mt19937随机数生成器，然后先生成随机数判定是否要进入下一步解密，在解密中重新生成随机数作为key，然后选取
+一个偏移在数据中取出32字节，加密其中的16字节并将左右位置互换，将每个note的击打时间都录入update函数，即
+可解出正确答案。会比较费时费力，可以自行尝试。
+
+flag的生成算法在libd3mug.so里
+
+```assembly
+__int64 __fastcall Server::run(__int64 this, char a2)
+{
+  __int64 v2; // x9
+  __int64 v3; // x8
+  unsigned __int64 v4; // x13
+  unsigned __int64 *v5; // x12
+  unsigned __int64 v6; // x14
+  unsigned __int64 v7; // x14
+  __int64 v8; // x14
+  int *v9; // x12
+  unsigned __int64 v10; // x8
+  int v11; // w10
+  int v12; // w13
+  int v13; // w15
+  unsigned __int64 v14; // x8
+  unsigned __int64 v15; // t2
+
+  v2 = *(_QWORD *)(this + 0x13A8);
+  v3 = this + 0x28;
+  v4 = (v2 + 1) % 0x270uLL;
+  v5 = (unsigned __int64 *)(this + 0x28 + 8 * v4);
+  *(_QWORD *)(this + 0x28 + 8 * v2) = (0x9908B0DF * (*v5 & 1)) ^ *(_QWORD *)(this + 0x28 + 8 * ((v2 + 0x18D) % 0x270uLL)) ^ ((*v5 & 0x7FFFFFFE | *(_QWORD *)(this + 0x28 + 8 * v2) & 0xFFFFFFFF80000000LL) >> 1);
+  v6 = *(_QWORD *)(this + 0x28 + 8LL * *(_QWORD *)(this + 0x13A8));
+  *(_QWORD *)(this + 0x13A8) = v4;
+  v7 = (((unsigned int)(v6 >> 0xB) ^ (unsigned int)v6) << 7) & 0x9D2C5680 ^ (unsigned int)(v6 >> 0xB) ^ v6;
+  if ( (((_DWORD)v7 << 0xF) & 0xEFC60000 ^ v7 ^ ((((_DWORD)v7 << 0xF) & 0xEFC60000 ^ v7) >> 0x12)) % 7 >= 3 )
+  {
+    v8 = (unsigned __int16)(v4 + 1) % 0x270u;
+    *v5 = (0x9908B0DF * (*(_QWORD *)(v3 + 8LL * (unsigned int)v8) & 1LL)) ^ *(_QWORD *)(v3
+                                                                                      + 8LL
+                                                                                      * ((unsigned __int16)(v4 + 0x18D)
+                                                                                       % 0x270u)) ^ ((*(_QWORD *)(v3 + 8LL * (unsigned int)v8) & 0x7FFFFFFELL | *v5 & 0xFFFFFFFF80000000LL) >> 1);
+    v9 = (int *)(this + (a2 & 0xF));
+    v10 = *(_QWORD *)(v3 + 8LL * *(_QWORD *)(this + 0x13A8));
+    *(_QWORD *)(this + 0x13A8) = v8;
+    v11 = *v9;
+    v12 = v9[1];
+    LODWORD(v8) = v9[2];
+    v13 = v9[3];
+    *v9 = v8;
+    v9[1] = v13;
+    v14 = (((((unsigned int)(v10 >> 0xB) ^ (unsigned int)v10) << 7) & 0x9D2C5680 ^ (unsigned int)(v10 >> 0xB) ^ (unsigned int)v10) << 0xF) & 0xEFC60000 ^ (((unsigned int)(v10 >> 0xB) ^ (unsigned int)v10) << 7) & 0x9D2C5680 ^ (unsigned int)(v10 >> 0xB) ^ v10;
+    HIDWORD(v15) = v8 ^ (v14 >> 0x12) ^ v14;
+    LODWORD(v15) = HIDWORD(v15);
+    LODWORD(v14) = v15 >> 0x13;
+    v9[2] = v14 ^ v11;
+    v9[3] = v12 ^ __ROR4__(v13, 0x12) ^ v14;
+  }
+  return this;
+}
+```
+
+有符号可以直接抠代码，编译一份跑出结果
+
+```assembly
+#include <stdio.h>
+#include <random>
+#include <Windows.h>
+
+using namespace std;
+
+const DWORD hitp[] = { 0,0,0,146,292,292,439,512,585,585,658,731,804,878,1024,1170,1170,1317,1463,1463,1609,1682,1756,1756,1902,2048,2195,2341,2341,2487,2634,2634,2780,2853,2926,2926,3073,3146,3219,3219,3365,3439,3512,3512,3658,3804,3878,3951,4024,4097,4097,4243,4390,4682,4682,4682,4829,4975,4975,5121,5195,5268,5341,5414,5487,5560,5560,5853,5853,5999,6146,6146,6292,6365,6439,6439,6585,6731,6731,6731,7024,7024,7170,7317,7317,7463,7536,7609,7609,7682,7756,7829,7902,7902,7975,8048,8121,8195,8341,8487,8634,8780,9073,9073,9073,9219,9365,9365,9512,9658,9658,9804,9878,9951,9951,10097,10243,10243,10243,10390,10463,10536,10536,10682,10829,10829,10975,11121,11121,11268,11414,11414,11560,11707,11707,11853,11999,11999,11999,12146,12292,12292,12439,12439,12585,12585,12585,12731,12878,12951,13024,13097,13170,13170,13317,13463,13463,13463,13609,13756,13756,13756,13902,14048,14048,14195,14341,14487,14634,14634,14926,14926,14926,15219,15219,15219,15365,15365,15512,15512,15658,15804,15804,15951,16024,16097,16097,16170,16243,16317,16390,16390,16536,16682,16682,16829,16902,16975,16975,17121,17268,17268,17268,17414,17560,17634,17707,17780,17853,17926,17999,18073,18146,18146,18292,18439,18439,18731,18731,18731,18878,19024,19024,19024,19170,19243,19317,19463,19609,19609,19609,19756,19829,19902,20048,20195,20195,20341,20487,20487,20634,20780,20780,20926,21073,21073,21219,21365,21365,21365,21512,21585,21658,21658,21804,21951,21951,21951,22097,22243,22317,22390,22463,22536,22536,22609,22682,22756,22829,22829,22975,23121,23121,23268,23414,23560,23707,23780,23853,23926,23999,23999,24073,24146,24219,24292,24365,24439,24512,24585,24585,24731,24731,24878,24878,24878,25024,25170,25170,25317,25390,25463,25463,25609,25756,25756,25756,25902,25902,26048,26048,26195,26195,26341,26341,26414,26487,26487,26560,26634,26634,26780,26780,26926,27219,27512,27585,27658,27731,27804,27804,28097,28097,28390,28682,28682,28975,29268,29268,29560,29560,29853,29853,30146,30439,30439,30731,31024,31024,31317,31609,31609,31902,32195,32195,32487,32780,32780,32780,33365,33365,33365,33951,33951,34243,34536,34536,34829,35121,35121,35414,35707,35707,35707,35999,36292,36585,36878,36878,37024,37024,37170,37170,37463,37463,37463,37609,37756,37756,37902,38048,38048,38195,38341,38341,38487,38634,38634,38780,38926,39073,39219,39365,39512,39658,39804,39804,39951,40097,40097,40243,40390,40390,40536,40682,40829,40975,40975,41121,41268,41414,41560,41707,41853,41999,42146,42146,42292,42292,42439,42585,42731,42731,42878,42878,43024,43170,43317,43317,43463,43463,43609,43609,43682,43756,43756,43829,43902,43902,44048,44048,44195,44195,44341,44341,44487,44560,44634,44707,44780,44853,44926,44999,45073,45146,45219,45292,45365,45439,45512,45585,45658,45658,45804,45951,45951,46097,46243,46243,46536,46536,46536,46829,46829,46902,46975,47121,47121,47268,47414,47414,47560,47634,47707,47707,47853,47926,47999,47999,48146,48292,48292,48439,48585,48585,48731,48878,48878,49024,49170,49170,49243,49317,49463,49463,49609,49756,49756,49902,49975,50048,50048,50121,50195,50268,50341,50341,50487,50487,50707,50707,50926,50926,51073,51219,51365,51512,51512,51585,51658,51804,51804,51951,52097,52097,52170,52243,52317,52390,52390,52536,52609,52682,52682,52829,52975,52975,53121,53268,53268,53414,53560,53560,53707,53853,53853,53926,53999,54073,54146,54146,54219,54292,54365,54439,54439,54512,54585,54658,54731,54731,54878,54878,55024,55024,55024,55317,55317,55317,55609,55609,55609,55902,55902,55902,56195,56268,56341,56487,56487,56634,56780,56780,56926,56999,57073,57073,57219,57292,57365,57365,57512,57658,57658,57804,57951,57951,58097,58243,58243,58390,58536,58536,58609,58682,58829,58829,58975,59121,59121,59268,59341,59414,59414,59560,59634,59707,59707,59853,59926,59999,59999,60073,60292,60292,60439,60585,60585,60731,60878,60878,60951,61024,61024,61170,61170,61317,61317,61463,61463,61463,61536,61609,61609,61756,61756,61902,61902,62048,62048,62048,62121,62195,62195,62341,62341,62414,62487,62560,62634,62634,62780,62780,62926,62926,63073,63073,63219,63219,63292,63365,63439,63512,63512,63585,63658,63731,63804,63804,63878,63951,64024,64097,64097,64170,64243,64317,64390,64390,64536,64536,64609,64682,64829,64975,65121,65268,65414,65560,65560,65707,65853,65999,66146,66146,66439,66585,66878,67170,67317,67317,67609,67902,68048,68195,68341,68487,68487,68780,68926,69073,69219,69365,69512,69658,69658,69804,69951,70243,70390,70536,70682,70829,70829,71121,71268,71560,71853,71999,71999,72292,72585,72731,72878,73024,73170,73317,73463,73609,73609,73756,73975,74195,74341,74341,74634,74707,74780,74926,74926,75073,75073,75219,75219,75219,75365,75512,75512,75658,75658,75804,75804,75804,75951,76097,76097,76390,76390,76390,76536,76682,76682,76829,76829,76975,76975,76975,77268,77268,77414,77560,77560,77561,77707,77853,77853,77999,77999,78146,78146,78146,78292,78439,78439,78731,78732,78732,78878,79024,79024,79170,79171,79317,79317,79463,79609,79609,79756,79902,79902,80048,80195,80341,80341,80487,80487,80634,80780,80780,80926,80926,81073,81073,81073,81219,81365,81512,81512,81658,81658,81658,81951,81951,81951,82097,82243,82243,82390,82536,82682,82682,82829,82829,82829,82975,83121,83121,83268,83414,83414,83560,83707,83853,83853,83999,83999,83999,84292,84292,84365,84439,84512,84585,84585,84731,84804,84878,84878,84951,85024,85097,85170,85170,85317,85390,85463,85463,85536,85609,85682,85756,85756,85829,85902,85975,86048,86048,86121,86195,86268,86341,86341,86487,86634,86634,86707,86780,86853,86926,86926,87073,87146,87219,87219,87292,87365,87439,87512,87512,87658,87804,87804,87878,87951,88024,88097,88097,88170,88243,88317,88390,88390,88536,88609,88682,88682,88829,88975,88975,89121,89121,89268,89268,89414,89414,89560,89560,89707,89707,89853,89853,89999,89999,90146,90146,90292,90292,90439,90439,90585,90585,90731,90731,90878,90878,91024,91024,91170,91170,91317,91317,91390,91463,91536,91609,91682,91756,91829,91902,91975,92048,92121,92195,92268,92341,92634,92780,92926,93219,93365,93365,93365,93365,93658,93658,93804,93878,93951,93951,94097,94243,94317,94390,94463,94536,94536,94682,94829,94829,94975,95121,95121,95268,95414,95487,95560,95634,95707,95707,95853,95853,95999,95999,96146,96292,96292,96292,96439,96585,96585,96658,96731,96804,96878,96878,97024,97170,97170,97317,97390,97463,97463,97609,97756,97756,97829,97902,98048,98048,98048,98195,98341,98341,98487,98560,98634,98634,98780,98926,98926,99073,99219,99219,99365,99512,99512,99658,99804,99804,99951,100097,100170,100243,100317,100390,100390,100536,100682,100682,100829,100975,100975,100975,101121,101268,101268,101341,101414,101487,101560,101560,101707,101853,101853,101926,101999,102073,102146,102146,102292,102439,102439,102439,102585,102658,102731,102731,102878,103024,103024,103024,103170,103243,103317,103317,103317,103463,103609,103682,103756,103829,103902,103902,104048,104195,104195,104341,104487,104487,104487,104634,104780,104853,104926,104999,105073,105073,105219,105365,105365,105512,105658,105658,105658,105804,105951,105951,106097,106170,106243,106243,106317,106390,106536,106536,106682,106756,106829,106829,106829,106975,107121,107121,107268,107268,107414,107414,107414,107560,107707,107707,107707,107853,107999,107999,107999,108146,108292,108292,108439,108585,108585,108731,108878,108878,108878,109024,109170,109170,109317,109463,109463,109536,109609,109682,109756,109756,109902,110048,110048,110048,110195,110195,110341,110341,110341,110487,110487,110634,110634,110634,110780,110780,110926,110926,110926,111073,111073,111219,111219,111219,111365,111512,111658,111731,111804,111878,111951,112024,112097,112097,112097,112390,112390,112536,112682,112682,112682,112829,112975,112975,113121,113268,113268,113414,113560,113560,113707,113853,113853,113999,114146,114219,114292,114365,114439,114439,114585,114731,114731,114878,115024,115024,115024,115170,115317,115317,115463,115536,115609,115609,115756,115902,115902,115975,116048,116121,116195,116195,116268,116341,116414,116487,116487,116560,116634,116707,116780,116780,116926,117073,117073,117219,117365,117365,117512,117658,117658,117804,117878,117951,117951,118097,118243,118243,118390,118536,118536,118682,118829,118902,118975,119048,119121,119121,119268,119414,119414,119560,119707,119707,119853,119999,119999,120146,120292,120292,120439,120439,120731,121024,121170,121463,121536,121609,121682,121756,121756,121756,121902,122048,122048,122048,122195,122341,122341,122341,122487,122560,122634,122634,122634,122780,122926,122926,122926,123073,123219,123219,123219,123365,123512,123512,123512,123585,123658,123731,123804,123804,123804,123951,124097,124097,124097,124243,124390,124390,124390,124536,124682,124682,124682,124829,124975,124975,124975,125121,125268,125268,125268,125414,125487,125560,125560,125560,125707,125853,125853,125853,125999,126146,126146,126146,126292,126439,126439,126439,126585,126585,126731,126731,126878,126878,127024,127024,127024,127170,127170,127317,127317,127463,127463,127609,127609,127609,127756,127756,127902,127902,128048,128048,128195,128195,128268,128341,128341,128414,128487,128487,128560,128634,128707,128780,128780,128853,128926,128999,129073,129146,129219,129292,129365,129365,129439,129512,129585,129658,129731,129804,129878,129951,129951,130024,130097,130170,130243,130243,130317,130390,130463,130536,130536,130682,130756,130829,130829,130829,130975,130975,131121,131195,131268,131341,131560,131707,131707,131780,131853,131926,132146,132292,132365,132439,132512,132731,132878,132878,132951,133024,133097,133463,133463,133756,134048,134048,134048,134341,134634,134634,134926,134926,135219,135219,135219,135512,135512,135658,135658,135804,135804,135951,135951,136097,136097,136243,136243,136390,136390,136536,136536,136609,136682,136682,136829,136829,136902,136975,136975,137121,137121,137268,137268,137414,137414,137560,137560,137707,137707,137780,137853,137926,137999,137999,138073,138146,138146,138219,138292,138365,138439,138439,138512,138585,138658,138731,138731,138804,138878,138951,139024,139024,139097,139170,139243,139317,139317,139463,139463,139609,139609,139756,139756,139902,139902,140195,140195,140195,140195 };
+
+DWORD __ROR4__(DWORD a1, char a2)
+{
+  return (a1 >> a2) | (a1 << (32 - a2));
+}
+
+int rounds(uint8_t* bytes, unsigned int a2, int a3)
+{
+  DWORD* v3; // r4
+  DWORD v4; // r12
+  DWORD v5[2]; // r5
+  DWORD v6; // r3
+  DWORD result; // r0
+
+  v3 = (DWORD*)((char*)bytes + a3);
+  v4 = *(DWORD*)((char*)bytes + a3);
+  *(DWORD64*)&v5[0] = *(DWORD64*)((char*)bytes + a3 + 4);
+  v6 = *(DWORD*)((char*)bytes + a3 + 12);
+  *(DWORD*)((char*)bytes + a3) = *(&v5[0] + 1);
+  result = v4 ^ __ROR4__(*(&v5[0] + 1) ^ a2, 19);
+  v3[3] = v5[0] ^ __ROR4__(v6, 18) ^ __ROR4__(*(&v5[0] + 1) ^ a2, 19);
+  v3[1] = v6;
+  v3[2] = result;
+  return result;
+}
+
+int main(int argc, char const* argv[])
+{
+  unsigned char enc_bytes[] =
+  {
+    0x3C, 0xAC, 0x92, 0x6F, 0x44, 0xA1, 0xC1, 0x17, 0xFD, 0x62,
+    0x60, 0xDD, 0x63, 0xF8, 0xE3, 0x2A, 0x5E, 0x75, 0x78, 0xBE,
+    0x59, 0x46, 0x33, 0xF6, 0x2E, 0x64, 0x61, 0x8A, 0x27, 0x93,
+    0x21, 0x7D, 0x00
+  };
+  mt19937 rng(-196167794);
+  for (int i = 0; i < 1608; ++i)
+  {
+    if (rng() % 7 >= 3)
+    {
+      rounds(enc_bytes, rng(), hitp[i] & 0xF);
+    }
+  }
+  printf("%s\n", enc_bytes);
+  getchar();
+  return 0;
+}
+```
+
+D3CTF{Gb78e-7b04-4364-82d2-7f44}
+
