@@ -1,0 +1,145 @@
+Manifest-Version: 1.0
+Built-By: Generated-by-ADT
+Created-By: Android Gradle 4.0.1
+
+Name: AndroidManifest.xml
+SHA-256-Digest: t7ZkfwP5ir4d2qWFFQLz5I8CVg+Tjtxf7n6VSwEtpgQ=
+
+Name: assets/bin/Data/Managed/Metadata/global-metadata.dat
+SHA-256-Digest: sdR38m2LS0uxjr6pTQmVfQf8FrGkf3DRYvCs5eb+wqE=
+
+Name: assets/bin/Data/Managed/Resources/mscorlib.dll-resources.dat
+SHA-256-Digest: xbqhdqW3LNVFJmNA5CEC05Ol5D04yVeWvIKJGLuVJ38=
+
+Name: assets/bin/Data/RuntimeInitializeOnLoads.json
+SHA-256-Digest: 9VIIadYE7DN7NH6AG2Hy7QO4D6HdF2HetydMtR7wiHY=
+
+Name: assets/bin/Data/ScriptingAssemblies.json
+SHA-256-Digest: sZYzO8ZrRxaNfGK4tG56XGYnLE/9ZlxcNKkxLE34j8Q=
+
+Name: assets/bin/Data/boot.config
+SHA-256-Digest: pHt+NBDSm5r4XdfSF4I1PrxUeJHlih9oF1P+7dQel1Y=
+
+Name: assets/bin/Data/data.unity3d
+SHA-256-Digest: THIt4Hp8pqhibQCRCTk2uCDAHw9rTuF8aciv6pXNDVc=
+
+Name: assets/bin/Data/resources.resource
+SHA-256-Digest: JUvnN20K9X9vj7eHDVcbqzzs+T9BTR3RPmZSgjvYc9Y=
+
+Name: assets/bin/Data/sharedassets0.resource
+SHA-256-Digest: 44vTcg8teIhSS24s97F334a3RtdSOUqylKuBG8vfkxU=
+
+Name: assets/bin/Data/sharedassets1.resource
+SHA-256-Digest: a+UpycJc0ertgBySJenor7kzte2BTsm6lHIbImzHN7c=
+
+Name: assets/bin/Data/unity default resources
+SHA-256-Digest: G5RD1EXhcsfC+AA5H9QzKTnO/y0KWrtmeCrtlZPPxGA=
+
+Name: assets/bin/Data/unity_app_guid
+SHA-256-Digest: LVFz3v9xpBeJeY7Hp2Upn0QhvFn/Jug8Of51gfaR1V0=
+
+Name: classes.dex
+SHA-256-Digest: n5ZHV91U2g1Cr5j52wf6MZh+tfM4krzo9x9e+ngXNkk=
+
+Name: lib/arm64-v8a/libAndroidCpuUsage.so
+SHA-256-Digest: 3/XVGDjrfFbfz3eXZ0Xw4A9rk9qhwDui9KzD0jakfaU=
+
+Name: lib/arm64-v8a/lib_burst_generated.so
+SHA-256-Digest: tXC5j6DmTwuiOH5Xi5wr48M4/Woa2eZeQk63Nc8Lr3Q=
+
+Name: lib/arm64-v8a/libd3mug.so
+SHA-256-Digest: P9cbYLq2IZllkTC0DB3rl+3I64gTI56PsREeLo1GjuY=
+
+Name: lib/arm64-v8a/libil2cpp.so
+SHA-256-Digest: 2QC0OV/vZuNQJF+hIGQ7YNfMi6sza2AXCQPQxNDzt50=
+
+Name: lib/arm64-v8a/libmain.so
+SHA-256-Digest: /3I4uZviIhQzAWReaFxNnjtZejzll0Kckw7GBQ6vnN8=
+
+Name: lib/arm64-v8a/libunity.so
+SHA-256-Digest: dpV336atR1B3Sdf/sIx0oXVhGRP574yEAaXcZn5QRL4=
+
+Name: lib/armeabi-v7a/libAndroidCpuUsage.so
+SHA-256-Digest: pZPx77LSNhIJuNbiV5o4Kp5SSN6bten1xNlY+w85ZfA=
+
+Name: lib/armeabi-v7a/lib_burst_generated.so
+SHA-256-Digest: qwA1eCu3j5sY+uJklsT1atD2MKjTq+hmZ4NoIXGFmZE=
+
+Name: lib/armeabi-v7a/libd3mug.so
+SHA-256-Digest: D482WcBQkKzsfejShkjAzibRQSJHA9YdKa+z72injLc=
+
+Name: lib/armeabi-v7a/libil2cpp.so
+SHA-256-Digest: GRLP8Dc/zxThZphiU34TyMvywbZcGd81DEetNUwSsQA=
+
+Name: lib/armeabi-v7a/libmain.so
+SHA-256-Digest: v7mOeD1zDBmUgA8j9o1rt3ylfiBuyPS4U2ityEFDEZA=
+
+Name: lib/armeabi-v7a/libunity.so
+SHA-256-Digest: 25cLbOJKnvJkrMsKWYc9Y1if24AjS90/Fw5Ta/4yXfI=
+
+Name: res/mipmap-anydpi-v26/app_icon.xml
+SHA-256-Digest: s77RTZzWGKi3k5Wo7/CgOO9Cpt9D1krkCDSZHoHY7tw=
+
+Name: res/mipmap-anydpi-v26/app_icon_round.xml
+SHA-256-Digest: s77RTZzWGKi3k5Wo7/CgOO9Cpt9D1krkCDSZHoHY7tw=
+
+Name: res/mipmap-hdpi-v4/app_icon_round.png
+SHA-256-Digest: OQORcaLoEcEZmxNnDp2t76qRewEgNJnXka1Vr3Zu2gY=
+
+Name: res/mipmap-hdpi-v4/ic_launcher_background.png
+SHA-256-Digest: KYD3FlE6b3scTG+0f8Y+QMWLbsmlC5OkYvDruBx+5f0=
+
+Name: res/mipmap-hdpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: KYD3FlE6b3scTG+0f8Y+QMWLbsmlC5OkYvDruBx+5f0=
+
+Name: res/mipmap-ldpi-v4/app_icon_round.png
+SHA-256-Digest: ySNESwnOzdhnKKOGDiHMJn6e2P98fHnDOX7XTn2yV3k=
+
+Name: res/mipmap-ldpi-v4/ic_launcher_background.png
+SHA-256-Digest: 9x1bLi1cEMjlQ67qw64vT0E7XrFTUYJI7T/5ofIM4FM=
+
+Name: res/mipmap-ldpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: 9x1bLi1cEMjlQ67qw64vT0E7XrFTUYJI7T/5ofIM4FM=
+
+Name: res/mipmap-mdpi-v4/app_icon.png
+SHA-256-Digest: Up4XOulYR1OzwYKGSsa4uoCcbasJrtd7IXGExnxhxeQ=
+
+Name: res/mipmap-mdpi-v4/app_icon_round.png
+SHA-256-Digest: 3yUgtiMITQKhhJwUrOSx3kkebdfdluOY6ydmMP9RBsQ=
+
+Name: res/mipmap-mdpi-v4/ic_launcher_background.png
+SHA-256-Digest: d/otAXrqucM6CQxXqF3XkbfIgbOvBBlkJtQQsMx749M=
+
+Name: res/mipmap-mdpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: d/otAXrqucM6CQxXqF3XkbfIgbOvBBlkJtQQsMx749M=
+
+Name: res/mipmap-xhdpi-v4/app_icon_round.png
+SHA-256-Digest: Qy73jtHOkuMrU9826ljllc/MiygXvcZ/QpOhmVWZhKA=
+
+Name: res/mipmap-xhdpi-v4/ic_launcher_background.png
+SHA-256-Digest: EPN91h0w2Xsl2yE1hTnvjEwEOSJjiZAyBrIHj8w7pHk=
+
+Name: res/mipmap-xhdpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: EPN91h0w2Xsl2yE1hTnvjEwEOSJjiZAyBrIHj8w7pHk=
+
+Name: res/mipmap-xxhdpi-v4/app_icon_round.png
+SHA-256-Digest: nXvXepF0Z+OMmTan1AjQBtNvpBAFDQxTgsklrBK5Leg=
+
+Name: res/mipmap-xxhdpi-v4/ic_launcher_background.png
+SHA-256-Digest: k8qc+/M+FhfhSOp9hI2HpYqV1Rdzf6H6XqA/4vc9jC8=
+
+Name: res/mipmap-xxhdpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: k8qc+/M+FhfhSOp9hI2HpYqV1Rdzf6H6XqA/4vc9jC8=
+
+Name: res/mipmap-xxxhdpi-v4/app_icon_round.png
+SHA-256-Digest: HAFs7ZglA2S59rQ75098wRTWbYKk8duQiIEQC7BRFy0=
+
+Name: res/mipmap-xxxhdpi-v4/ic_launcher_background.png
+SHA-256-Digest: 4z8ur8EKIqi+sPtyy6okHANIKhBlsyY1ue+rrWvXq4s=
+
+Name: res/mipmap-xxxhdpi-v4/ic_launcher_foreground.png
+SHA-256-Digest: 4z8ur8EKIqi+sPtyy6okHANIKhBlsyY1ue+rrWvXq4s=
+
+Name: resources.arsc
+SHA-256-Digest: ZklNaNj8SlY5BZNWUbAqijaO0o4pGJE/ZB6OqHexcd4=
+
