@@ -1,0 +1,425 @@
+---
+layout: post
+title:  fpbe
+date:   2022-04-17 00:08:01 +0300
+image:  2022-04-17-tree.jpg
+tags:   [ctf,reverse,bpf,虎符杯]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  int result; // eax
+  int v4; // ecx
+  int v5; // er8
+  int v6; // er9
+  int v7; // ecx
+  int v8; // er8
+  int v9; // er9
+  int err; // [rsp+14h] [rbp-4Ch]
+  unsigned int *array; // [rsp+18h] [rbp-48h]
+  fpbe_bpf *skel; // [rsp+20h] [rbp-40h]
+  __int64 base_addr; // [rsp+28h] [rbp-38h]
+  char flag[17]; // [rsp+40h] [rbp-20h] BYREF
+  unsigned __int64 v15; // [rsp+58h] [rbp-8h]
+
+  v15 = __readfsqword(0x28u);
+  if ( argc == 2 )
+  {
+    array = (unsigned int *)argv[1];
+    libbpf_set_print((libbpf_print_fn_t)libbpf_print_fn);
+    bump_memlock_rlimit();
+    skel = fpbe_bpf__open_and_load();
+    if ( skel )
+    {
+      base_addr = get_base_addr();
+      if ( base_addr >= 0 )
+      {
+        skel->links.uprobe = bpf_program__attach_uprobe(
+                               skel->progs.uprobe,
+                               0,
+                               0,
+                               "/proc/self/exe",
+                               (size_t)uprobed_function - base_addr);
+        err = libbpf_get_error(skel->links.uprobe);
+        if ( err )
+        {
+          fprintf((_DWORD)stderr, (unsigned int)"Failed to attach uprobe: %d\n", err, v4, v5, v6, (char)argv);
+        }
+        else
+        {
+          puts(
+            "Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` to see output of the BPF programs.");
+          err = uprobed_function(*array, array[1], array[2], array[3]);
+          *(_QWORD *)flag = 0LL;
+          *(_QWORD *)&flag[8] = 0LL;
+          flag[0x10] = 0;
+          *(_QWORD *)flag = *array;
+          *(_DWORD *)&flag[4] = array[1];
+          *(_QWORD *)&flag[8] = array[2];
+          *(_DWORD *)&flag[0xC] = array[3];
+          if ( err == 1 )
+            printf(
+              (unsigned int)"flag: HFCTF{%s}\n",
+              (unsigned int)flag,
+              (unsigned int)&flag[0xC],
+              v7,
+              v8,
+              v9,
+              (char)argv);
+          else
+            puts("not flag");
+        }
+      }
+      else
+      {
+        fwrite("Failed to determine process's load address\n", 1LL, 0x2BLL, stderr);
+        err = base_addr;
+      }
+      fpbe_bpf__destroy(skel);
+      result = -err;
+    }
+    else
+    {
+      fwrite("Failed to open and load BPF skeleton\n", 1LL, 0x25LL, stderr);
+      result = 1;
+    }
+  }
+  else
+  {
+    fwrite("Usage: sudo ./fpbe <flag>\n", 1LL, 0x1ALL, stderr);
+    result = 1;
+  }
+  return result;
+}
+```
+
+uprobed_function是主要函数
+
+```assembly
+int __cdecl uprobed_function(unsigned int a, unsigned int b, unsigned int c, unsigned int d)
+{
+  SHA256_CTX ctx; // [rsp+20h] [rbp-E0h] BYREF
+  char flag[17]; // [rsp+90h] [rbp-70h] BYREF
+  BYTE hash[32]; // [rsp+B0h] [rbp-50h] BYREF
+  BYTE buf[32]; // [rsp+D0h] [rbp-30h] BYREF
+  unsigned __int64 v9; // [rsp+F8h] [rbp-8h]
+
+  v9 = __readfsqword(0x28u);
+  flag[0x10] = 0;
+  *(_DWORD *)flag = a;
+  *(_DWORD *)&flag[4] = b;
+  *(_DWORD *)&flag[8] = c;
+  *(_DWORD *)&flag[0xC] = d;
+  *(_QWORD *)hash = 0x1543E1B29A58BC7BLL;
+  *(_QWORD *)&hash[8] = 0xE8E552D9290D81CBLL;
+  *(_QWORD *)&hash[0x10] = 0x515753F0C747283DLL;
+  *(_QWORD *)&hash[0x18] = 0x7C8A5AB2D78ED974LL;
+  sha256_init(&ctx);
+  sha256_update(&ctx, (const BYTE *)flag, 0x10uLL);
+  sha256_final(&ctx, buf);
+  return j_memcmp_ifunc(hash, buf, 0x20LL) == 0;
+}
+```
+
+是一个sha256的hash，然后就不知道该怎么办了
+
+看了wp说，直接用ida打开可以发现是一个直接套了libbpf/libbpf-bootstrap模版的程序，逻辑必然在ebpf程序中。通过对ebpf程序的简要了解可以得知ebpf字节码是直接嵌入到ELF文件中的，可以直接使用binwalk识别
+
+```assembly
+┌──(kali㉿kali)-[~/Documents/ctf]
+└─$ binwalk -D 'relocatable' fpbe                                        130 ⨯
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+0             0x0             ELF, 64-bit LSB executable, AMD x86-64, version 1 (GNU/Linux)
+221544        0x36168         bix header, header size: 64 bytes, header CRC: 0x0, created: 1970-02-24 14:51:20, image size: 1216955152 bytes, Data Address: 0xE9F7FEFF, Entry Point: 0xFF4883C8, data CRC: 0xFFC36666, CPU: Nios-II, image name: ""
+221960        0x36308         bix header, header size: 64 bytes, header CRC: 0x0, created: 1970-02-24 14:51:20, image size: 1216955152 bytes, Data Address: 0xE9F7FEFF, Entry Point: 0xFF4883C8, data CRC: 0xFFC36666, CPU: Nios-II, image name: ""
+999448        0xF4018         ELF, 64-bit LSB relocatable, version 1 (SYSV)
+1001347       0xF4783         Unix path: /sys/kernel/debug/tracing/trace_pipe` to see output of the BPF programs.
+1002253       0xF4B0D         Unix path: /sys/fs/bpf
+1007944       0xF6148         Unix path: /sys/bus/event_source/devices/uprobe/type
+1008088       0xF61D8         Unix path: /sys/bus/event_source/devices/uprobe/format/retprobe
+1008304       0xF62B0         Unix path: /sys/kernel/debug/tracing/events/%s/%s/id
+1023848       0xF9F68         Unix path: /sys/devices/system/cpu/possible
+1027984       0xFAF90         Unix path: /sys/devices/system/cpu/online
+1028968       0xFB368         Unix path: /sys/class/net/%s/device/vendor
+1032264       0xFC048         Unix path: /usr/lib/modules/%1$s/kernel/vmlinux
+1033613       0xFC58D         Unix path: /sys/kernel/btf/vmlinux
+1033664       0xFC5C0         SHA256 hash constants, little endian
+1037104       0xFD330         Copyright string: "Copyright 1995-2017 Jean-loup Gailly and Mark Adler "
+1040304       0xFDFB0         Copyright string: "Copyright 1995-2017 Mark Adler "
+1043744       0xFED20         CRC32 polynomial table, little endian
+1047840       0xFFD20         CRC32 polynomial table, big endian
+1052672       0x101000        Unix path: /usr/share/locale
+1068918       0x104F76        Unix path: /usr/lib/getconf
+1077072       0x106F50        Unix path: /usr/lib/locale
+1079072       0x107720        Unix path: /usr/lib/locale/locale-archive
+1159415       0x11B0F7        Unix path: /usr/lib/x86_64-linux-gnu/
+1612910       0x189C6E        Unix path: /usr/lib/gcc/x86_64-linux-gnu/9/include
+1613889       0x18A041        Unix path: /usr/include/x86_64-linux-gnu/bits
+1689860       0x19C904        Unix path: /usr/include/x86_64-linux-gnu/bits
+1690271       0x19CA9F        Unix path: /usr/include/x86_64-linux-gnu/bits
+1692385       0x19D2E1        Unix path: /usr/include/x86_64-linux-gnu/bits
+1694273       0x19DA41        Unix path: /usr/include/x86_64-linux-gnu/bits
+1698777       0x19EBD9        Unix path: /usr/include/x86_64-linux-gnu/bits
+1711704       0x1A1E58        Unix path: /usr/include/x86_64-linux-gnu/bits
+1743743       0x1A9B7F        Unix path: /usr/include/x86_64-linux-gnu/bits
+1744971       0x1AA04B        Unix path: /usr/lib/gcc/x86_64-linux-gnu/9/include
+1746923       0x1AA7EB        Unix path: /home/ainevsia/gh/libbpf-bootstrap/examples/c
+1799202       0x1B7422        Intel x86 or x64 microcode, pf_mask 0x5c000100, 195C-01-03, rev 0x10000, size 2048
+1799418       0x1B74FA        Intel x86 or x64 microcode, pf_mask 0x5a000100, 1E5A-01-03, rev 0x10000, size 2048
+1801991       0x1B7F07        Intel x86 or x64 microcode, pf_mask 0xf3000400, 1F56-01-01, rev 0x10000, size 2048
+1802313       0x1B8049        Intel x86 or x64 microcode, pf_mask 0xf3000400, 1F56-01-01, rev 0x10000, size 2048
+1802395       0x1B809B        Intel x86 or x64 microcode, pf_mask 0xf3000400, 1F56-01-01, rev 0x10000, size 2048
+1814834       0x1BB132        Intel x86 or x64 microcode, pf_mask 0x5c000100, 2055-01-06, rev 0x10000, size 2048
+1856659       0x1C5493        Intel x86 or x64 microcode, pf_mask 0x73000300, 1F53-01-36, rev 0x10000, size 1
+1858082       0x1C5A22        Intel x86 or x64 microcode, pf_mask 0x77000200, 1950-01-39, rev 0x10000, size 2048
+1863560       0x1C6F88        Intel x86 or x64 microcode, pf_mask 0x5d000100, 195D-01-22, rev 0x10000, size 2048
+1867263       0x1C7DFF        Intel x86 or x64 microcode, pf_mask 0x50000100, 1B56-01-21, rev 0x10000, size 2048
+1926627       0x1D65E3        Intel x86 or x64 microcode, pf_mask 0x5c000100, 1F50-01-17, rev 0x10000, size 2048
+2288415       0x22EB1F        mcrypt 2.2 encrypted data, algorithm: blowfish-448, mode: CBC, keymode: 4bit
+```
+
+得到F4018文件
+
+在github上可搜到Ghidra对ebpf的支持插件eBPF-for-Ghidra
+
+直接查看uprobe函数
+
+```assembly
+
+undefined8 uprobe(longlong param_1)
+
+{
+  ulonglong uVar1;
+  ulonglong uVar2;
+  undefined8 uVar3;
+  undefined8 local_40;
+  undefined8 local_38;
+  undefined8 local_30;
+  undefined8 local_28;
+  undefined local_20;
+  ulonglong local_18;
+  ulonglong local_10;
+  undefined local_8;
+  
+  uVar2 = *(ulonglong *)(param_1 + 0x68) & 0xffffffff;
+  local_18 = *(ulonglong *)(param_1 + 0x70) & 0xffffffff;
+  local_10 = *(ulonglong *)(param_1 + 0x60) & 0xffffffff;
+  local_8 = 0;
+  uVar1 = *(ulonglong *)(param_1 + 0x58) & 0xffffffff;
+  uVar3 = 1;
+  if ((((uVar2 * 0xfb88 + local_18 * 0x6dc0 + local_10 * 0x71fb + uVar1 * 0xcc8e == -0x5e8ca66b) &&
+       (uVar2 * 0x6ae5 + local_18 * 0xf1bf + local_10 * 0xadd3 + uVar1 * 0x9284 == -0x1aabfcc0)) &&
+      (uVar2 * 0x8028 + local_18 * 0xdd85 + local_10 * 0x652d + uVar1 * 0xe712 == 0xa6f374484da3))
+     && (uVar2 * 0xca43 + local_18 * 0x822c + local_10 * 0x7c8e + uVar1 * 0xf23a == 0xb99c485a7277))
+  {
+    local_10 = local_10 | uVar1 << 0x20;
+    local_18 = local_18 | uVar2 << 0x20;
+    local_28 = 0xa7d73257b465443;
+    local_30 = 0x4648203a47414c46;
+    local_38 = 0x2052554f59202145;
+    local_40 = 0x4e4f44204c4c4557;
+    uVar3 = 0;
+    local_20 = 0;
+    FUN_syscall_0006(&local_40,0x21,&local_18);
+  }
+  return uVar3;
+}
+```
+
+为一个四元四次方程组，解方程
+
+```assembly
+from z3 import *
+
+flag_enc = [BitVec("f%d" % i, 32) for i in range(4)]
+s = Solver()
+
+s.add(flag_enc[3]*0xCC8E + flag_enc[2]*0x71FB + flag_enc[1]*0xFB88 + flag_enc[0]*0x6DC0 == 0xBE18A1735995)
+s.add(flag_enc[3]*0x9284 + flag_enc[2]*0xADD3 + flag_enc[1]*0x6AE5 + flag_enc[0]*0xF1BF == 0xA556E5540340)
+s.add(flag_enc[3]*0xE712 + flag_enc[2]*0x652D + flag_enc[1]*0x8028 + flag_enc[0]*0xDD85 == 0xA6F374484DA3)
+s.add(flag_enc[3]*0xF23A + flag_enc[2]*0x7C8E + flag_enc[1]*0xCA43 + flag_enc[0]*0x822C == 0xB99C485A7277)
+
+if s.check() == sat:
+    m = s.model()
+    flag = [m[flag_enc[i]].as_long().to_bytes(4,'little').decode() for i in range(4)]
+    print(''.join(flag))
+```
+
+0vR3sAlbs8pD2h53
+
+后来了解到有一个工具bpftool
+
+使用方法
+
+* bpftool prog检查系统中运行程序的情况
+
+* bpftool prog show查看当前程序的id
+
+* bpftool prog dump获取整个程序的数据，能够看到编译器生成的字节码
+
+* sudo bpftool prog dump xlated in 30将指定id的程序的字节码打印出来
+
+首先我们要先将程序运行起来，下断点在
+
+```assembly
+puts("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` to see output of the BPF programs.");
+```
+
+这里需要注意的是，因为程序会在
+
+```assembly
+skel = fpbe_bpf__open_and_load();
+```
+
+处进入内核，所以linuxserver64调试服务器必须sudo运行，这也是我在比赛时动调跑不起来的原因，刚开始还以为有反调试😢
+
+程序断在断点处后
+
+```assembly
+┌──(kali㉿kali)-[/]
+└─$ sudo bpftool prog show
+3: cgroup_device  tag 3650d9673c54ce30  gpl
+        loaded_at 2022-04-16T22:31:15-0400  uid 0
+        xlated 504B  jited 309B  memlock 4096B
+4: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:15-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+5: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:15-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+6: cgroup_device  tag e0428d4db95f3ed4  gpl
+        loaded_at 2022-04-16T22:31:17-0400  uid 0
+        xlated 496B  jited 307B  memlock 4096B
+7: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:17-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+8: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:17-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+9: cgroup_device  tag ee0e253c78993a24  gpl
+        loaded_at 2022-04-16T22:31:24-0400  uid 0
+        xlated 416B  jited 255B  memlock 4096B
+10: cgroup_device  tag 8470ed2b25b99116  gpl
+        loaded_at 2022-04-16T22:31:24-0400  uid 0
+        xlated 744B  jited 447B  memlock 4096B
+11: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:24-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+12: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:31:24-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+16: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:32:13-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+17: cgroup_skb  tag 6deef7357e7b4530  gpl
+        loaded_at 2022-04-16T22:32:13-0400  uid 0
+        xlated 64B  jited 54B  memlock 4096B
+21: kprobe  name uprobe  tag d833ddf75360d0b4  gpl
+        loaded_at 2022-04-16T22:42:32-0400  uid 0
+        xlated 792B  jited 456B  memlock 4096B
+```
+
+可以看到最后一个即为我们的程序
+
+```assembly
+┌──(kali㉿kali)-[/]
+└─$ sudo bpftool prog dump xlated id 21
+   0: (79) r2 = *(u64 *)(r1 +104)
+   1: (67) r2 <<= 32
+   2: (77) r2 >>= 32
+   3: (79) r3 = *(u64 *)(r1 +112)
+   4: (67) r3 <<= 32
+   5: (77) r3 >>= 32
+   6: (bf) r4 = r3
+   7: (27) r4 *= 28096
+   8: (bf) r5 = r2
+   9: (27) r5 *= 64392
+  10: (0f) r5 += r4
+  11: (79) r4 = *(u64 *)(r1 +96)
+  12: (67) r4 <<= 32
+  13: (77) r4 >>= 32
+  14: (bf) r0 = r4
+  15: (27) r0 *= 29179
+  16: (0f) r5 += r0
+  17: (79) r1 = *(u64 *)(r1 +88)
+  18: (b7) r0 = 0
+  19: (73) *(u8 *)(r10 -8) = r0
+  20: (7b) *(u64 *)(r10 -16) = r0
+  21: (7b) *(u64 *)(r10 -24) = r0
+  22: (67) r1 <<= 32
+  23: (77) r1 >>= 32
+  24: (bf) r0 = r1
+  25: (27) r0 *= 52366
+  26: (0f) r5 += r0
+  27: (b7) r6 = 1
+  28: (18) r0 = 0xbe18a1735995
+  30: (5d) if r5 != r0 goto pc+66
+  31: (bf) r5 = r3
+  32: (27) r5 *= 61887
+  33: (bf) r0 = r2
+  34: (27) r0 *= 27365
+  35: (0f) r0 += r5
+  36: (bf) r5 = r4
+  37: (27) r5 *= 44499
+  38: (0f) r0 += r5
+  39: (bf) r5 = r1
+  40: (27) r5 *= 37508
+  41: (0f) r0 += r5
+  42: (18) r5 = 0xa556e5540340
+  44: (5d) if r0 != r5 goto pc+52
+  45: (bf) r5 = r3
+  46: (27) r5 *= 56709
+  47: (bf) r0 = r2
+  48: (27) r0 *= 32808
+  49: (0f) r0 += r5
+  50: (bf) r5 = r4
+  51: (27) r5 *= 25901
+  52: (0f) r0 += r5
+  53: (bf) r5 = r1
+  54: (27) r5 *= 59154
+  55: (0f) r0 += r5
+  56: (18) r5 = 0xa6f374484da3
+  58: (5d) if r0 != r5 goto pc+38
+  59: (bf) r5 = r3
+  60: (27) r5 *= 33324
+  61: (bf) r0 = r2
+  62: (27) r0 *= 51779
+  63: (0f) r0 += r5
+  64: (bf) r5 = r4
+  65: (27) r5 *= 31886
+  66: (0f) r0 += r5
+  67: (bf) r5 = r1
+  68: (27) r5 *= 62010
+  69: (0f) r0 += r5
+  70: (18) r5 = 0xb99c485a7277
+  72: (5d) if r0 != r5 goto pc+24
+  73: (63) *(u32 *)(r10 -12) = r1
+  74: (63) *(u32 *)(r10 -16) = r4
+  75: (63) *(u32 *)(r10 -20) = r2
+  76: (63) *(u32 *)(r10 -24) = r3
+  77: (18) r1 = 0xa7d73257b465443
+  79: (7b) *(u64 *)(r10 -40) = r1
+  80: (18) r1 = 0x4648203a47414c46
+  82: (7b) *(u64 *)(r10 -48) = r1
+  83: (18) r1 = 0x2052554f59202145
+  85: (7b) *(u64 *)(r10 -56) = r1
+  86: (18) r1 = 0x4e4f44204c4c4557
+  88: (7b) *(u64 *)(r10 -64) = r1
+  89: (b7) r6 = 0
+  90: (73) *(u8 *)(r10 -32) = r6
+  91: (bf) r1 = r10
+  92: (07) r1 += -64
+  93: (bf) r3 = r10
+  94: (07) r3 += -24
+  95: (b7) r2 = 33
+  96: (85) call bpf_trace_printk#-56848
+  97: (bf) r0 = r6
+  98: (95) exit
+```
+
+得到字节码，可以将其再次编译，然后将编译好的程序拖入ida反汇编代码。
