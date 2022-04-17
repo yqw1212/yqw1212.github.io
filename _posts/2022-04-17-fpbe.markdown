@@ -62,7 +62,7 @@ int __cdecl main(int argc, const char **argv, const char **envp)
           *(_DWORD *)&flag[0xC] = array[3];
           if ( err == 1 )
             printf(
-              (unsigned int)"flag: HFCTF{%s}\n",
+              (unsigned int)"flag: HFCTF{ %s}\n",
               (unsigned int)flag,
               (unsigned int)&flag[0xC],
               v7,
