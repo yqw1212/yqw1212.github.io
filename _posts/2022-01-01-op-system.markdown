@@ -1,0 +1,1978 @@
+---
+layout: post
+title:  Yama
+date:   2022-01-01 00:08:01 +0300
+image:  2022-01-01-flower.jpg
+tags:   [note]
+---
+
+# 计算机系统概述
+
+## 中断
+
+中断类别
+
+| 类别         |                                                              |
+| ------------ | ------------------------------------------------------------ |
+| 程序中断     | 在某些条件下由指令执行的结果产生，如算术溢出、被零除、试图执行一条非法机器指令或访问用户不允许的存储器位置 |
+| 时钟中断     | 由处理器内部的计时器产生，允许操作系统按一定的规律执行函数   |
+| I/O中断      | 由I/O控制器产生，用于发信号通知一个操作系统的正常完成或各种错误条件 |
+| 硬件失效中断 | 由诸如掉电或存储器奇偶校验错之类的故障产生                   |
+
+### 多个中断
+
+两种方法
+
+* 正在处理一个中断时，禁止再发生中断
+
+  * 优点
+
+    简单，所有中断都严格按顺序处理
+
+  * 缺点
+
+    未考虑相对优先级和时间限制的要求。
+
+* 定义中断优先级，允许高优先级中断打断低优先级中断的运行。
+
+## 存储器的层次结构
+
+沿这个层次结构从上向下看，会出现一下情况：
+
+* 每“位”的价格递减
+* 容量递增
+* 存取时间递增
+* 处理器访问存储器的频率递减
+
+# 内存管理
+
+## 虚拟地址与物理地址
+
+虚拟内存的设计具有如下三个方面的目标
+
+* 高效性：一方面，虚拟内存抽象不能在应用程序运行过程中造成明显的性能开销；另一方面，虚拟内存抽象不应该占用过多的物理内存资源，从而导致物理内存的有效利用率（即存储应用程序数据的物理内存大小占物理内存大小的比例）明显降低。
+* 安全性：虚拟内存抽象需要使不同应用程序的内存互相隔离，即一个应用程序只能访问属于自己的物理内存区域
+* 透明性：虚拟内存抽象需要考虑到对应用程序的透明性，使得应用程序开发者在编程时无须考虑虚拟内存的抽象。
+
+内存管理单元（MMU），负责虚拟地址到物理地址的转换。为了加速地址翻译的过程，现代CPU都引入了转址旁路缓存（TLB）。TLB是属于MMU内部的单元。
+
+MMU将虚拟地址翻译为物理地址的主要机制有两种：分段机制和分页机制
+
+### 分段机制
+
+虚拟地址由两部分构成：第一部分表示段号，标识着该虚拟地址属于整个虚拟地址空间中的哪一个段；第二部分表示段内地址，或称段内偏移，即相对于该段起始地址的偏移量。段表存储着一个虚拟地址空间中每一个分段的信息，其中包括段起始地址（对应于物理内存中段的起始物理地址）和段长。
+
+这种段式分配方式容易导致在物理内存上出现外部碎片，即在段与段之间留下碎片空间（不足以映射给虚拟地址空间中的段），从而造成物理内存资源利用率的降低。
+
+### 分页机制
+
+该机制下虚拟地址也由两个部分组成：第一部分标识着虚拟地址的虚拟页号；第二部分标识着虚拟地址的页内偏移量。
+
+多级页表允许在整个页表结构中出现空洞，而单级页表则需要每一项都实际存在。又因为在实际使用中，应用程序的虚拟地址空间中的绝大部分使处于未分配状态的，所以多级页表可以部分创建，从而能够极大地节约所占空间。
+
+#### TLB
+
+多级页表结构能够显著地压缩页表大小，但是会导致地址翻译时长的增加（“时间换空间“的权衡）。一次地址翻译可能会导致多次物理内存访问。
+
+TLB缓存了虚拟页号到物理页号的映射关系。
+
+一般来说，TLB硬件采用分层的架构（类似于CPU缓存），分为L1和L2两层。其中L1又分为数据TLB和指令TLB，分别用于缓存数据和指令的地址翻译；L2不区分数据和指令（也存在分离的设计）。TLB在地址翻译过程中是硬件（MMU）进行管理的。
+
+**为什么硬件仅仅采用简单的TLB管理方式，就能够在大多数情况下获得较高的TLB命中率？**
+
+因为局部性起了重要作用。具体来说，应用程序在运行过程中访问内存的模式具有时间局部性和空间局部性。前者指的是被访问过一次的内存位置在未来通常会被多次访问，后者指的是如果一个内存位置被访问，那么其附近的内存位置通常在未来也会被访问。TLB中的一条缓存项对应着一个内存页，由于内存访问的时空局部性，TLB缓存项在将来很可能会被多次查询，即发生TLB命中的可能性较大。
+
+--------------------
+
+由于TLB是使用虚拟地址进行查询的，所以操作系统在进行页表切换（应用程序切换）的时候需要主动刷新TLB。
+
+操作系统可以为不同的应用程序分配不同的ASID作为应用程序的身份标签，再将这个标签写入应用程序的页表基地址寄存器中的空闲位（如TTBR0_EL1的高16位）。同时，TLB中的缓存项也会包含ASID这个标签，从而使得TLB中属于不同应用程序的缓存项可以被区分开。因此，在切换页表的过程中，操作系统不再需要清空TLB缓存项。
+
+在AArch64体系结构中提供了多种不同粒度的刷新TLB的指令：
+
+* 刷新全部TLB
+* 刷新指定ASID的TLB
+* 刷新指定虚拟地址的TLB
+
+#### 换页与缺页异常
+
+换页的基本思想是当物理内存容量不够的时候，操作系统应该把若干物理页的内容写到类似于磁盘这种容量更大且更加便宜的存储设备中，然后就可以回收这些物理页并继续使用了。
+
+换出
+
+当操作系统希望从应用程序A那里回收物理页P（对应于应用程序A中的虚拟页V）时，操作系统需要将物理页P的内容写到磁盘上的一个位置，并且在应用程序A的页表中去除虚拟页V的映射，同时记录该物理页被换到磁盘上的对应位置。虚拟页V就处于已分配但未映射至物理内存的状态。
+
+缺页异常
+
+当应用程序访问已分配但未映射至物理内存的虚拟页时，就会触发缺页异常。
+
+换入
+
+此时CPU会运行操作系统预先设置的缺页异常处理函数（page fault handler），该函数会找到（也可能是通过换页的方式）一个空闲的物理页，将之前写到磁盘上的数据内容重新加载到该物理页中，并且在页表中填写虚拟地址到这一物理页的映射。
+
+由于换页过程中涉及耗时的磁盘操作，因此操作系统往往会引入预取（prefetching）机制进行优化。预取机制的想法是：当发生换入操作时，预测还有哪些页即将被访问，提前将它们一并换入物理内存，从而减少发生缺页异常的次数。
+
+在Linux中，应用程序的虚拟地址空间被实现成由多个虚拟内存区域（Virtual Memory Area，VMA）组成的数据结构。每个虚拟内存区域中包含该区域的起始虚拟地址、结束虚拟地址、访问权限等信息。当应用程序发生缺页异常时（假设访问虚拟页P），操作系统（缺页异常处理函数）通过判断虚拟页P是否属于该应用程序的某个虚拟内存区域来区分该页所处的分配状态：若属于，则说明该页处于已分配但未映射至物理内存状态；若不属于，则说明该页处于未分配状态。
+
+#### 页替换策略
+
+##### MIN策略/OPT策略
+
+有点：理论最优
+
+缺点：在实际场景中很难实现。这是因为页访问顺序取决于应用程序，而操作系统通常无法预先得知应用程序未来访问页的顺序
+
+##### FIFO策略
+
+优点：简单，时间开销低
+
+缺点：在实际使用中往往表现不佳（因为页换入顺序与使用是否频繁通常没有关联）
+
+##### Second Chance策略
+
+优点：由于考虑了页的访问信息，Second Chance策略会优于FIFO策略。
+
+##### LRU策略
+
+缺点：在实际系统中，精确地实现这一策略需要时刻记录CPU访问了哪些物理页，其实现开销往往较大。
+
+##### MRU策略
+
+##### 时钟算法策略
+
+时钟算法与Second Chance有相似之处，不过Second Chance需要将页号从队头移动到队尾，而时钟算法并不需要，所以后者的实现更加高效一些。
+
+#### 工作集模型
+
+最近使用的内存页刚被换出又被换入，于是大部分CPU时间都被用来处理缺页异常以及等待缓慢的磁盘操作，而仅剩小部分的时间用于执行真正有意义的工作。
+
+工作集模型（working set model）能够有效地避免颠簸现象的发生。工作集的定义是”一个应用程序在时刻t的工作集W为它在时间区间[t-x，t]使用的内存页集合“。
+
+##### 工作集时钟算法
+
+## 虚拟内存功能
+
+### 共享内存
+
+#### 写时拷贝
+
+优点：
+
+* 一方面能够节约物理内存资源，比如不同的应用程序以写时拷贝的方式映射相同的动态链接库
+* 另一方面可以让父子程序以只读的方式共享全部内存数据，避免内存拷贝操作带来的时间和空间开销。
+
+#### 内存去重
+
+操作系统可以定期地在内存中扫描具有相同内容的物理页，并且找到映射到这些物理页的虚拟页；然后只保留其中一个物理页，并将具有相同内容的其他虚拟页都用写时拷贝的方式映射到这个物理页，然后释放其他的物理页以供将来使用。
+
+内存去重会对应用程序访存时延造成影响。
+
+#### 内存压缩
+
+所有操作都在内存中完成
+
+Linux操作系统支持的zswap机制是一个使用内存压缩技术的例子。zswap机制在内存中为换页过程提供了缓冲区，称为zswap区域。操作系统将准备换出的内存数据进行压缩，并且将压缩后的内容写入zswap区域（实际上依然是内存）。通过这样的设计，将内存数据写到磁盘设备的操作可以被延迟完成，从而有可能进行更加高效的磁盘批量I/O，甚至可能避免磁盘I/O。即使最后还是会触发磁盘操作，但写出/读回的数据量由于经过压缩会明显减小。当被换出和zswap区域或者磁盘上的数据再次被访问时，该机制会把压缩的数据进行解压和换入。
+
+### 大页
+
+好处
+
+* 它能够减少TLB缓存项的使用，从而有机会提高TLB命中率
+* 它可以减少页表的级数，从而提升查询页表的效率
+
+弊端
+
+* 应用程序可能未使用整个大页而造成物理内存资源浪费
+* 大页的使用会增加操作系统管理内存的复杂度，Linux中就存在与大页相关的漏洞。
+
+Linux还提供了透明大页（transparent huge page）机制，能够自动地将一个应用程序中连续的4KB内存页合并成2MB的内存页。
+
+## 物理内存分配与管理
+
+### 伙伴系统
+
+将物理内存划分成连续的块，以块作为基本单位进行分配。不同块的大小可以不同，但每个块都由一个或多个连续的物理页组成，物理页的数量必须是2的n次幂（0≤n<预设的最大值）。
+
+在处理分配请求的过程中，大的块可以分裂成两半，即两个小一号的块，这两个块互为伙伴。
+
+在一个块被释放后，分配器会找到其伙伴块，若伙伴块也处于空闲的状态，则将这两个伙伴块进行合并，形成一个大一号的空闲块，然后继续尝试向上合并。由于分裂操作和合并都是级联的，因此能够很好地缓解外部碎片的问题。
+
+### SLAB分配器
+
+伙伴系统最小的分配单位是一个物理页（4KB），但是大多数情况下，内核需要分配的内存大小通常是几十字节或几百个字节，远远小于一个物理页的大小。
+
+SLAB分配器存在一些问题，比如维护了太多的队列、实现日趋复杂、存储开销也由于复杂的设计而增大等。
+
+最简单的分配器称为SLOB分配器，它的出现主要为了满足内存资源稀缺场景（比如嵌入式设备）的需求，它具有最小的存储开销。
+
+SLUB分配器做的事情是把伙伴系统分配的大块内存进一步细分成小块内存进行管理。SLUB分配器向伙伴系统申请一定大小的物理内存块（一个或多个连续的物理页），并将获得物理内存块作为一个slab（slab在这里指代这个物理内存块对应的数据结构）。slab会被划分成等长的小块内存，并且其内部空闲的小块内存会被组织成空闲链表的形式。
+
+一个内存资源池通常还有current和partial两个重要指针。current指针仅指向一个slab，所有的分配请求都将从该指针指向的slab中获得空闲内存块。partial指针指向由所有拥有空闲块的slab组成的链表。如果partial指针指向的链表为空，那么slub分配器就会向伙伴系统申请分配新的物理内存作为新的slab。
+
+好处
+
+* 一方面有效避免了外部碎片
+* 另一方面通常分配速度很快（直接从current指针指向的slab取出第一个空闲块即可）
+
+### 空闲链表
+
+#### 隐式空闲链表
+
+每个内存块头部存储了关于该块是否空闲、块大小的信息。通过块大小，可以找到下一个块的位置。
+
+#### 显式空闲链表
+
+仅仅把空闲的内存块（而不是所有内存块）放在链表中。除了块大小（合并块时需要），每个空闲块需要额外维护两个指针（prev和next）分别指向前后空闲块。
+
+相比之下，显式空闲链表在分配速度上更具有优势，因为它的分配时间仅与空闲块数量成正相关，而隐式空闲链表的分配时间与所有块的数量成正相关。这个优势在内存使用率高的情况下更加明显，因为空闲块的数量更少而非空闲块更多。
+
+#### 分离空闲链表
+
+维护多条不同的显式空闲链表，每条链表服务固定范围大小的分配请求。
+
+在分离空闲链表中采用first-fit策略（找到第一个空闲块即返回）能够近似地达到best-fit策略（最优策略，即找到大小最接近的空闲块）的内存利用率。
+
+## CPU缓存
+
+### 软件方案：染色机制
+
+缓存着色（cache coloring/page coloring）的内存染色机制
+
+把能够被存放到缓存中不同位置（不造成缓存冲突）的物理页标记上不同的颜色，在为连续虚拟内存页分配物理页的时候，优先选择不同颜色的物理页进行分配。
+
+不足：
+
+这种染色机制会导致物理页的分配变得复杂，但如果能够明确地得知应用对内存的访问模式，则可以有效提升内存访问的性能。
+
+### 硬件方案：Intel CAT
+
+一般来说，CPU的最末级缓存（Last Level Cache，LLC）会被多个CPU核心共享。这些应用程序将会竞争最末级缓存的资源，从而可能由于互相影响导致应用程序产生性能抖动，甚至造成系统整体性能的下降。
+
+Intel缓存分配技术（Cache Allocation Technology，CAT）的出现为操作系统有效解决这些问题提供了一种方法。该技术允许操作系统设置应用程序所能使用的最末级缓存的大小和区域，从而实现最末级缓存资源在不同应用程序间的隔离。
+
+### 硬件方案：ARMv8-A MPAM
+
+在AArch64处理器上也有MPAM（Memory System Resource Partitioning and Monitoring）技术，MPAM支持配置多个分配区ID（Partition ID，PARTID）并且限制每个PARTID能够使用的缓存资源。操作系统可以把应用程序划分到某个PARTID，从而限制该应用程序能够使用的缓存资源。MPAM支持两种缓存划分方案，分别是缓存局部划分（cache-portion partitioning）以及缓存最大容量划分（cache maximum-capacity partitioning）。
+
+# 进程与线程
+
+## 进程
+
+### 进程的状态
+
+* 新生状态（new）
+
+  该状态表示一个进程刚刚被创建出来，还未完成初始化，不能调度执行。在经过初始化过程之后，进程迁移至就绪状态
+
+* 就绪状态（ready）
+
+  该状态表示进程可以被调度执行，但还未被调度器选择。在被调度器选择执行后，进程迁移至运行状态。
+
+* 运行状态（running）
+
+  该状态表示进程正在CPU上运行。当一个进程执行一段时间后，调度器可以选择中断它的执行并重新将其放回调度队列，它就迁移至就绪状态。当进程运行结束，它会迁移至终止状态。如果一个进程需要等待某些外部事件，它可以放弃CPU并迁移至阻塞状态。
+
+* 阻塞状态（blocked）
+
+  该状态表示进程需要等待外部事件（如某个I/O请求的完成），暂时无法被调度。当进程等待的外部事件完成后，它会迁移至就绪状态。
+
+* 终止状态（terminated）
+
+  该状态表示进程已经完成了执行，且不会再被调度。
+
+### 进程的地址空间
+
+#### 静态链接
+
+minimal.S
+
+```assembly
+#include <sys/syscall.h>
+
+.globl _start
+_start:
+  movq $SYS_write, %rax   # write(
+  movq $1,         %rdi   #   fd=1,
+  movq $st,        %rsi   #   buf=st,
+  movq $(ed - st), %rdx   #   count=ed-st
+  syscall                 # );
+
+  movq $SYS_exit,  %rax   # exit(
+  movq $1,         %rdi   #   status=1
+  syscall                 # );
+
+st:
+  .ascii "\033[01;31mHello, OS World\033[0m\n"
+ed:
+```
+
+编译
+
+```assembly
+yqw@ubuntu ~/D/opsystem [1]> gcc -c minimal.S && ld minimal.o    
+```
+
+查看进程的地址空间
+
+```assembly
+yqw@ubuntu ~/D/opsystem> gdb ./a.out                                     (base) 
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ./a.out...
+(No debugging symbols found in ./a.out)
+(gdb) starti
+Starting program: /home/yqw/Documents/opsystem/a.out 
+
+Program stopped.
+0x0000000000401000 in _start ()
+(gdb) info inferiors 
+  Num  Description       Executable        
+* 1    process 5096      /home/yqw/Documents/opsystem/a.out 
+(gdb) !cat /proc/5096/maps
+00400000-00401000 r--p 00000000 08:05 1574486                            /home/yqw/Documents/opsystem/a.out
+00401000-00402000 r-xp 00001000 08:05 1574486                            /home/yqw/Documents/opsystem/a.out
+7ffff7ff9000-7ffff7ffd000 r--p 00000000 00:00 0                          [vvar]
+7ffff7ffd000-7ffff7fff000 r-xp 00000000 00:00 0                          [vdso]
+7ffffffde000-7ffffffff000 rw-p 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+(gdb) 
+```
+
+#### 动态链接
+
+内容更多
+
+把文件映射到地址空间
+
+readelf -p ./a.out | less
+
+vdso非陷入系统调用
+
+### 进程操作
+
+#### 创建fork
+
+```assembly
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+  int n = 2;
+  for (int i = 0; i < n; i++) {
+    fork();
+    printf("Hello\n");
+  }
+  for (int i = 0; i < n; i++) {
+    wait(NULL);
+  }
+}
+```
+
+执行并输出
+
+```assembly
+yqw@ubuntu ~/D/opsystem> gcc fork-printf.c                               (base) 
+yqw@ubuntu ~/D/opsystem> ./a.out                                         (base) 
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+yqw@ubuntu ~/D/opsystem> ./a.out | cat                                   (base) 
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+```
+
+说明fork会复制整个状态机的状态
+
+#### 终止
+
+结束程序执行的三种方法
+
+exit 的几种写法 (它们是不同)
+
+- exit(0)
+
+  stdlib.h中声明的 libc 函数
+
+  会调用 `atexit`
+
+- _exit(0)
+
+  \- glibc 的 syscall wrapper
+
+  - 执行 “exit_group” 系统调用终止整个进程 (所有线程)
+    - 细心的同学已经在 strace 中发现了
+  - 不会调用 `atexit`
+
+- syscall(SYS_exit, 0)
+
+  - 执行 “`exit`” 系统调用终止当前线程
+  - 不会调用 `atexit`
+
+```assembly
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/syscall.h>
+
+void func() {
+  printf("Goodbye, Cruel OS World!\n");
+}
+
+int main(int argc, char *argv[]) {
+  atexit(func);
+
+  if (argc < 2) return EXIT_FAILURE;
+
+  if (strcmp(argv[1], "exit") == 0)
+    exit(0);
+  if (strcmp(argv[1], "_exit") == 0)
+    _exit(0);
+  if (strcmp(argv[1], "__exit") == 0)
+    syscall(SYS_exit, 0);
+}
+```
+
+## 例子
+
+Goroutine：概念上是线程，实际是线程和协程的混合体
+
+* 每个CPU上有一个Go Worker，自由调度goroutines
+* 执行到blocking API时（例如sleep，read）
+  * 成功 → 立即继续执行
+  * 失败 → 立即 yield 到另一个需要 CPU 的 goroutine
+
+CPU 和操作系统全部用到 100%
+
+fib.go
+
+```assembly
+// Example from "The Go Programming Language"
+
+package main
+
+import (
+  "fmt"
+  "time"
+)
+
+func main() {
+  go spinner(100 * time.Millisecond)
+  const n = 45
+  fibN := fib(n) // slow
+  fmt.Printf("\rFibonacci(%d) = %d\n", n, fibN)
+}
+
+func spinner(delay time.Duration) {
+  for {
+    for _, r := range `-\|/` {
+      fmt.Printf("\r%c", r)
+      time.Sleep(delay)
+    }
+  }
+}
+
+func fib(x int) int {
+  if x < 2 { return x }
+  return fib(x - 1) + fib(x - 2)
+}
+```
+
+# 操作系统调度
+
+任务在执行时会用红黑树来是先运行队列。任务在执行时若触发一定条件，则会停止执行，这些条件可以是：
+
+* 该任务执行了指定的时间片后，应让其他任务在当前CPU核心上执行。
+* 该任务发起了I/O请求，在I/O返回前，它不会继续执行
+* 该任务主动停止执行或进入睡眠
+* 该任务被系统中断打断，系统优先处理中断而暂缓该任务的执行
+
+## 调度指标
+
+性能相关
+
+* 吞吐量（单位时间内处理的任务数量）
+* 周转时间（任务从被发起直至执行结束所需要的时间）
+* 响应时间（任务从被发起直至第一次向用户返回输出以响应用户所需的时间）
+
+非性能相关
+
+* 公平性
+* 资源利用率
+
+特有需求
+
+* 实时任务的实时性
+* 终端设备的能耗
+
+--------------------------
+
+设计实现调度器的挑战：
+
+* 调度指标多样性
+* 调度可参考的信息有限
+* 任务间的复杂交互
+* 许多方面存在权衡
+  * 调度开销与调度效果
+  * 优先级与公平性
+  * 性能与能耗
+
+## 调度机制
+
+### 长期、中期与短期调度
+
+#### 长期调度
+
+长期调度就像一个阀门，用于限制系统中真正被短期调度管理的进程数量，避免短期调度的开销过大。长期调度决定了当前真正可被调用的进程的数量。
+
+根据进程主要使用的资源类型，进程可以简单分为两类：
+
+* 计算密集型
+* I/O密集型
+
+#### 短期调度
+
+短期调度主要负责进程在就绪状态、运行状态、阻塞状态之间的转换。
+
+在操作系统中一般触发短期调度的事件包括：
+
+* 进程的创建
+* 执行结束
+* 硬件中断（特别是时钟中断）
+* 系统调用
+
+#### 中期调度
+
+操作系统需要将内存使用情况也纳入考量，避免内存使用过多，这是由中期调度来负责的。
+
+中期调度会根据某些策略选择将要被挂起的进程（例如频繁触发缺页异常的进程、长时间未响应的进程等），该进程会被设置为对应的挂起状态，标志着它不会再被调度执行。同时，换页机制会倾向于选择被挂起的进程所使用的内存页替换入磁盘。
+
+#### 总览
+
+长期调度粗粒度地决定是否应该将一个新的进程纳入调度管理，负责增加系统中可被调度的进程的数量
+
+中期调度的触发相对频繁，它辅助换页机制，负责限制系统中可被调度的进程的数量
+
+短期调度的触发最为频繁，负责细粒度地调度进程的执行，做出相应的调度决策。
+
+### 经典调度
+
+#### 先到先得
+
+优点：简单直观
+
+弊端：
+
+* 在长短任务混合的场景下对短任务不友好
+* 对I/O密集型任务不友好
+
+#### 最短任务优先
+
+弊端：
+
+* 必须预知任务的运行时间
+* 其表现严重依赖于任务到达时间点
+
+#### 最短完成时间任务优先
+
+弊端：长时间饥饿
+
+饥饿：当一个系统中有大量的短任务和少量的长任务时，这个系统的长任务很可能会无法占用CPU资源，一直处于饥饿中，即永远无法被调度。
+
+#### 时间片轮转
+
+优点：不仅无须预知任务的运行时间，而且也不会出现长任务饥饿的情况。
+
+弊端：
+
+* 过小的时间片反而会引入大量的调度开销，让任务的调度成为严重的性能瓶颈
+* 要求开发者对整个应用场景有着明确的认知
+* 在任务运行时间相似的场景下平均周转时间高
+
+### 优先级调度
+
+### 公平共享调度
+
+以份额（share）来量化每个任务对CPU时间的使用
+
+#### 彩票份额
+
+在每次调度时，会根据随机数（彩票开奖）确定任务是否被调度。任务所占的份额越大，随机数就越有可能落在它的份额之内，因此它就越有可能会被调度。
+
+如果将任务按照持有的份额数量从高到低进行排序，可以减少决策时列表的查找次数。
+
+彩票调度还给出了一些基于彩票的优化方法：
+
+* 彩票转让
+
+  任务A可以将自己的份额转让给任务B。在转让后，任务B将拥有更高的CPU占比份额，减少了资源浪费
+
+* 彩票货币
+
+  通过添加一层彩票货币的抽象，可以让任务组更加灵活地修改自己持有的份额，避免影响从属它们的任务。
+
+* 彩票通胀
+
+  彩票通胀的思想是给任务一定自由度，允许任务根据当前对CPU资源的需求决定自己的份额。这种动态调整份额的方式可以应对变化的应用场景，让需求资源的任务动态地申请更多的资源，而不需要资源的任务则可以释放自己的资源。但是，彩票通胀需要多个任务间互相信任，如果有任务恶意地提升自己的彩票量，那么最坏情况下它会占用绝大部分的CPU时间。
+
+随机数会导致某一任务占用CPU时间的比例，需要在该任务经历多次调度后，才能趋近于该任务的份额在所有任务总份额中的比例。即只有调度次数足够多，彩票调度的效果才接近公平。
+
+#### 步幅份额
+
+步幅调度通过设置虚拟时间的方式，让任务在每次调度时增加一定的虚拟时间，即步幅。经历虚拟时间相同的任务，它们使用的CPU时间之比就是步幅的倒数之比。换句话说，任务的份额之比正对应了任务的步幅的倒数之比。
+
+在真实系统中需要注意的是，由于任务可能在任意时间进入系统，因此任务的pass不能够简单地从0开始设置，而应该设置为当前所有任务的最小pass值。否则，可能会导致新进入的任务长时间占有CPU。
+
+### 实时调度
+
+根据任务超过截止时间所造成的后果，实时任务可以分为两类：
+
+* 硬实时任务
+* 软实时任务
+
+实时任务还可以根据被触发的时间分为三类：
+
+* 周期任务
+
+* 偶发任务
+
+  指不会周期性地到达系统的任务，且还要满足连续两个相同偶发任务到达系统的时间间隔有最小值，即系统不会在同一时刻处理两个相同的偶发任务。
+
+  偶发任务通常是硬实时任务
+
+* 非周期任务
+
+  指到达系统时间随机的任务。相比于偶发任务，非周期任务没有了相同任务间最小时间间隔的限制。所以系统中同一时刻可以处理多个相同的非周期任务，并且非周期任务通常是软实时任务。
+
+实时操作系统的特点是确定性，而为了获得确定性的、可预测的任务时延，关键就是需要调度让实时任务可以立即执行。对于实时任务，调度器的主要指标已经不再是响应时间、周转时间、资源占用比例等，而是任务是否能够在截止时间完成。
+
+#### 速度单调
+
+这里的速率指的是任务到达速率，它是任务周期的倒数，即1/T。任务的周期越短，意味着其截止时间要求越迫切，则其优先级越高。RM还支持抢占调度，高优先级的任务可以抢占低优先级的任务执行。
+
+Liu和Layland证明了在所有基于静态优先级的实时调度策略中，RM策略是最优的。基于RM策略无法在截止时间前完成的一组任务，也无法被其他基于静态优先级的实时调度策略在截止时间前完成。
+
+#### 最早截止时间优先
+
+任务的截止时间越近则优先级越高。调度器只需要知道任务的截止时间这一种信息。
+
+### 其他调度
+
+#### 借用虚拟时间（Borrowed Virtual Time，BVT）
+
+## 多核调度策略
+
+### 负载分担
+
+多核共享一个全局运行队列
+
+优点：
+
+* 设计简单。通过使用负载分担，可以将多核调度问题规约为单核调度问题，使用已有的单核调度策略和单核调度器，就可以实现一个多核的全局调度器。
+* 每个CPU都会分担系统的负载，不会出现CPU资源浪费的情况。一个CPU核心执行完当前任务后，它会从全局任务队列中再选取一个任务执行。因此，只要系统当前还有可以执行的任务，每个CPU核心都能够获取到任务去执行。
+
+问题：
+
+* 多核共享一个全局运行队列的同步开销问题
+
+* 任务在多个CPU核心间来回切换的开销
+
+  任务在不同CPU核心间切换会导致大量开销，包括重新载入缓存、TLB刷新等
+
+### 协同调度
+
+协同调度的目的是尽可能让一组任务并行执行，避免调度器同时调度有依赖关系的两组任务，同时避免关联任务（倾向于同时执行的一系列任务）执行效率减低的问题。
+
+#### 群组调度
+
+将关联任务设置为一组（gang），并以组为单位调度任务在多个CPU核心上执行，使它们的开始时间和结束时间接近相同。
+
+如果在应用场景不匹配的情况下，群组调度策略可能并不是最优的，因为它会要求无关联的任务必须同时进入或退出CPU核心，无关联任务之间的相互等待可能造成CPU资源的浪费。
+
+### 两级调度
+
+使用全局调度器和本地调度器，构成了层级化结构，一般称之为两级调度（two-level scheduling）
+
+当一个任务被分配到给定的CPU核心时，它将一直被该核心的本地调度器管理，不会迁移到其他CPU核心上执行。
+
+#### 负载均衡
+
+负载均衡的思想是，通过追踪每个CPU核心当前的负载情况，将处于高负载的CPU核心管理的任务迁移到低负载的CPU核心上，尽可能地保证每个核心的负载大致相同。
+
+##### 负载追踪
+
+* 运行队列粒度的负载追踪
+* 调度实体粒度的负载追踪
+
+PELT的好处是它的开销很小，且能帮助调度器更细粒度、更精确地检测任务的负载，对于预测负载均衡策略的效果有很大帮助
+
+##### 调度域
+
+由于在越高层级的调度域间进行负载均衡的开销越大，所以Linux为不同层级的调度域设置了不同的负载均衡触发频率与阈值（只有当两个调度组的负载相差超过一定阈值才会触发负载均衡）。Linux负载均衡通过将CPU核心进行层级化的划分，并为不同层级设置不一样的参数，尽量减少了负载均衡的开销。
+
+### 能耗感知调度
+
+大核处理速度更快，能耗也会更高；相对地，小核能耗较低，但是完成任务所需时间会更长。
+
+为了保证性能的同时达到最低的系统整体能耗，调度器通过ESA决定任务在哪个CPU核心上执行。
+
+为了了解每个CPU核心的处理能力和能耗信息，ESA需要使用当前处理器架构的能耗模型（energy model）。具体地，EAS通过能耗模型了解每个CPU核心的容量（处理能力）和功率。
+
+系统的CPU核心会被划分为多个**性能域（Performance Domain，PD）**，同一个性能域内的CPU核心具有相同的容量和功率的对应关系，即公用同一套相同的能耗模型。一个能耗模型中有多个**操作性能点（Operating Performance Point，OPP）**，OPP记录了CPU核心的频率（用以计算对应的CPU容量）和电压（用以计算对应的功率）的对应关系。
+
+在放置新任务时，如果新任务负载小于该CPU核心的剩余容量，将任务放置在CPU核心上不会导致频率提升，因而不会大幅度提升能耗。EAS在做出调度策略时，会选取每个性能域中剩余容量最大的CPU核心作为任务迁移备选，并且计算出任务迁移到这些CPU核心后的总能耗，并选取总能耗最低的CPU核心作为任务迁移目标。
+
+EAS适用于中、低负载场景。如果当前系统中的CPU都处于高负载或满负载的状态，EAS很难通过任务迁移来降级能耗。当任一CPU核心的当前负载超过80%时，Linux会开启负载均衡并关闭EAS；而当没有任何CPU核心的负载超过80%时，Linux会开启EAS并关闭负载均衡。
+
+# 进程间通信
+
+多进程协作三大优势
+
+* 将功能模块化，避免重复造轮子
+* 增强模块间的隔离
+* 提高应用的容错能力
+
+进程间通信（Inter-Process Communication, IPC）是多进程协作的基础。
+
+## 数据传递
+
+### 基于共享内存的消息传递
+
+特点：操作系统在通信过程中不干预数据传输
+
+**共享内存vs.基于共享内存的消息传递**
+
+基于共享内存的消息传递以共享内存为媒介进行消息的传输，其核心的通信抽象仍然是消息。共享内存的另一种方法是，直接在两个（或多个）进程间建立共享区域，然后在区域上建立数据结构。进程可以直接使用该共享区域上的数据，而不存在“消息”的抽象。然而，直接使用共享内存上的数据结构 存在不少问题。例如：
+
+* 由于共享内存的虚拟地址在不同进程的地址空间中可能是不同的，这会导致指针以及指针相关的数据无法使用。
+* 改用法通常还假设共享内存的进程是互相信任的，而这与多进程的隔离性优势存在冲突。
+
+### 操作系统辅助的消息传递
+
+操作系统辅助的消息传递指内核对用户态提供通信的接口，如Send和Recv等。进程可以直接使用这些接口，将消息传递给另一个进程，而不需要建立共享内存和轮询内存数据等操作。
+
+**共享内存和操作系统辅助传递的对比**
+
+从数据传递的性能来看，共享内存可以实现理论上的零内存拷贝的传输。这里的内存拷贝，是指将数据从内存中的一块区域拷贝到另一块区域，通常通过CPU访存指令来实现。而操作系统辅助传递方式下，通常需要将数据先从发送者用户态拷贝到内核内存，再从内核拷贝到接收者用户态内存，这个过程包含两次拷贝。
+
+操作系统辅助传递同样有优于共享内存的地址：
+
+* 操作系统辅助传递的抽象更简单。内核可以保证每一次通信接口的调用都是一个消息被发送或接收（或者出现异常错误），并且能够较好地支持变长的消息，而共享内存则需要用户态软件封装来实现这一点。
+* 操作系统辅助传递的安全性保证通常更强，并且不会破坏发送者和接收者进程的内存隔离。
+* 在多方通信时，在多个进程间共享内存区域是复杂且不安全的，而操作系统辅助传递可以避免此问题。
+
+## 控制流转移
+
+当一个通信发生时，内核将控制流从发送者进程切换到接收者进程（返回的过程类似）
+
+### **过程**
+
+* 进程1在用户态，进程2在内核态，进程2处于阻塞状态，等待新的请求到来
+* 进程1发起IPC请求，陷入内核处理
+* 内核将进程2唤醒去处理请求，进入用户态，而进程1在内核态处于阻塞状态等待执行结果
+
+### **优势**
+
+结合内核中的调度以及对进程（或线程）的调度状态的修改，控制流转移可以避免轮询操作，高效地将消息的到来和发出“告知”进程。
+
+## 同步和异步
+
+* 同步IPC指它的IPC操作（如Send）会阻塞进程直到该操作完成
+
+* 异步IPC则通常是非阻塞的，进程只要发起一次操作即可返回，而不需要等待其完成。异步IPC通常通过**轮询内存状态或注册回调函数（如果内核支持）**来获取返回结果。
+
+同步IPC往往是双向IPC（或RPC），即发送者需要等待返回结果。不过也存在单向IPC是同步的，在这种场景下，虽然发送者不会阻塞等待接收者返回结果，但是发送者会阻塞等待接收者接收。
+
+在同步的设计下，此时该发送者需要进行一定的等待，而异步的设计则会通过如内核缓冲区等方式暂存消息，避免等待。
+
+在早期的微内核（如L4微内核）中，同步IPC往往是唯一的IPC方式。这是因为相比异步而言，同步IPC有着更好的编程抽象。如使用（同步的）RPC时，调用者可以将进程间通信看成一种“函数调用”，调用返回时也就意味着结果返回了。然而同步IPC在操作系统的发展中，逐渐表现出一些不足。一个典型的问题是并发。当一个服务进程要响应很多客户进程的通信，比如一个微内核中的用户态文件系统时，在同步IPC的实现下服务进程（为了性能）往往需要创建大量工作线程去响应不同的客户进程，否则有可能出现阻塞客户请求。
+
+## 命名服务
+
+权限检查机制的引入保证了安全性。权限的分发会通过一个用户态的服务——命名服务（naming server）来处理。命名服务则指代提供该服务的具体进程。
+
+服务端进程可以将自己提供的服务告诉命名服务进程，而客户端进程可以去民工服务商查询当前的服务，并选择自己希望建立连接的服务去尝试获取权限。具体是否分发权限给对应的客户端进程，是由命名服务和对应的服务端进程根据特定的策略来判断的。
+
+**好处**
+
+各个服务不再是内核中的ID等抽象的表示，而是对应用更友好的“名字”。
+
+命名服务在用户态，因为命名服务的功能其实并不简单，并且通常需要支持很多不同的策略。
+
+## 宏内核进程间通信
+
+### 管道进程间通信
+
+管道是单项IPC，内核中通常有一定的缓冲区来缓冲消息，而通信的数据（消息抽象）是字节流，需要应用自己去对数据进行解析。
+
+具体实现上，管道在UNIX系列的系统中会被当做一个文件。内核会为用户态提供代表管道的文件描述符，让其可以通过文件系统相关的系统调用来使用。管道的特殊之处在于，它的创建会返回一组（两个）文件描述符。不过实际上管道并不会使用存储设备，而是使用内存作为数据的一个缓冲区。这是因为管道的本质上是为了通信，一方面对可持久化没有要求，另一方面还需要保证数据传输的高性能。
+
+#### 匿名管道
+
+匿名管道是通过pipe的系统调用创建的，在创建的同时进程会拿到读写的端口（两个文件描述符）。由于整个管道没有全局的“名字”，因此只能通过这两个文件描述符来使用它。
+
+#### 命名管道
+
+命名管道是通过命令mkfifo来创建的，在创建过程中会指定一个全局的文件名，由这个文件名来指代一个具体的管道。
+
+sh-xv6.c
+
+```assembly
+// Linux port of xv6-riscv shell (no libc)
+// Compile with "-ffreestanding"!
+
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <sys/syscall.h>
+
+// Parsed command representation
+enum { EXEC = 1, REDIR, PIPE, LIST, BACK };
+
+#define MAXARGS 10
+#define NULL ((void *)0)
+
+struct cmd {
+  int type;
+};
+
+struct execcmd {
+  int type;
+  char *argv[MAXARGS], *eargv[MAXARGS];
+};
+
+struct redircmd {
+  int type, fd, mode;
+  char *file, *efile;
+  struct cmd* cmd;
+};
+
+struct pipecmd {
+  int type;
+  struct cmd *left, *right;
+};
+
+struct listcmd {
+  int type;
+  struct cmd *left, *right;
+};
+
+struct backcmd {
+  int type;
+  struct cmd* cmd;
+};
+
+struct cmd* parsecmd(char*);
+
+// Minimum runtime library
+long syscall(int num, ...) {
+  va_list ap;
+  va_start(ap, num);
+  register long a0 asm ("rax") = num;
+  register long a1 asm ("rdi") = va_arg(ap, long);
+  register long a2 asm ("rsi") = va_arg(ap, long);
+  register long a3 asm ("rdx") = va_arg(ap, long);
+  register long a4 asm ("r10") = va_arg(ap, long);
+  va_end(ap);
+  asm volatile("syscall"
+    : "+r"(a0) : "r"(a1), "r"(a2), "r"(a3), "r"(a4)
+    : "memory", "rcx", "r8", "r9", "r11");
+  return a0;
+}
+
+size_t strlen(const char *s) {
+  size_t len = 0;
+  for (; *s; s++) len++;
+  return len;
+}
+
+char *strchr(const char *s, int c) {
+  for (; *s; s++) {
+    if (*s == c) return (char *)s;
+  }
+  return NULL;
+}
+
+void print(const char *s, ...) {
+  va_list ap;
+  va_start(ap, s);
+  while (s) {
+    syscall(SYS_write, 2, s, strlen(s));
+    s = va_arg(ap, const char *);
+  }
+  va_end(ap);
+}
+
+#define assert(cond) \
+  do { if (!(cond)) { \
+    print("Panicked.\n", NULL); \
+    syscall(SYS_exit, 1); } \
+  } while (0)
+
+static char mem[4096], *freem = mem;
+
+void *zalloc(size_t sz) {
+  assert(freem + sz < mem + sizeof(mem));
+  void *ret = freem;
+  freem += sz;
+  return ret;
+}
+
+// Execute cmd.  Never returns.
+void runcmd(struct cmd* cmd) {
+  int p[2];
+  struct backcmd* bcmd;
+  struct execcmd* ecmd;
+  struct listcmd* lcmd;
+  struct pipecmd* pcmd;
+  struct redircmd* rcmd;
+
+  if (cmd == 0) syscall(SYS_exit, 1);
+
+  switch (cmd->type) {
+    case EXEC:
+      ecmd = (struct execcmd*)cmd;
+      if (ecmd->argv[0] == 0) syscall(SYS_exit, 1);
+      syscall(SYS_execve, ecmd->argv[0], ecmd->argv, NULL);
+      print("fail to exec ", ecmd->argv[0], "\n", NULL);
+      break;
+
+    case REDIR:
+      rcmd = (struct redircmd*)cmd;
+      syscall(SYS_close, rcmd->fd);
+      if (syscall(SYS_open, rcmd->file, rcmd->mode, 0644) < 0) {
+        print("fail to open ", rcmd->file, "\n", NULL);
+        syscall(SYS_exit, 1);
+      }
+      runcmd(rcmd->cmd);
+      break;
+
+    case LIST:
+      lcmd = (struct listcmd*)cmd;
+      if (syscall(SYS_fork) == 0) runcmd(lcmd->left);
+      syscall(SYS_wait4, -1, 0, 0, 0);
+      runcmd(lcmd->right);
+      break;
+
+    case PIPE:
+      pcmd = (struct pipecmd*)cmd;
+      assert(syscall(SYS_pipe, p) >= 0);
+      if (syscall(SYS_fork) == 0) {
+        syscall(SYS_close, 1);
+        syscall(SYS_dup, p[1]);
+        syscall(SYS_close, p[0]);
+        syscall(SYS_close, p[1]);
+        runcmd(pcmd->left);
+      }
+      if (syscall(SYS_fork) == 0) {
+        syscall(SYS_close, 0);
+        syscall(SYS_dup, p[0]);
+        syscall(SYS_close, p[0]);
+        syscall(SYS_close, p[1]);
+        runcmd(pcmd->right);
+      }
+      syscall(SYS_close, p[0]);
+      syscall(SYS_close, p[1]);
+      syscall(SYS_wait4, -1, 0, 0, 0);
+      syscall(SYS_wait4, -1, 0, 0, 0);
+      break;
+
+    case BACK:
+      bcmd = (struct backcmd*)cmd;
+      if (syscall(SYS_fork) == 0) runcmd(bcmd->cmd);
+      break;
+
+    default:
+      assert(0);
+  }
+  syscall(SYS_exit, 0);
+}
+
+int getcmd(char* buf, int nbuf) {
+  print("> ", NULL);
+  for (int i = 0; i < nbuf; i++) buf[i] = '\0';
+
+  while (nbuf-- > 1) {
+    int nread = syscall(SYS_read, 0, buf, 1);
+    if (nread <= 0) return -1;
+    if (*(buf++) == '\n') break;
+  }
+  return 0;
+}
+
+void _start() {
+  static char buf[100];
+
+  // Read and run input commands.
+  while (getcmd(buf, sizeof(buf)) >= 0) {
+    if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
+      // Chdir must be called by the parent, not the child.
+      buf[strlen(buf) - 1] = 0;  // chop \n
+      if (syscall(SYS_chdir, buf + 3) < 0) print("cannot cd ", buf + 3, "\n", NULL);
+      continue;
+    }
+    if (syscall(SYS_fork) == 0) runcmd(parsecmd(buf));
+    syscall(SYS_wait4, -1, 0, 0, 0);
+  }
+  syscall(SYS_exit, 0);
+}
+
+// Constructors
+
+struct cmd* execcmd(void) {
+  struct execcmd* cmd;
+
+  cmd = zalloc(sizeof(*cmd));
+  cmd->type = EXEC;
+  return (struct cmd*)cmd;
+}
+
+struct cmd* redircmd(struct cmd* subcmd, char* file, char* efile, int mode,
+                     int fd) {
+  struct redircmd* cmd;
+
+  cmd = zalloc(sizeof(*cmd));
+  cmd->type = REDIR;
+  cmd->cmd = subcmd;
+  cmd->file = file;
+  cmd->efile = efile;
+  cmd->mode = mode;
+  cmd->fd = fd;
+  return (struct cmd*)cmd;
+}
+
+struct cmd* pipecmd(struct cmd* left, struct cmd* right) {
+  struct pipecmd* cmd;
+
+  cmd = zalloc(sizeof(*cmd));
+  cmd->type = PIPE;
+  cmd->left = left;
+  cmd->right = right;
+  return (struct cmd*)cmd;
+}
+
+struct cmd* listcmd(struct cmd* left, struct cmd* right) {
+  struct listcmd* cmd;
+
+  cmd = zalloc(sizeof(*cmd));
+  cmd->type = LIST;
+  cmd->left = left;
+  cmd->right = right;
+  return (struct cmd*)cmd;
+}
+
+struct cmd* backcmd(struct cmd* subcmd) {
+  struct backcmd* cmd;
+
+  cmd = zalloc(sizeof(*cmd));
+  cmd->type = BACK;
+  cmd->cmd = subcmd;
+  return (struct cmd*)cmd;
+}
+
+// Parsing
+
+char whitespace[] = " \t\r\n\v";
+char symbols[] = "<|>&;()";
+
+int gettoken(char** ps, char* es, char** q, char** eq) {
+  char* s;
+  int ret;
+
+  s = *ps;
+  while (s < es && strchr(whitespace, *s)) s++;
+  if (q) *q = s;
+  ret = *s;
+  switch (*s) {
+    case 0:
+      break;
+    case '|': case '(': case ')': case ';': case '&': case '<':
+      s++;
+      break;
+    case '>':
+      s++;
+      if (*s == '>') {
+        ret = '+'; s++;
+      }
+      break;
+    default:
+      ret = 'a';
+      while (s < es && !strchr(whitespace, *s) && !strchr(symbols, *s)) s++;
+      break;
+  }
+  if (eq) *eq = s;
+
+  while (s < es && strchr(whitespace, *s)) s++;
+  *ps = s;
+  return ret;
+}
+
+int peek(char** ps, char* es, char* toks) {
+  char* s;
+
+  s = *ps;
+  while (s < es && strchr(whitespace, *s)) s++;
+  *ps = s;
+  return *s && strchr(toks, *s);
+}
+
+struct cmd* parseline(char**, char*);
+struct cmd* parsepipe(char**, char*);
+struct cmd* parseexec(char**, char*);
+struct cmd* nulterminate(struct cmd*);
+
+struct cmd* parsecmd(char* s) {
+  char* es;
+  struct cmd* cmd;
+
+  es = s + strlen(s);
+  cmd = parseline(&s, es);
+  peek(&s, es, "");
+  assert(s == es);
+  nulterminate(cmd);
+  return cmd;
+}
+
+struct cmd* parseline(char** ps, char* es) {
+  struct cmd* cmd;
+
+  cmd = parsepipe(ps, es);
+  while (peek(ps, es, "&")) {
+    gettoken(ps, es, 0, 0);
+    cmd = backcmd(cmd);
+  }
+  if (peek(ps, es, ";")) {
+    gettoken(ps, es, 0, 0);
+    cmd = listcmd(cmd, parseline(ps, es));
+  }
+  return cmd;
+}
+
+struct cmd* parsepipe(char** ps, char* es) {
+  struct cmd* cmd;
+
+  cmd = parseexec(ps, es);
+  if (peek(ps, es, "|")) {
+    gettoken(ps, es, 0, 0);
+    cmd = pipecmd(cmd, parsepipe(ps, es));
+  }
+  return cmd;
+}
+
+struct cmd* parseredirs(struct cmd* cmd, char** ps, char* es) {
+  int tok;
+  char *q, *eq;
+
+  while (peek(ps, es, "<>")) {
+    tok = gettoken(ps, es, 0, 0);
+    assert(gettoken(ps, es, &q, &eq) == 'a');
+    switch (tok) {
+      case '<':
+        cmd = redircmd(cmd, q, eq, O_RDONLY, 0);
+        break;
+      case '>':
+        cmd = redircmd(cmd, q, eq, O_WRONLY | O_CREAT | O_TRUNC, 1);
+        break;
+      case '+':  // >>
+        cmd = redircmd(cmd, q, eq, O_WRONLY | O_CREAT, 1);
+        break;
+    }
+  }
+  return cmd;
+}
+
+struct cmd* parseblock(char** ps, char* es) {
+  struct cmd* cmd;
+
+  assert(peek(ps, es, "("));
+  gettoken(ps, es, 0, 0);
+  cmd = parseline(ps, es);
+  assert(peek(ps, es, ")"));
+  gettoken(ps, es, 0, 0);
+  cmd = parseredirs(cmd, ps, es);
+  return cmd;
+}
+
+struct cmd* parseexec(char** ps, char* es) {
+  char *q, *eq;
+  int tok, argc;
+  struct execcmd* cmd;
+  struct cmd* ret;
+
+  if (peek(ps, es, "(")) return parseblock(ps, es);
+
+  ret = execcmd();
+  cmd = (struct execcmd*)ret;
+
+  argc = 0;
+  ret = parseredirs(ret, ps, es);
+  while (!peek(ps, es, "|)&;")) {
+    if ((tok = gettoken(ps, es, &q, &eq)) == 0) break;
+    assert(tok == 'a');
+    cmd->argv[argc] = q;
+    cmd->eargv[argc] = eq;
+    assert(++argc < MAXARGS);
+    ret = parseredirs(ret, ps, es);
+  }
+  cmd->argv[argc] = 0;
+  cmd->eargv[argc] = 0;
+  return ret;
+}
+
+// NUL-terminate all the counted strings.
+struct cmd* nulterminate(struct cmd* cmd) {
+  int i;
+  struct backcmd* bcmd;
+  struct execcmd* ecmd;
+  struct listcmd* lcmd;
+  struct pipecmd* pcmd;
+  struct redircmd* rcmd;
+
+  if (cmd == 0) return 0;
+
+  switch (cmd->type) {
+    case EXEC:
+      ecmd = (struct execcmd*)cmd;
+      for (i = 0; ecmd->argv[i]; i++) *ecmd->eargv[i] = 0;
+      break;
+
+    case REDIR:
+      rcmd = (struct redircmd*)cmd;
+      nulterminate(rcmd->cmd);
+      *rcmd->efile = 0;
+      break;
+
+    case PIPE:
+      pcmd = (struct pipecmd*)cmd;
+      nulterminate(pcmd->left);
+      nulterminate(pcmd->right);
+      break;
+
+    case LIST:
+      lcmd = (struct listcmd*)cmd;
+      nulterminate(lcmd->left);
+      nulterminate(lcmd->right);
+      break;
+
+    case BACK:
+      bcmd = (struct backcmd*)cmd;
+      nulterminate(bcmd->cmd);
+      break;
+  }
+  return cmd;
+}
+```
+
+编译并链接
+
+```assembly
+yqw@ubuntu ~/D/opsystem> gcc -c -ffreestanding sh-xv6.c -g -O2           (base) 
+yqw@ubuntu ~/D/opsystem> ld sh-xv6.o -o sh                               (base) 
+```
+
+### System V
+
+#### 消息队列
+
+###### 基本操作
+
+* msgget
+
+  允许进程获取已有消息队列的连接，或者创建一个新的消息队列
+
+* msgctl
+
+  可以控制和管理一个消息队列，如修改消息队列的权限信息或删除消息队列
+
+* msgsnd
+
+  往消息队列上发送消息
+
+* msgrcv
+
+  从消息队列上接收消息
+
+通常建议使用共享内存机制来传递长消息，而非使用消息队列。
+
+#### 信号量
+
+信号量在实际的使用中主要用作进程间的“同步”。有些场景下，多个进程需要依赖与进程间通信来同步彼此的状态。
+
+#### 共享内存
+
+内核会为全局所有的共享内存维护一个全局的队列结构。各进程可以通过同样的一个key，来找到并使用同一段共享物理内存区域。虽然这样的key是全局唯一的，但是能否使用这段共享内存，是通过System V的权限检查机制来判断的。
+
+每段共享内存是由shmid_kernel结构体封装的，而其会包含一个file结构体。这是因为在Linux的系统设计中，将共享内存的机制封装在了一个特殊的文件系统上。这个file结构体通过文件系统的inode结构体，最终指向一段共享物理内存页的集合，这些共享内存页就是这段共享内存对应的物理内存。
+
+当两个进程（进程1和进程2）分别对同一个共享内存建立了映射（shm_at）之后，内核会为它们分配两个VMA（Virtual Memory Area）结构体，让它们都指向file。这里的VMA会描述进程的一段虚拟地址空间的映射。有了这两个VMA的建立，内核就能够从一个用户进程的虚拟地址找到对应的VMA，从而知道这是一个共享内存的区间。值得注意的是，两个VMA对应的虚拟地址是可以不同的，这并不影响它们映射到相同的物理内存上。
+
+### Linux信号机制
+
+使用信号，一个进程可以随时发送一个事件到特定的进程、线程或进程组等。并且接受事件的进程不需要阻塞等待该事件，内核会帮助其切换到对应的处理函数中响应信号事件，并且在处理完成后恢复之前的上下文。
+
+Linux早期使用的信号有31个（1~31号），后续POSIX标准又引入了编号从32到64的其他信号。Linux
+
+传统信号被称为常规信号，而POSIX引入的信号被称为实时信，主要用于实时场景。一个进程如果多次受到某个常规信号事件，内核只会记录一次。而实时信号的多个相同信号事件通常不能丢弃。
+
+#### 信号的发送
+
+#### 信号的阻塞/屏蔽
+
+#### 信号的响应和处理
+
+内核对信号的处理一般有下面三种方式
+
+* 忽略：直接忽略对应的信号
+* 用户处理函数：调用用户注册的信号处理函数
+* 内核默认处理函数：调用默认的内核处理函数（如果用户没有注册处理函数）
+
+用户注册的信号处理函数为用户态的代码。当内核在处理对应的信号时，需要返回到用户太去执行处理函数。信号处理完成后，信号处理函数会通过系统调用sigreturn返回到内核。这个系统调用的主要作用就是辅助内核恢复到被信号打断之前的上下文。它不会返回到信号处理函数中，而是直接恢复到之前的用户态。
+
+在跳转到信号处理函数前，Linux会将系统调用的返回值和此前的用户上下文信息（比如代码指针）等保存在用户栈上。这样当内核接收到sigreturn的系统调用时，就会从用户栈上提取出这些上下文，然后恢复到之前的位置。
+
+#### 信号处理函数的可重入考虑
+
+实现可重入函数需要注意以下几点：
+
+* 不使用静态数据，或者静态数据对于所有的处理函数都是只读的
+* 尽量只使用本地数据
+* 在必须使用全局共享数据的情况下，需要保护对全局数据的访问（需要避免死锁的发生）
+* 避免在函数中修改自己的代码（部分操作系统支持程序修改代码）
+* 不调用不可重入的函数，很多常见的库函数实现（如malloc）都是不可重入的，需要避免。
+
+### 套接字机制
+
+# 同步原语
+
+生产者-消费者问题
+
+99%的实际并发问题都可以用生产者-消费者解决
+
+```assembly
+void Tproduce() { while (1) printf("("); }
+void Tconsume() { while (1) printf(")"); }
+```
+
+同步
+
+* 等到有空位再打印左括号
+* 等到能配对时再打印右括号
+
+## 互斥锁
+
+### 硬件实现
+
+### 软件实现
+
+### 软硬件协同：使用原子操作实现互斥锁
+
+#### 原子操作
+
+更多的原子指令
+
+| Macros                                                       |                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [_Atomic](https://en.cppreference.com/w/cpp/atomic/atomic)(C++23) | compatibility macro such that _Atomic(T) is identical to [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<T> (function macro) |
+| Types                                                        |                                                              |
+| [atomic_flag](https://en.cppreference.com/w/cpp/atomic/atomic_flag)(C++11) | the lock-free boolean atomic type (class)                    |
+| [memory_order](https://en.cppreference.com/w/cpp/atomic/memory_order)(C++11) | defines memory ordering constraints for the given atomic operation (enum) |
+| [atomic_bool](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<bool> (typedef) |
+| [atomic_char](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<char> (typedef) |
+| [atomic_schar](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<signed char> (typedef) |
+| [atomic_uchar](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<unsigned char> (typedef) |
+| [atomic_short](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<short> (typedef) |
+| [atomic_ushort](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<unsigned short> (typedef) |
+| [atomic_int](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<int> (typedef) |
+| [atomic_uint](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<unsigned int> (typedef) |
+| [atomic_long](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<long> (typedef) |
+| [atomic_ulong](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<unsigned long> (typedef) |
+| [atomic_llong](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<long long> (typedef) |
+| [atomic_ullong](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<unsigned long long> (typedef) |
+| [atomic_char8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++20) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<char8_t> (typedef) |
+| [atomic_char16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<char16_t> (typedef) |
+| [atomic_char32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<char32_t> (typedef) |
+| [atomic_wchar_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<wchar_t> (typedef) |
+| [atomic_int8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_least8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_least8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_least8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_least8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_least16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_least16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_least16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_least16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_least32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_least32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_least32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_least32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_least64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_least64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_least64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_least64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_fast8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_fast8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_fast8_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_fast8_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_fast16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_fast16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_fast16_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_fast16_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_fast32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_fast32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_fast32_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_fast32_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_int_fast64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::int_fast64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uint_fast64_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uint_fast64_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_intptr_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::intptr_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uintptr_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11)(optional) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uintptr_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_size_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::size_t](http://en.cppreference.com/w/cpp/types/size_t)> (typedef) |
+| [atomic_ptrdiff_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::ptrdiff_t](http://en.cppreference.com/w/cpp/types/ptrdiff_t)> (typedef) |
+| [atomic_intmax_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::intmax_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+| [atomic_uintmax_t](https://en.cppreference.com/w/cpp/atomic/atomic)(C++11) | [std::atomic](http://en.cppreference.com/w/cpp/atomic/atomic)<[std::uintmax_t](http://en.cppreference.com/w/cpp/types/integer)> (typedef) |
+
+#### 互斥锁抽象
+
+##### 自旋锁
+
+优点：实现简单，在竞争程度低时非常高效。
+
+缺点：自旋锁并不能保证有限等待，即自旋锁不具有公平性。从自旋锁的实现可以看出，自旋锁并非按照申请的顺序决定下一个获取锁的竞争者，而是让所有的竞争者均同时尝试完成原子操作，而原子操作的成功与否完全取决于硬件特性。比如：在一些异构环境下（如ARM移动CPU中的大小核架构），小核由于运行频率低，在与大核竞争时成功完成原子操作的概率远远小于大核。因此运行在小核上的竞争者可能永远也无法获取锁，从而出现不公平的情况。
+
+性能下降
+
+sum-scalability.c
+
+```assembly
+#include "thread.h"
+#include "thread-sync.h"
+
+#define N 10000000
+spinlock_t lock = SPIN_INIT();
+
+long n, sum = 0;
+
+void Tsum() {
+  for (int i = 0; i < n; i++) {
+    spin_lock(&lock);
+    sum++;
+    spin_unlock(&lock);
+  }
+}
+
+int main(int argc, char *argv[]) {
+  assert(argc == 2);
+  int nthread = atoi(argv[1]);
+  n = N / nthread;
+  for (int i = 0; i < nthread; i++) {
+    create(Tsum);
+  }
+  join();
+  assert(sum == n * nthread);
+}
+```
+
+thread-sync.h
+
+```assembly
+#include <semaphore.h>
+
+// Spinlock
+typedef int spinlock_t;
+#define SPIN_INIT() 0
+
+static inline int atomic_xchg(volatile int *addr, int newval) {
+  int result;
+  asm volatile ("lock xchg %0, %1":
+    "+m"(*addr), "=a"(result) : "1"(newval) : "memory");
+  return result;
+}
+
+void spin_lock(spinlock_t *lk) {
+  while (1) {
+    intptr_t value = atomic_xchg(lk, 1);
+    if (value == 0) {
+      break;
+    }
+  }
+}
+void spin_unlock(spinlock_t *lk) {
+  atomic_xchg(lk, 0);
+}
+
+// Mutex
+typedef pthread_mutex_t mutex_t;
+#define MUTEX_INIT() PTHREAD_MUTEX_INITIALIZER
+void mutex_lock(mutex_t *lk)   { pthread_mutex_lock(lk); }
+void mutex_unlock(mutex_t *lk) { pthread_mutex_unlock(lk); }
+
+// Conditional Variable
+typedef pthread_cond_t cond_t;
+#define COND_INIT() PTHREAD_COND_INITIALIZER
+#define cond_wait pthread_cond_wait
+#define cond_broadcast pthread_cond_broadcast
+#define cond_signal pthread_cond_signal
+
+// Semaphore
+#define P sem_wait
+#define V sem_post
+#define SEM_INIT(sem, val) sem_init(sem, 0, val)
+```
+
+线程越多，执行时间越长
+
+```assembly
+yqw@ubuntu ~/D/opsystem> time ./a.out 1                                  (base) 
+
+________________________________________________________
+Executed in  173.33 millis    fish           external 
+   usr time  172.94 millis   81.00 micros  172.86 millis 
+   sys time    0.37 millis  374.00 micros    0.00 millis 
+
+yqw@ubuntu ~/D/opsystem> time ./a.out 2                                  (base) 
+
+________________________________________________________
+Executed in  631.25 millis    fish           external 
+   usr time  1252.83 millis   94.00 micros  1252.74 millis 
+   sys time    4.42 millis  426.00 micros    3.99 millis 
+
+yqw@ubuntu ~/D/opsystem> time ./a.out 3                                  (base) 
+
+________________________________________________________
+Executed in    1.28 secs   fish           external 
+   usr time    3.83 secs  106.00 micros    3.83 secs 
+   sys time    0.00 secs  499.00 micros    0.00 secs 
+
+yqw@ubuntu ~/D/opsystem> time ./a.out 10                                 (base) 
+
+________________________________________________________
+Executed in    3.68 secs   fish           external 
+   usr time   14.51 secs    0.00 micros   14.51 secs 
+   sys time    0.05 secs  508.00 micros    0.05 secs 
+```
+
+使用场景
+
+* 临界区几乎不“拥堵”
+* 持有自旋锁时禁止执行流切换
+
+例如：操作系统内核的并发数据结构（短临界区）
+
+##### 排号自旋锁
+
+## 条件变量
+
+互斥锁与条件变量解决的不是同一个问题。互斥锁用于解决临界区问题，保证互斥访问共享资源。而条件变量通过提供挂起/唤醒机制来避免循环等待，节省CPU资源。条件变量需要和互斥锁搭配使用。
+
+## 信号量
+
+**互斥锁vs.信号量**
+
+二元信号量与互斥锁的差别在于：互斥锁有拥有者这一概念，而二元信号量没有。互斥锁往往由同一个线程加锁和放锁，而信号量允许不同线程执行wait与signal操作。
+
+互斥锁与计数信号量（非二元信号量的其他信号量）区别较大。计数信号量允许多个线程通过，其数量等于剩余可用资源数量；而互斥锁同一时刻只允许一个线程获取。互斥锁用于保证多个线程对一个共享资源的互斥访问，而信号量则用于协调多个线程对一系列共享资源的有序操作。例如：互斥锁可以用于保护生产者消费者问题中的共享缓冲区，而信号量可以用于协调生产者与消费者何时该等待，何时该放入或拿取缓冲区数据。
+
+**条件变量vs.信号量**
+
+信号量是由条件变量、互斥锁、以及计数器实现的。而这个计数器就是信号量的核心，用于表示当前可用资源的数量。因此可以理解为，信号量利用条件变量实现了更高级的抽象。
+
+go语言解决生产者消费者问题
+
+```assembly
+package main
+
+import "fmt"
+
+var stream = make(chan int, 10)
+const n = 4
+
+func produce() {
+  for i := 0; ; i++ {
+    fmt.Println("produce", i)
+    stream <- i
+  }
+}
+
+func consume() {
+  for {
+    x := <- stream
+    fmt.Println("consume", x)
+  }
+}
+
+func main() {
+  for i := 0; i < n; i++ {
+    go produce()
+  }
+  consume()
+}
+```
+
+## 同步带来的问题
+
+### 死锁
+
+#### 原因
+
+互斥访问：互斥访问保证一个共享资源在同一个时刻只能被至多一个线程访问。在有互斥访问的前提下，线程才会出现等待。
+
+持有并等待：线程持有一些资源，并等待一些资源。
+
+资源非抢占：一旦一个资源被持有，除非持有者主动放弃，否则其他竞争者都得不到这个资源。
+
+循环等待：循环等待是指存在一系列线程T<sub>0</sub>，T<sub>1,</sub>，…，T<sub>n</sub>，其中T<sub>0</sub>等待T<sub>1</sub>，T<sub>1</sub>等待T<sub>2</sub>，…，T<sub>n-1</sub>等待T<sub>n</sub>，而T<sub>n</sub>等待T<sub>0</sub>。因此形成了一个循环。由于循环中任何一个线程都不能得到资源，因而如果不能释放已经占有的资源，便出现了循环等待。
+
+#### 检测与恢复
+
+#### 预防
+
+#### 避免
+
+### 活锁
+
+### 优先级反转
+
+# 文件系统
+
+每个文件实质上是一个有名字的符号序列。序列的内容为**文件数据（file data）**，而序列长度、序列的修改时间等描述文件数据的属性、支撑文件描述功能的其他信息称为**文件元数据（file metadata）**。
+
+文件系统是操作系统中文件的管理者。对上层用户和应用程序来说，文件系统提供文件抽象并实现文件访问所需要的接口。对下层存储设备来说，文件系统以特定格式在存储设备上维护着每个文件的数据和元数据。操作系统将这些存储设备抽象为**块设备（block device）**，以方便文件系统使用统一的接口访问。块设备上的存储空间在逻辑上被划分为固定大小的存储块（block）。块，是块设备读写的最小单元，大小一般为512字节或4KB。每个存储块均有一个地址，称为块号。
+
+在处理系统调用时，Linux内核会调用其虚拟文件系统（Virtual File System，VFS）处理文件请求。虚拟文件系统如同一个大管家，负责管理具体的文件系统，并提供一系列服务，如页缓存（page cache）、inode缓存（icache）和目录项缓存（dcache）等。
+
+## 基于inode的文件系统
+
+inode记录一个文件所对应的多有存储块号（即存储的索引）。每个inode对应一个文件；通过一个inode，就可以访问这个文件所有的数据。
+
+inode保存了三种存储指针（即存储设备的块号）：
+
+* 直接指针，其直接指向数据块，数据块中保存了文件数据
+* 间接指针，指向一个一级索引块，一级索引块中存放着指向数据块的指针
+* 二级指针，指向一个二级索引块，二级索引块中的每个指针均指向一个一级索引块
+
+inode除了记录存储的索引外，还记录了该文件相关的其它元数据
+
+| 文件元数据 | 说明                                 |
+| ---------- | ------------------------------------ |
+| mode       | 文件模式，其中包括文件类型和文件权限 |
+| nlink      | 指向此文件的链接个数                 |
+| uid        | 文件所属用户的ID                     |
+| gid        | 文件所属用户组的ID                   |
+| size       | 文件的大小                           |
+| atime      | 文件数据最近访问时间                 |
+| ctime      | 文件元数据最近修改时间               |
+| mtime      | 文件数据最近修改时间                 |
+
+一个文件系统一般会支持多种文件类型，例如常规文件（regular file）、目录文件（directory file）和符号链接文件（sysmbolic link file）。
+
+### 目录
+
+inode文件系统中，文件名并不是文件的元数据。文件名存放在目录。目录是一种特殊类型的文件，记录了从文件名到inode号的映射。与常规文件中保存的用户数据不同，目录中保存的是一种特殊的结构——目录项。每个目录项代表一条文件信息，记录了文件的文件名及其对应的inode号。
+
+目录项
+
+* inode号：用于找到文件名对应的inode结构，从而访问文件数据和元数据。
+* 目录项长度：用于记录整个目录项长度，主要是为了目录项的删除和重用而设计的。
+* 文件名长度
+* 文件名
+
+对目录的操作主要包括：
+
+* 查找
+* 遍历
+* 增加
+* 删除：删除操作通过将目标目录项中的inode号变为0来标记这个目录项是无效的。这种方法无须为目录有效性信息预留额外的存储空间，可以更加高效地利用空间。同时，在进行文件删除时，可以将相邻的无效目录进行合并，以允许更长的新目录项重新利用这些空间。
+
+### 链接
+
+#### 硬链接
+
+当用户创建一个新的硬链接时，文件系统并不会创建一个新的inode，而是先找到目标文件的inode，随后在目标路径的父目录中增加一个指向此inode的新目录项。
+
+对其中任意一个硬链接的读写操作或者元数据修改，都影响到指向同一inode的其他硬链接。对于删除操作，只有当所有指向这个inode的全部硬链接都被删除时，这个inode及其数据才会被删除。
+
+由于目录文件中保存了“.”和“..”两个目录项，当一个新的目录文件被创建时，其本身的链接数为2，同时其父目录的链接数增加1.
+
+#### 软链接
+
+符号链接文件中保存的是一个字符串，表示一个文件路径。由于路径的长度一般不会过长，符号链接文件的一个简单实现是将路径字符串直接保存在inode中，占据原本用于保存数据块指针的空间。
+
+在支持符号链接的情况下，每解析完路径中的一部分，文件系统都需要判断当前得到的文件是否为符号链接。如果是符号链接，要先跟随符号链接中的路径找到目标文件，再继续解析原路径的剩余部分。
+
+#### 符号链接和硬链接的比较
+
+相同点
+
+均允许应用程序使用一个新的路径访问已有文件（目标文件）
+
+原理不同：
+
+* 当应用程序访问一个以目标文件路径为内容的符号链接时，文件系统读取符号链接中保存的路径，并继续进行解析，最终找到目标文件。而当应用程序访问一个指向目标文件的硬链接时，其直接通过硬链接的目录项访问到目标文件的inode。
+* 符号链接有自己的inode结构，其有自己的权限、时间等元数据，且删除符号链接本身，不会影响其目标文件。硬链接与目标文件共享同一个inode结构，两者是等价的，并没有主次之分；删除其中的任意一个，应用程序依然可以通过未删除的另一个路径对文件数据进行访问。
+* 在一个符号链接中，用户可以随意存放目标路径，即使这个目标路径不存在。而对于硬链接，其目标路径在创建时即被用于查找inode，因此用户无法成功地创建一个指向不存在的文件的硬链接。
+* 硬链接还要求目标文件不能为目录
+* 由于对目标文件的要求不同，符号链接不受文件系统边界的限制，即在一个文件系统中，可以创建一个指向其他文件系统的符号链接；而硬链接的目标文件只能与被连接的目标文件处于同一个文件系统。
+
+### 存储布局
+
+为了高效地管理这些文件数据和元数据，文件系统通常将存储空间划分成不同区域，分别用于不同功能。
+
+* 超级块
+
+  记录整个文件系统的全局元数据。魔法数据（magic number）是保存在超级块中的比较重要的元数据之一。不同的文件系统通常会使用不同的魔法数字。通过读取魔法数字，操作系统可以得知存储设备上文件系统的类型和存储布局。除了魔法数字外，超级块中还保存了文件系统的版本、文件系统所管理空间的大小、最后一次挂载时间和一些统计信息等。统计信息中包括文件系统能支持的最大inode数量、当前空闲可用的inode数量、能支持的最大的块数量、当前空闲可用的块数量等。
+
+* 块分配信息
+
+  使用位图（bitmap）的格式标记文件数据块区域中各个块的使用情况。块分配信息区域中的每个比特位，对应文件数据块区域中的一个块。
+
+* inode分配信息
+
+* inode表
+
+  inode表以数组的形式保存了整个文件系统中所有的inode结构。
+
+* 文件数据块
+
+## 虚拟文件系统
+
+# 设备管理
+
+## 计算机设备的连接和通信
+
+### 设备的连接：总线
+
+设备和总线的工作频率一般低于CPU
+
+#### AMBA总线
+
+ARM架构下的片上总线规范成为高级微控制器总线结构（Advanced Micro-controller Bus Aechitecture，AMBA）规范。
+
+在AMBA规范中一共包括三组总线
+
+* 高级高性能总线（Advanced High-Performance Bus，AHB）：用于连接其他高性能IP核、片上和片外内存以及中断控制器等高性能模块。
+* 高级系统总线（Advanced System Bus，ASB）：用于某些不必使用AHB但同时又需要高性能特性的芯片中，能起到一部分减低功耗的作用
+* 高级设备总线（Advanced Peripheral Bus，APB）：用于连接低速的设备，作为低功耗的精简接口总线。
+
+此外，AMBA规范中还包含高级可拓展接口（Advanced eXtensible Interface，AXI），它被用作高带宽、低延迟的片内总线。
+
+#### PCI总线
+
+还有一类常用的设备总线标准——设备组件互连（Peripheral Component Interconnect，PCI）标准。其内容包括：总线号（bus number）、设备号（device number）、功能号（function number）。识别编号可用于在PCI设备枚举阶段快速识别设备。
+
+当数据传输速率过高时，PCI所采用的并行线路间会相互干扰。PCIe（PCI express）使用了基于数据包的串行连接协议，其相比于PCI总线来说带宽更高，同时保持了PCI设备驱动的前向兼容性。
+
+### 可编程I/O
+
+CPU通常以读写设备寄存器的方式与设备进行通信。一个设备通常有多个寄存器，可以在内存地址空间或I/O地址空间中被访问。设备寄存器可以分为如下几种类型
+
+* 控制寄存器：用于接收来自驱动程序的命令
+* 状态寄存器：用于反馈当前设备的工作状态
+* 输入/输出寄存器：用于驱动和设备之间的数据交互
+
+访问设备寄存器通常有两种方式：一种是通过内存映射I/O（Memory-Mapped I/O，MMIO），另一种是通过端口映射I/O（Port-Mapped I/O，PMIO）。MMIO将设备寄存器直接映射到内存空间上并拥有独立的地址，CPU通过读写内存指令即可控制设备。PMIO则通过专门的端口操作指令和设备进行交互。这两种I/O统称为可编程I/O（Programmed I/O，PIO）。
+
+### DMA
+
+直接内存访问（Direct Memory Access，DMA）是在设备和内存之间主要且更高效的数据传输形式。与PIO不同，DMA机制允许设备绕过处理器直接读写系统内存的数据。
+
+以处理器发起DMA为例，设备驱动首先在内存中分配一块DMA缓冲区，随后发起DMA请求，设备收到请求后通过DMA机制将数据传输至DMA缓冲区。DMA操作完成后，设备触发中断通知处理器对DMA缓冲区中的数据进行处理。
+
+#### 第三方DMS
+
+在标准DMA场景下由处理器发起DMA的具体步骤
+
+* 处理器向DMA控制器发送DMA缓冲区的位置和长度，以及数据传输的方向，随后放弃对总线的控制
+* DMA控制器获得总线控制权，可以直接与内存和设备进行通信
+* DMA控制器根据从处理器获得的指令，将设备的数据拷贝至内存，在这期间处理器可以执行其他任务
+* DMA控制器完成DMA后向处理器发送中断，通知处理器DMA已经完成。此时，处理器会重新得到总线的控制权
+
+#### 第一方DMA（总线控制）
+
+总线允许设备直接获取总线控制权并进行DMA操作，而无须借助DMA控制器。不过，如果多个设备希望同时进行DMA，总线控制器需要进行仲裁，决定优先次序，同一时间只允许一个设备进行DMA。
+
+### 设备地址翻译：IOMMU
+
+当操作系统向DMA控制器注册DMA内存缓冲区时，需要填写的是总线地址。设备和内存之间的输入输出内存管理单元（Input-Output Memory Management Unit，IOMMU）会负责将总线地址翻译成物理地址。
+
+由于总线或者一些设备本身的限制，设备可以访问到的内存范围远远小于物理内存的总大小。一种解决方案是使用**回弹缓冲区（bounce buffer）**，也就是在设备DMA能访问到的内存区域之内和之外分别分配一个内存缓冲区A和B，并将A的内容搬运至B中。该方案的缺点是内容搬运会导致较为明显的内存拷贝开销。另一种方案则是使用IOMMU进行地址翻译，它可以有效地解决总线地址的限制问题。
+
+## 设备的识别
+
+### 设备树
+
+设备树（device tree）是描述计算机硬件信息的数据结构，或理解为操作系统可读的硬件描述语言。设备树中包含了CPU的名称、内存、总线、设备等硬件信息。如果不使用设备树，硬件相关的具体参数都需要记录在驱动代码中。当硬件参数发生变化时，驱动代码也要进行相应的改动并重新编译。
+
+设备树并不对所有设备信息都进行描述，通常只有不能被动态探测的设备才会出现在设备树中。
+
+#### 如何使用设备树
+
+设备树源码编译生成的二进制称为设备树块（Device Tree Blob，DTB）或者扁平设备树（Flattened Device Tree，FDT）。
+
+Linux内核根据设备树注册各节点所表示的设备，根据compatible属性后接的字符串内容识别设备并匹配对应的驱动代码，进而实现设备的管理。
+
+### ACPI
+
+高级配置与电源接口（Advanced Configuration and Power interface）简称为ACPI，这是x86结构计算机上的标准设备识别方案。
+
+ACPI可以理解为设备和操作系统之间的一层抽象，该层抽象统一地向操作系统汇报硬件设备的情况，同时提供管理设备的接口和方法。我们可以将ACPI分为两部分：
+
+* ACPI表：ACPI提供了大量的表结构信息，这些信息描述了当前计算机系统的各种状态，包括多处理器信息、NUMA的配置信息等。
+* ACPI运行时：ACPI提供了ACPI机器语言（ACPI Machine Language，简称AML）。操作系统可以解释执行AML代码和底层的固件进行交互，进而完成对设备的识别和响应配置功能。
+
+ACPI还负责计算机整体系统、各个处理器以及不同设备的电源和温度的管理。
+
+**ACPI和设备树有什么共通之处？**
+
+ACPI和设备树均使用树状结构对设备信息和层次关系进行描述。类似于设备树的compatible属性，ACPI则通过命名空间（namespace）和特定的ACPI/PNPID来完成设备和驱动代码的匹配。
+
+ACPI和设备树在能力上有什么不同？
+
+设备树描述的仅仅是一种of的关系，即当前计算机系统拥有哪些设备。而ACPI除了描述当前计算机的设备信息之外，还能通过AML代码直接控制设备的行为，这是设备树所不具备的。
+
+## 设备的中断处理
+
+ARM架构在CPU与设备之间引入了中断控制器（interrupt controller）来管理中断。
+
+### ARM中断控制器
+
+#### ICOLL
+
+中断信息中包含中断号的优先级（priority）。ICOLL中断控制器的主要任务是根据优先级响应中断。
+
+优先级有两个作用：
+
+* 当产生不同优先级的中断时，高优先级的中断比低优先级的中断优先接受响应
+* 低优先级的中断在处理过程中，可以被高优先级的中断抢占（preemption）
+
+对于不同设备来源的中断，ICOLL通过查表的方式得到不同的中断处理的入口，这个表被称为中断向量表。
+
+#### GIC
+
+通用中断控制器（Genneric Interrupt Controller，GIC），负责对设备的中断信号进行处理，并将其发送至CPU。
+
+GIC有两部分接口：
+
+* 一部分是**分发器接口（distributor interface）**，负责汇集收到的中断请求，并根据中断的优先级进行排序和分发。
+* 另一部分书**CPU接口（interface）**，顾名思义，CPU接口直接与CPU核相连。
+
+### 中断的基本概念
+
+#### 中断类型
+
+* 软件生成中断（Software Generated Interrupt，SGI）：由软件通过写GICD_SGIR系统寄存器触发，常用于发送核间中断
+* 私有设备中断（Private Peripheral Interrupt，PPI）：由每个处理器核上私有的设备触发，如通用定时器（Generic Timer）
+* 共享设备中断（Shared Peripheral Interrupt，SPI）：由所有CPU核心共同连接的设备触发，可以发送给任意核心
+
+#### 中断优先级
+
+通常长优先级的数字越小表示优先级越高
+
+#### 中断号
+
+| 中断类型 | INTID              | 说明                                                         |
+| -------- | ------------------ | ------------------------------------------------------------ |
+| SGI      | 0~15               | 由核间通信等产生的中断，需交由指定核进行处理，每个核各自维护中断队列 |
+| PPI      | 16~31，1056~1119   | 由设备产生的中断，需交由指定核进行处理，每个核各自维护中断队列 |
+| SPI      | 32~1019，4096~5119 | 由设备产生的中断可以交给指定或非指定的任意一个或多个核进行处理，所有核维护一个共享的中断队列。 |
+
+#### 中断状态
+
+* Inactive：中断处于无效状态，此时没有中断到来
+* Pending：中断处于有效状态，此时中断已经到来，但CPU没有响应中断
+* Active：CPU处于响应并处理中断的过程中
+* Active & Pending：在CPU响应并处理中断的过程中，同时又有相同中断号的中断发生。
+
+#### 中断响应的过程
+
+* Generate：某个中断源产生中断，传递给GIC，中断从Inactive变为Pending状态。
+* Deliver：GIC将中断转发给CPU，中断仍处于Pending状态
+* Activate：CPU调用中断处理函数响应并处理该中断，中断处于Active状态
+* Deactivate：CPU处理完中断，通知GIC中断处理完毕，GIC将中断状态更新为Inactive
+
+其中第四步又称为中断完成（End Of Interrupt，EOI）。EOI在中断处理中是非常重要的步骤，只有在CPU确认了EOI后，对应的中断（此时的状态为Inactive）才能重新被响应。
+
+为了提高中断响应的实时性，GIC将中断完成分解为两个阶段
+
+* 优先级重置（priority drop）：将当前中断屏蔽的优先级进行重置，从而能够响应较低优先级的中断
+* 中断无效（nterrupt deactivation）：将对应中断的状态设置为Inactive，从而可以重新响应该优先级的中断。
+
+#### 中断处理
+
+Linux操作系统将中断处理过程分为两个阶段：上半部和下半部
+
+* 上半部（top half）：完成一些必要但轻量级的操作，比如向中断控制器确认中断
+* 下半部（bottom half）：完成剩余的、复杂且时延要求相对较低的操作
+
+当出现中断时，会首先执行上半部，在执行上半部期间关闭中断。上半部执行完成后，立即向中断控制器声明该中断事件已处理完毕并打开中断，从而允许CPU继续响应该中断。而下半部的执行时间将由系统调度来确定。
+
+硬处理函数又称为**中断服务例程（Interrupt Service Routine，ISR）**。硬中断处理函数实质上是Linux中断处理的上半部。上半部在执行过程中，会向系统注册新的处理任务，将其作为下半部的执行函数。
+
+软中断（softirq）是最基本的下半部处理方式，可以看作一种普通内核任务模拟硬中断处理函数的方法。
+
+软中断和硬中断都用于处理来自I/O设备的中断请求，只不过软中断不使用硬中断上下文，而是拥有独立的上下文环境。软中断不会中断当前CPU的任务，而是等待调度器的主动调度。
+
+软中断与硬中断的另一点区别是，软中断的处理函数必须是可重入的。硬中断之所以无须可重入，是因为在硬中断响应过程中，处理器已经关闭了中断，从而屏蔽了新到来的硬中断（不考虑中断嵌套）；而软中断的执行允许被硬中断抢占。同时，Linux还允许软中断在多个CPU核上并行执行以提升软中断的处理效率，因此软中断处理过程应该避免使用全局共享变量（如静态变量和全局变量），否则必须加锁来保护关键数据。
+
+##### tasklet机制
+
+Linux的软中断只能在代码编译时静态分配，而无法根据需要在运行时进行动态创建。为了解决这一问题，Linux基于软中断实现了tasklet机制，其也运行在软中断上下文中。
+
+内核会使用如下过程检查tasklet的运行条件并执行tasklet：
+
+* 检查当前tasklet的状态是否为TASKLET_STATE_RUN，如果是，则说明有同类型的tasklet在其他CPU上运行，于是将当前tasklet插回链表中，直到条件满足时再执行（即延迟执行）。
+* 检查count变量，不为0表示禁用，将该tasklet插回链表
+* 检查当前tasklet的状态是否为TASKLET_STATE_SCHED，如果是，那么将state置为TASKLET_STATE_RUN，调用func（data）
+
+tasklet和软中断存在明显区别。除了允许在运行时动态创建tasklet外，Linux不允许在多个CPU上并发执行tasklet。此外，Linux还保证了tasklet的执行的原子性，使其不能被其他下半部机制所抢占，因此无须考虑可重入问题，开发起来也更直接、简单。
+
+通过对比软中断和tasklet，可以发现这两种下半部机制在设计上有不同的侧重。软中断侧重于中断的处理效率，如在多核情况下软中断可并行执行；tasklet则更侧重于编程开发的友好性，tasklet使用者无须考虑同步加锁和代码可重入等问题。但是因为tasklet本身依托于中断上下文，执行期间不能睡眠，外加设计上的不可抢占性，导致tasklet可能引起难以预测的系统延迟，严重的话甚至可能影响系统的整体实时性。
+
+##### 工作队列
+
+工作队列（work queue）把需要推迟执行的函数，即中断下半部，交由内核线程来执行。工作队列的特点是借助线程上下文来执行下半部操作，从而允许下半部的睡眠和和重新调度，解决了因为软中断和task单个实例执行时间过长且无法睡眠而导致的系统实时性下降的问题。
+
+缺点：
+
+由驱动开发者根据自己的目的任意创建工作队列，会导致大量工作队列的存在。
+
+为了改变这一局面，Linux内核引入了并发可管理工作队列（Concurrency Managed WorkQueue，CMWQ）机制。CMWQ本质上是将工作队列的管理从驱动开发者手里交还给内核，由内核来决定工作线程的创建时机。CMWQ不同于传统工作队列的主要特点是，同一个工作队列里的两个work不在遵循严格的串行性执行原则，而是可以在两个不同CPU上并发执行，不必等待其中一个完成后才调度另一个。
+
+与传统的Linux工作队列相比，CMWQ在设计上具有如下优点：
+
+* 兼容性：CMWQ在接口上保持对传统工作队列接口的兼容，方便已有设备驱动的移植
+* 灵活性：CMWQ提出了线程池（worker-pool）概念，不同工作队列之间可以共享线程池，从而有效地减少了资源浪费和频繁调度。
+* 并发性：CMWQ会根据情况动态创建新的工作队列来处理被阻塞的任务，同时自动调节线程池大小与并发级别。使用CMWQ的驱动开发者不必关心并发的具体细节，这也正是CMWQ得名的原因。
+
+Linux不同中断处理方式的特点比较
+
+| 属性                                     | 硬中断 | 软中断 | tasklet | 工作队列 | CMWQ |
+| ---------------------------------------- | ------ | ------ | ------- | -------- | ---- |
+| 是否屏蔽相同中断                         | 是     | 是     | 否      | 否       | 否   |
+| 是否可以睡眠（拥有线程上下文）           | 否     | 否     | 否      | 是       | 是   |
+| 是否可以被高优先级的任务所抢占           | 否     | 否     | 否      | 是       | 是   |
+| 是否能在多个处理器核心上同时运行相同实例 | 是     | 是     | 否      | 是       | 是   |
+| 分配后是否能在不同处理器核心上迁移       | 否     | 否     | 否      | 否       | 是   |
+
+## 设备驱动和设备驱动模型
+
+**设备驱动（device driver）**是操作系统中负责控制设备的定制化程序。一方面，当设备连接到计算机系统之后，需要操作系统对其进行初始化，分配必要的软硬件资源，并对其启动参数进行调配。另一方面，不同的硬件设备的访问方式各不相同，操作系统应该选择合适的方式对设备进行管理，实现与设备之间较为高效的交互。
+
+操作系统事先规定好一组数据结构和应该实现的接口，然后驱动开发人员将设备驱动的开发转化为对数据结构的填充，以及接口函数的挂载。
+
+# 系统虚拟化
