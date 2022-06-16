@@ -1,0 +1,25 @@
+---
+layout: post
+title:  SSRF服务端请求伪造
+date:   2022-06-03 00:08:01 +0300
+image:  2022-06-03-flower.jpg
+tags:   [web,ssrf]
+---
+
+尝试输入file:///etc/hosts，发现读取到了/etc/hosts文件内容，说明对输入内容并未做过滤，hosts文件是linux系统中负责ip地址与域名快速解析的文件，包含了ip地址和主机名之间的映射，同时还发现了服务器的内网ip地址。
+
+```assembly
+file:///etc/hosts 的快照如下：
+
+127.0.0.1	localhost
+::1	localhost ip6-localhost ip6-loopback
+fe00::0	ip6-localnet
+ff00::0	ip6-mcastprefix
+ff02::1	ip6-allnodes
+ff02::2	ip6-allrouters
+172.23.23.21	773d7646cb3d
+```
+
+知道了服务器的内网ip地址，尝试对c类网络进行内网探测，Burpsuite抓取请求包并发送到【Intruder】中，在ip的前四段和端口上添加有效负载，攻击类型选择集束炸弹（Clusterbomb）
+
+![]({{site.baseurl}}/img/ssrf/2022-06-03-intruder.jpg)
