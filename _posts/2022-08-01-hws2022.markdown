@@ -1,0 +1,184 @@
+---
+layout: post
+title:  HWS计划第五期2022硬件安全在线夏令营线上预选赛
+date:   2022-08-01 00:08:01 +0300
+image:  2022-08-01-woman.jpg
+tags:   [ctf,hws,tea]
+---
+
+## HWS-easyRSA
+
+```python
+p= 31893593182018727625473530765941216190921866039118147474754069955393226712079257707838327486268599271803
+seed1=25820280412859586557218124484272275594433027771091486422152141535682739897353623931875432576083022273940
+seed2= 24295465524789348024814588142969609603624462580932512051939198335014954252359986260009296537423802567677
+seed3= 14963686422550871447791815183480974143372785034397446416396172429864269108509521776424254168481536292904
+k=seed3-seed2
+import gmpy2
+k2=gmpy2.invert((seed2-seed1),p)
+print(k2*k%p)
+a=k2*k%p
+b=(seed2-seed1*a)%p
+print(a)
+print(b)
+assert(seed2 == (a * seed1 + b) % p)
+assert(((seed2-b)*gmpy2.invert(a,p))%p==seed1)
+print((seed1-b)*gmpy2.invert(a,p))
+from Crypto.Util.number import *
+print(long_to_bytes(((seed1-b)*gmpy2.invert(a,p))%p))
+```
+
+## re1
+
+```
+#include <stdio.h>
+#include <stdint.h>
+#define MX (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (key[(p & 3) ^ e] ^ z))
+#define DELTA 0x9e3779b9
+
+//XXTEA 加密，在处理数据流中每个数据时利用了相邻数据，使用MX函数计算加密值
+static uint32_t * xxtea_uint_encrypt(uint32_t * data, size_t len, uint32_t * key) {
+    uint32_t n = (uint32_t)len - 1;
+    uint32_t z = data[n], y, p, q = 6 + 52 / (n + 1), sum = 0, e;
+
+    if (n < 1) return data;
+
+    while (0 < q--) {
+        sum += DELTA;
+        // 根据sum 计算得出0~3中的某一个数值, 用于MX中与p共同作用选择key数组中某个秘钥值
+        e = sum >> 2 & 3;
+
+        //遍历每个待加密的数据
+        for (p = 0; p < n; p++) {
+            //z的初值为data[len - 1]，即将数据数组当做是环形队列来处理的，首尾相连，当加密data[0]时，需要用到data[len - 1]，data[0]，data[0 + 1]，以及MX计算返回的的一个加密值，加密值与data[0]相加后达到加密的效果
+            y = data[p + 1];
+            z = data[p] += MX;
+        }
+
+        //当加密data[len-1]时，需要用到data[len - 2]，data[len-1]，data[0]，以及MX计算返回的的一个加密值，加密值与data[len-1]相加后达到加密的效果
+        y = data[0];
+        z = data[n] += MX;
+    }
+
+    return data;
+}
+
+//XXTEA 解密，把加密的步骤反过来即可得到解密的方法
+static uint32_t * xxtea_uint_decrypt(uint32_t * data, size_t len, uint32_t * key) {
+    uint32_t n = (uint32_t)len-1;
+    uint32_t z, y = data[0], p, q = 6 + 52 / (n + 1), sum = q * DELTA, e;
+
+    if (n < 1) return data;
+
+    while (sum != 0) {
+        e = sum >> 2 & 3;
+
+        for (p = n; p > 0; p--) {
+            z = data[p - 1];
+            y = data[p] -= MX;
+        }
+
+        z = data[n];
+        y = data[0] -= MX;
+        sum -= DELTA;
+    }
+
+    return data;
+}
+
+int main(int argc, char const *argv[])
+{
+    uint32_t v[8]={0x10BD3B47, 0x6155E0F9,
+                   0x6AF7EBC5, 0x8D23435F,
+                   0x1A091605, 0xD43D40EF,
+                   0xB4B16A67, 0x6B3578A9},key[4]={0x1234,0x2345,0x4567,0x6789};
+    xxtea_uint_decrypt(v,8,key);
+    for(int i=0; i<8; i++){
+        printf("%x",v[i]);
+    }
+    return 0;
+}
+// 49f7 1293 d427 cd36 9ca0 ef6c 99fb 88af
+// 7f943921724d63dc0ac9c6febf99fa88
+```
+
+主要注意的地方就是大小端序的问题
+
+## random
+
+```assembly
+# from flag import FLAG
+import random
+from PIL import Image
+from hashlib import md5
+from Crypto.Util.number import long_to_bytes as n2b
+
+random.seed(793211)
+
+
+def pbl(bits):
+    num = random.getrandbits(bits)
+    bins = []
+    while num:
+        bins.append(num & 1)
+        num >>= 1
+    while len(bins) != bits:
+        bins.append(0)
+    return bins
+
+
+
+FLAG=b"flag{!@#1234567890abcdefghi}"
+assert len(FLAG) == 28
+fake_cat = Image.open('xx.png')
+# cat1 = Image.new('L', cat.size)
+# cat2 = Image.new('L', cat.size)
+# cat3 = Image.new('L', cat.size)
+cat = Image.open('1.png')
+x, y = cat.size
+bits = x * y
+print(bits)
+r1, r2 = pbl(bits), pbl(bits)
+r3 = FLAG + n2b(random.getrandbits((bits - len(FLAG)) * 8))
+r3 = list(r3)
+random.shuffle(r3)
+n=0
+tmp=0
+res=[]
+ans=[]
+for i in range(x):
+    for j in range(y):
+        fake_pix = fake_cat.getpixel((i, j))
+        fp1=fake_pix[0]
+        fp3=fake_pix[2]
+        pix = cat.getpixel((i,j))
+        p1=pix[0]
+        p3=pix[2]
+        if(p3^r3[i * y + j]!=fp3):
+            ans.append(chr(r3[i * y + j]))
+            while(p3^tmp!=fp3 and tmp<256):
+                tmp+=1
+            
+            if(tmp==256):
+                print("error")
+            else:
+                print(chr(tmp))
+                res.append(chr(tmp))
+                print(i,j)
+                n+=1
+                tmp=0
+print(n)
+print(ans)
+print(res)
+        # cat1.putpixel((i, j), pix[0] ^ r1[i * y + j])
+        # cat2.putpixel((i, j), pix[1] ^ r2[i * y + j])
+        # cat3.putpixel((i, j), pix[2] ^ r3[i * y + j])
+        # print(pix)
+
+# img = Image.new('RGB', cat.size)
+# img.putdata([(p1, 0, p3) for p1, p3 in zip(cat1.getdata(), cat3.getdata())])
+# img.save('xx.png')
+
+# lovely_cat_with_random
+```
+
