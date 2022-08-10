@@ -138,7 +138,7 @@ _DWORD *hide_key(void)
 }
 ```
 
-![]({{site.baseurl}}/img/ssrf/2022-07-04-babyre.jpg)
+![]({{site.baseurl}}/img/2022-07-04-babyre.jpg)
 
 ## gocode
 
