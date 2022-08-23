@@ -1,0 +1,997 @@
+---
+layout: post
+title:  dropper(ACTF2022)
+date:   2022-08-23 00:08:01 +0300
+image:  2022-08-23-cat.jpg
+tags:   [ctf,reverse,ACTF]
+---
+
+有一个upx壳，用工具脱掉之后发现不能运行，所以就没有办法动态调式，那么我们可以用xdbg进行手动脱壳，然后定位函数的关键代码
+
+start
+
+```assembly
+__int64 start_0()
+{
+  return sub_14001B700();
+}
+```
+
+sub_14001B700
+
+```assembly
+__int64 sub_14001B700()
+{
+  sub_1400115B9();
+  return sub_14001B720();
+}
+```
+
+这里进入sub_14001B720函数
+
+```assembly
+__int64 sub_14001B720()
+{
+  __int64 v1; // rcx
+  char v2; // [rsp+20h] [rbp-48h]
+  unsigned __int8 v3; // [rsp+21h] [rbp-47h]
+  unsigned int Code; // [rsp+28h] [rbp-40h]
+  void (__fastcall **v5)(_QWORD, __int64, _QWORD); // [rsp+30h] [rbp-38h]
+  _tls_callback_type *v6; // [rsp+38h] [rbp-30h]
+
+  if ( !(unsigned __int8)sub_140011870(1i64) )
+    sub_1400116EA(7i64);
+  v2 = 0;
+  v3 = sub_140011717();
+  if ( dword_14002D928 == 1 )
+  {
+    sub_1400116EA(7i64);
+  }
+  else if ( dword_14002D928 )
+  {
+    v2 = 1;
+  }
+  else
+  {
+    dword_14002D928 = 1;
+    if ( j__initterm_e((_PIFV *)&First, (_PIFV *)&Last) )
+      return 0xFFi64;
+    j__initterm((_PVFV *)&qword_140023000, (_PVFV *)&qword_140023610);
+    dword_14002D928 = 2;
+  }
+  sub_1400116D6(v3);
+  v5 = (void (__fastcall **)(_QWORD, __int64, _QWORD))sub_1400115D7();
+  if ( *v5 && (unsigned __int8)sub_140011316((__int64)v5) )
+    (*v5)(0i64, 2i64, 0i64);
+  v6 = (_tls_callback_type *)sub_14001164F();
+  if ( *v6 && (unsigned __int8)sub_140011316((__int64)v6) )
+    j__register_thread_local_exe_atexit_callback(*v6);
+  Code = sub_14001B930();
+  if ( !(unsigned __int8)sub_1400115A5() )
+    j_exit(Code);
+  if ( !v2 )
+    j__cexit();
+  LOBYTE(v1) = 1;
+  sub_1400112D5(v1, 0i64);
+  return Code;
+}
+```
+
+进入sub_14001B930函数
+
+```assembly
+__int64 sub_14001B930()
+{
+  unsigned int v1; // [rsp+20h] [rbp-28h]
+  char **v2; // [rsp+28h] [rbp-20h]
+  char **v3; // [rsp+30h] [rbp-18h]
+
+  v2 = j__get_initial_narrow_environment();
+  v3 = *j___p___argv();
+  v1 = *j___p___argc();
+  return sub_14001158C(v1, v3, v2);
+}
+```
+
+进入sub_14001158C函数，最后进入sub_140019470()函数
+
+在程序执行完sub_1400113D4();函数后，我们可以发现程序的函数名字改变了，
+
+![]({{site.baseurl}}/img/dropper/haveFucName.jpg)
+
+说明sub_1400113D4()对函数的名字进行了操作
+
+```assembly
+FARPROC sub_140018860()
+{
+  const CHAR *v0; // rax
+  const CHAR *v1; // rax
+  const CHAR *v2; // rax
+  const CHAR *v3; // rax
+  const CHAR *v4; // rax
+  const CHAR *v5; // rax
+  const CHAR *v6; // rax
+  const CHAR *v7; // rax
+  const CHAR *v8; // rax
+  const CHAR *v9; // rax
+  const CHAR *v10; // rax
+  const CHAR *v11; // rax
+  const CHAR *v12; // rax
+  const CHAR *v13; // rax
+  const CHAR *v14; // rax
+  const CHAR *v15; // rax
+  const CHAR *v16; // rax
+  const CHAR *v17; // rax
+  const CHAR *v18; // rax
+  const CHAR *v19; // rax
+  const CHAR *v20; // rax
+  const CHAR *v21; // rax
+  const CHAR *v22; // rax
+  const CHAR *v23; // rax
+  FARPROC result; // rax
+
+  sub_140011816((__int64)&unk_140035100);
+  v0 = (const CHAR *)sub_1400112A8(&unk_14002A000, 0xDi64);
+  hModule = LoadLibraryA(v0);
+  v1 = (const CHAR *)sub_1400112A8(&unk_14002A278, 0xDi64);
+  qword_14002AA50 = (__int64)GetProcAddress(hModule, v1);
+  v2 = (const CHAR *)sub_1400112A8(&unk_14002A2B0, 0x13i64);
+  qword_14002AAE8 = (__int64)GetProcAddress(hModule, v2);
+  v3 = (const CHAR *)sub_1400112A8(&unk_14002A300, 0x11i64);
+  qword_14002AA80 = (__int64)GetProcAddress(hModule, v3);
+  v4 = (const CHAR *)sub_1400112A8(&unk_14002A350, 0x11i64);
+  qword_14002AA88 = (__int64)GetProcAddress(hModule, v4);
+  v5 = (const CHAR *)sub_1400112A8(&unk_14002A3A0, 0x12i64);
+  qword_14002AAB8 = (__int64)GetProcAddress(hModule, v5);
+  v6 = (const CHAR *)sub_1400112A8(&unk_14002A3F0, 0x13i64);
+  qword_14002AAC0 = (__int64)GetProcAddress(hModule, v6);
+  v7 = (const CHAR *)sub_1400112A8(&unk_14002A440, 0xDi64);
+  qword_14002AAA0 = (__int64)GetProcAddress(hModule, v7);
+  v8 = (const CHAR *)sub_1400112A8(&unk_14002A478, 0xFi64);
+  qword_14002AA48 = (__int64)GetProcAddress(hModule, v8);
+  v9 = (const CHAR *)sub_1400112A8(&unk_14002A070, 0xEi64);
+  FindResourceW = (__int64 (__fastcall *)(_QWORD, _QWORD, _QWORD))GetProcAddress(hModule, v9);
+  v10 = (const CHAR *)sub_1400112A8(&unk_14002A0A8, 0xDi64);
+  LoadResource = (__int64 (__fastcall *)(_QWORD, _QWORD))GetProcAddress(hModule, v10);
+  v11 = (const CHAR *)sub_1400112A8(&unk_14002A0E0, 0xDi64);
+  LockResource = (__int64 (__fastcall *)(_QWORD))GetProcAddress(hModule, v11);
+  v12 = (const CHAR *)sub_1400112A8(&unk_14002A118, 0xFi64);
+  SizeofResource = (__int64 (__fastcall *)(_QWORD, _QWORD))GetProcAddress(hModule, v12);
+  v13 = (const CHAR *)sub_1400112A8(&unk_14002A158, 0xFi64);
+  qword_14002AAE0 = (__int64)GetProcAddress(hModule, v13);
+  v14 = (const CHAR *)sub_1400112A8(&unk_14002A4C0, 0x11i64);
+  qword_14002AAF0 = (__int64)GetProcAddress(hModule, v14);
+  v15 = (const CHAR *)sub_1400112A8(&unk_14002A038, 0xDi64);
+  qword_14002AA40 = LoadLibraryA(v15);
+  v16 = (const CHAR *)sub_1400112A8(&unk_14002A198, 7i64);
+  qword_14002AA78 = (__int64)GetProcAddress(qword_14002AA40, v16);
+  v17 = (const CHAR *)sub_1400112A8(&unk_14002A1B8, 6i64);
+  qword_14002AA90 = (__int64)GetProcAddress(qword_14002AA40, v17);
+  v18 = (const CHAR *)sub_1400112A8(&unk_14002A1D0, 8i64);
+  qword_14002AA98 = (__int64)GetProcAddress(qword_14002AA40, v18);
+  v19 = (const CHAR *)sub_1400112A8(&unk_14002A1F0, 5i64);
+  qword_14002AAA8 = (__int64)GetProcAddress(qword_14002AA40, v19);
+  v20 = (const CHAR *)sub_1400112A8(&unk_14002A208, 6i64);
+  qword_14002AAB0 = (__int64)GetProcAddress(qword_14002AA40, v20);
+  v21 = (const CHAR *)sub_1400112A8(&unk_14002A220, 8i64);
+  qword_14002AAC8 = (__int64)GetProcAddress(qword_14002AA40, v21);
+  v22 = (const CHAR *)sub_1400112A8(&unk_14002A240, 7i64);
+  qword_14002AAD0 = (__int64)GetProcAddress(qword_14002AA40, v22);
+  v23 = (const CHAR *)sub_1400112A8(&unk_14002A260, 5i64);
+  result = GetProcAddress(qword_14002AA40, v23);
+  qword_14002AAD8 = (__int64)result;
+  return result;
+}
+```
+
+然后我们可以看到很多对资源进行操作的文件，并且之后有一个函数对资源进行了一个解密操作
+
+```assembly
+_BYTE *__fastcall sub_140017D70(__int64 a1, int a2)
+{
+  _BYTE *v3; // [rsp+28h] [rbp+8h]
+  int i; // [rsp+44h] [rbp+24h]
+
+  sub_140011816((__int64)&unk_140035100);
+  v3 = malloc(a2);
+  for ( i = 0; i < a2; ++i )
+    v3[i] = *(_BYTE *)(a1 + i) ^ 0x73;
+  return v3;
+}
+```
+
+所以我们可以提取出资源，使用cyberchef直接对资源文件进行异或完成解密
+
+然后使用ida分析得到的新文件
+
+定位到主函数sub_7FF68B1CD080()
+
+```assembly
+__int64 sub_7FF68B1CD080()
+{
+  char *v0; // rdi
+  __int64 i; // rcx
+  __int64 input; // rax
+  __int64 inputBase64; // rax
+  __int64 v4; // rax
+  __int64 v5; // rax
+  __int64 v6; // rax
+  __int64 v7; // rax
+  char v9; // [rsp+20h] [rbp+0h] BYREF
+  char v10[72]; // [rsp+28h] [rbp+8h] BYREF
+  char v11[2040]; // [rsp+70h] [rbp+50h] BYREF
+  void (__fastcall ***v12)(_QWORD, __int64); // [rsp+868h] [rbp+848h]
+  __int64 v13; // [rsp+888h] [rbp+868h]
+  char v14[3576]; // [rsp+8B0h] [rbp+890h] BYREF
+  char v15[64]; // [rsp+16A8h] [rbp+1688h] BYREF
+  char v16[64]; // [rsp+16E8h] [rbp+16C8h] BYREF
+  char *v17; // [rsp+1728h] [rbp+1708h]
+  void (__fastcall ***v18)(_QWORD, _QWORD); // [rsp+1748h] [rbp+1728h]
+  __int64 v19; // [rsp+1768h] [rbp+1748h]
+  char v20; // [rsp+1788h] [rbp+1768h] BYREF
+  char *v21; // [rsp+1F78h] [rbp+1F58h]
+  char v22[64]; // [rsp+1F98h] [rbp+1F78h] BYREF
+  __int64 v23; // [rsp+1FD8h] [rbp+1FB8h]
+  __int64 v24; // [rsp+1FF8h] [rbp+1FD8h]
+  char v25[64]; // [rsp+2018h] [rbp+1FF8h] BYREF
+  char v26[64]; // [rsp+2058h] [rbp+2038h] BYREF
+  void (__fastcall ***v27)(_QWORD, _QWORD); // [rsp+2098h] [rbp+2078h]
+  unsigned int v28; // [rsp+20B4h] [rbp+2094h]
+  int v29; // [rsp+20D4h] [rbp+20B4h]
+  __int64 v30; // [rsp+20E8h] [rbp+20C8h]
+  __int64 v31; // [rsp+20F0h] [rbp+20D0h]
+  void (__fastcall ***v32)(_QWORD, _QWORD); // [rsp+20F8h] [rbp+20D8h]
+
+  v0 = &v9;
+  for ( i = 0x6BEi64; i; --i )
+  {
+    *(_DWORD *)v0 = 0xCCCCCCCC;
+    v0 += 4;
+  }
+  v29 = 0;
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  v30 = sub_7FF68B1C128A((__int64)v15, (__int64)&unk_7FF68B1DE168, 5i64);
+  v31 = v30;
+  sub_7FF68B1C1735(std::cout, v30);
+  sub_7FF68B1C119A((__int64)v15);
+  sub_7FF68B1C17DF(v10);
+  sub_7FF68B1C1032(std::cin, v10);
+  v30 = sub_7FF68B1C15E6((__int64)v10);
+  input = sub_7FF68B1C10D2((__int64)v10);
+  inputBase64 = sub_7FF68B1C1320(input, (unsigned int)v30);
+  j_UA_Server_removeCallback_0_0((__int64)v10, inputBase64);
+  v17 = v16;
+  v30 = sub_7FF68B1C1136((__int64)v16, (__int64)v10);
+  sub_7FF68B1C1244((__int64)v11, v30);
+  v19 = j_operator_new_unsigned___int64_(0x7E0i64);
+  if ( v19 )
+  {
+    v21 = &v20;
+    v30 = sub_7FF68B1C128A((__int64)v22, (__int64)&unk_7FF68B1DF300, 0x168i64);
+    v31 = v30;
+    v29 |= 1u;
+    v4 = sub_7FF68B1C10D2(v30);
+    v5 = sub_7FF68B1C110E(v21, v4);
+    v32 = (void (__fastcall ***)(_QWORD, _QWORD))sub_7FF68B1C1433(v19, v5);
+  }
+  else
+  {
+    v32 = 0i64;
+  }
+  v18 = v32;
+  v12 = v32;
+  if ( (v29 & 1) != 0 )
+  {
+    v29 &= 0xFFFFFFFE;
+    sub_7FF68B1C119A((__int64)v22);
+  }
+  sub_7FF68B1C1226((__int64)v12);
+  v24 = j_operator_new_unsigned___int64_(0x7D4i64);
+  if ( v24 )
+    v30 = sub_7FF68B1C152D(v24, (__int64)v11);
+  else
+    v30 = 0i64;
+  v23 = v30;
+  v13 = v30;
+  (**v12)(v12, v30);
+  sub_7FF68B1C119F(v13, (__int64)v14, (__int64)(v12 + 1));
+  if ( sub_7FF68B1C1014((__int64)v14) )
+  {
+    v30 = sub_7FF68B1C128A((__int64)v25, (__int64)&unk_7FF68B1DF910, 4i64);
+    v31 = v30;
+    v6 = sub_7FF68B1C1735(std::cout, v30);
+    std::ostream::operator<<(v6, sub_7FF68B1C105A);
+    sub_7FF68B1C119A((__int64)v25);
+  }
+  else
+  {
+    v30 = sub_7FF68B1C128A((__int64)v26, (__int64)&unk_7FF68B1DF920, 5i64);
+    v31 = v30;
+    v7 = sub_7FF68B1C1735(std::cout, v30);
+    std::ostream::operator<<(v7, sub_7FF68B1C105A);
+    sub_7FF68B1C119A((__int64)v26);
+  }
+  v27 = v12;
+  if ( v12 )
+    v30 = sub_7FF68B1C1316(v27, 1i64);
+  else
+    v30 = 0i64;
+  v28 = 0;
+  sub_7FF68B1C119A((__int64)v10);
+  return v28;
+}
+```
+
+通过动调调式，来一步一步确定函数和参数的意思
+
+v30的值为0x20，应该为输入的字符串的长度
+
+sub_7FF68B1C10D2类似一个复制函数，将字符串复制到另一个地址
+
+sub_7FF68B1C1320显然易见是一个base64加密的函数
+
+sub_7FF68B1C1244函数将inputBase64进行了4位一组划为，再转置
+
+当执行完sub_7FF68B1C128A函数时，查看返回的变量的值，该值为一个指针，双击查看指向的地址，
+
+![]({{site.baseurl}}/img/dropper/point1.jpg)
+
+dq offset a83457205181433指向了一个字符串
+
+```assembly
+>>> len("834572051814337070469744559761199605121805728622619480039894407167152612470842477813941120780374570205930952883661000998715107231695919001238818879944773516507366865633886966330912156402063735306303966193481658066437563587241718036562480496368592194719092339868512773222711600878782903109949779245500098606570248830570792028831133949440164219842871034275938433")
+360
+>>
+```
+
+360与sub_7FF68B1C128A函数的第三个参数对应，可知改字符串即sub_7FF68B1C128A函数操作后得到的字符串
+
+分析sub_7FF68B1C110E函数
+
+```assembly
+_DWORD *__fastcall sub_7FF68B1C6890(_DWORD *a1, const char *a2)
+{
+  int v3; // [rsp+24h] [rbp+4h]
+  int v4; // [rsp+44h] [rbp+24h]
+  int v5; // [rsp+64h] [rbp+44h]
+  int v6; // [rsp+84h] [rbp+64h]
+  int i; // [rsp+A4h] [rbp+84h]
+  int j; // [rsp+C4h] [rbp+A4h]
+
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  j_memset(a1, 0, 0x7D0ui64);
+  v6 = j_strlen(a2);
+  a1[0x1F4] = v6 / 4;
+  if ( v6 % 4 )
+    ++a1[0x1F4];
+  v5 = 0;
+  for ( i = v6 - 1; i >= 0; i -= 4 )
+  {
+    v3 = 0;
+    v4 = i - 3;
+    if ( i - 3 < 0 )
+      v4 = 0;
+    for ( j = v4; j <= i; ++j )
+      v3 = 0xA * v3 + a2[j] - 0x30;
+    a1[v5++] = v3;
+  }
+  return a1;
+}
+```
+
+可知是将传入的字符串每4个字符为一组，将字符串转为数字
+
+sub_7FF68B1C1433跟进去
+
+```assembly
+_QWORD *__fastcall sub_7FF68B1C6AB0(_QWORD *a1, __int64 a2)
+{
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  *a1 = &Myflag::`vftable';
+  sub_7FF68B1C14B5((__int64)(a1 + 1));
+  sub_7FF68B1C10A0((__int64)(a1 + 1), a2);
+  return a1;
+}
+```
+
+这里有一个vftable虚表函数，跟进这个函数可以到达
+
+```assembly
+__int64 __fastcall sub_7FF68B1C9640(__int64 a1, __int64 a2)
+{
+  char *v2; // rdi
+  __int64 i; // rcx
+  __int64 v4; // rax
+  __int64 v5; // rax
+  __int64 v6; // rax
+  __int64 v7; // rax
+  __int64 v8; // rax
+  __int64 v9; // rax
+  __int64 v10; // rax
+  __int64 v11; // rax
+  __int64 v12; // rax
+  __int64 v13; // rax
+  __int64 v14; // rax
+  __int64 v15; // rax
+  __int64 v16; // rax
+  __int64 v17; // rax
+  __int64 v18; // rax
+  __int64 v19; // rax
+  __int64 v20; // rax
+  __int64 v21; // rax
+  __int64 v22; // rax
+  __int64 v23; // rax
+  char v25; // [rsp+20h] [rbp+0h] BYREF
+  char v26[2048]; // [rsp+30h] [rbp+10h] BYREF
+  char v27[2048]; // [rsp+830h] [rbp+810h] BYREF
+  char v28[2048]; // [rsp+1030h] [rbp+1010h] BYREF
+  char v29[2048]; // [rsp+1830h] [rbp+1810h] BYREF
+  char v30[2048]; // [rsp+2030h] [rbp+2010h] BYREF
+  char v31[2048]; // [rsp+2830h] [rbp+2810h] BYREF
+  char v32[2048]; // [rsp+3030h] [rbp+3010h] BYREF
+  char v33[2048]; // [rsp+3830h] [rbp+3810h] BYREF
+  char v34[2048]; // [rsp+4030h] [rbp+4010h] BYREF
+  char v35[2048]; // [rsp+4830h] [rbp+4810h] BYREF
+  char v36[3576]; // [rsp+5030h] [rbp+5010h] BYREF
+  char v37[64]; // [rsp+5E28h] [rbp+5E08h] BYREF
+  char v38[64]; // [rsp+5E68h] [rbp+5E48h] BYREF
+  char v39[64]; // [rsp+5EA8h] [rbp+5E88h] BYREF
+  char v40[64]; // [rsp+5EE8h] [rbp+5EC8h] BYREF
+  char v41[64]; // [rsp+5F28h] [rbp+5F08h] BYREF
+  char v42[64]; // [rsp+5F68h] [rbp+5F48h] BYREF
+  char v43[64]; // [rsp+5FA8h] [rbp+5F88h] BYREF
+  char v44[64]; // [rsp+5FE8h] [rbp+5FC8h] BYREF
+  char v45[64]; // [rsp+6028h] [rbp+6008h] BYREF
+  char v46[72]; // [rsp+6068h] [rbp+6048h] BYREF
+  char v47[2048]; // [rsp+60B0h] [rbp+6090h] BYREF
+  char v48[2048]; // [rsp+68B0h] [rbp+6890h] BYREF
+  char v49[2048]; // [rsp+70B0h] [rbp+7090h] BYREF
+  char v50[2048]; // [rsp+78B0h] [rbp+7890h] BYREF
+  char v51[2048]; // [rsp+80B0h] [rbp+8090h] BYREF
+  char v52[2048]; // [rsp+88B0h] [rbp+8890h] BYREF
+  char v53[2048]; // [rsp+90B0h] [rbp+9090h] BYREF
+  char v54[2048]; // [rsp+98B0h] [rbp+9890h] BYREF
+  char v55[2048]; // [rsp+A0B0h] [rbp+A090h] BYREF
+  char v56[2024]; // [rsp+A8B0h] [rbp+A890h] BYREF
+  __int64 v57; // [rsp+B098h] [rbp+B078h]
+  __int64 v58; // [rsp+B0A0h] [rbp+B080h]
+
+  v2 = &v25;
+  for ( i = 0x2AA6i64; i; --i )
+  {
+    *(_DWORD *)v2 = 0xCCCCCCCC;
+    v2 += 4;
+  }
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  v57 = sub_7FF68B1C128A((__int64)v37, (__int64)&unk_7FF68B1DE000, 0x30i64);
+  v58 = v57;
+  v4 = copy(v57);
+  groupAtoi((__int64)v26, v4);
+  sub_7FF68B1C119A((__int64)v37);
+  v57 = sub_7FF68B1C128A((__int64)v38, (__int64)&unk_7FF68B1DE0C0, 0x2Ai64);
+  v58 = v57;
+  v5 = copy(v57);
+  groupAtoi((__int64)v27, v5);
+  sub_7FF68B1C119A((__int64)v38);
+  v57 = sub_7FF68B1C128A((__int64)v39, (__int64)&unk_7FF68B1DE180, 0x2Ai64);
+  v58 = v57;
+  v6 = copy(v57);
+  groupAtoi((__int64)v28, v6);
+  sub_7FF68B1C119A((__int64)v39);
+  v57 = sub_7FF68B1C128A((__int64)v40, (__int64)&unk_7FF68B1DE230, 0x24i64);
+  v58 = v57;
+  v7 = copy(v57);
+  groupAtoi((__int64)v29, v7);
+  sub_7FF68B1C119A((__int64)v40);
+  v57 = sub_7FF68B1C128A((__int64)v41, (__int64)&unk_7FF68B1DE2C0, 0x2Ai64);
+  v58 = v57;
+  v8 = copy(v57);
+  groupAtoi((__int64)v30, v8);
+  sub_7FF68B1C119A((__int64)v41);
+  v57 = sub_7FF68B1C128A((__int64)v42, (__int64)&unk_7FF68B1DE370, 0x24i64);
+  v58 = v57;
+  v9 = copy(v57);
+  groupAtoi((__int64)v31, v9);
+  sub_7FF68B1C119A((__int64)v42);
+  v57 = sub_7FF68B1C128A((__int64)v43, (__int64)&unk_7FF68B1DE400, 0x24i64);
+  v58 = v57;
+  v10 = copy(v57);
+  groupAtoi((__int64)v32, v10);
+  sub_7FF68B1C119A((__int64)v43);
+  v57 = sub_7FF68B1C128A((__int64)v44, (__int64)&unk_7FF68B1DE490, 0x24i64);
+  v58 = v57;
+  v11 = copy(v57);
+  groupAtoi((__int64)v33, v11);
+  sub_7FF68B1C119A((__int64)v44);
+  v57 = sub_7FF68B1C128A((__int64)v45, (__int64)&unk_7FF68B1DE520, 0x2Ai64);
+  v58 = v57;
+  v12 = copy(v57);
+  groupAtoi((__int64)v34, v12);
+  sub_7FF68B1C119A((__int64)v45);
+  v57 = sub_7FF68B1C128A((__int64)v46, (__int64)&unk_7FF68B1DE5D0, 0x2Ai64);
+  v58 = v57;
+  v13 = copy(v57);
+  groupAtoi((__int64)v35, v13);
+  sub_7FF68B1C119A((__int64)v46);
+  sub_7FF68B1C152D((__int64)v36, a2);
+  v14 = sub_7FF68B1C1857(v36, v47, v26);
+  sub_7FF68B1C10A0((__int64)v36, v14);
+  v15 = sub_7FF68B1C132F(v36, v48, v27);
+  sub_7FF68B1C10A0((__int64)v36, v15);
+  v16 = sub_7FF68B1C119F((__int64)v36, (__int64)v49, (__int64)v28);
+  sub_7FF68B1C10A0((__int64)v36, v16);
+  v17 = sub_7FF68B1C1857(v36, v50, v29);
+  sub_7FF68B1C10A0((__int64)v36, v17);
+  v18 = sub_7FF68B1C132F(v36, v51, v30);
+  sub_7FF68B1C10A0((__int64)v36, v18);
+  v19 = sub_7FF68B1C119F((__int64)v36, (__int64)v52, (__int64)v31);
+  sub_7FF68B1C10A0((__int64)v36, v19);
+  v20 = sub_7FF68B1C1857(v36, v53, v32);
+  sub_7FF68B1C10A0((__int64)v36, v20);
+  v21 = sub_7FF68B1C119F((__int64)v36, (__int64)v54, (__int64)v33);
+  sub_7FF68B1C10A0((__int64)v36, v21);
+  v22 = sub_7FF68B1C1857(v36, v55, v34);
+  sub_7FF68B1C10A0((__int64)v36, v22);
+  v23 = sub_7FF68B1C119F((__int64)v36, (__int64)v56, (__int64)v35);
+  sub_7FF68B1C10A0((__int64)v36, v23);
+  return sub_7FF68B1C10A0(a2, (__int64)v36);
+}
+```
+
+到sub_7FF68B1C1226函数步进，我们会发现到sub_7FF68B1C12C6的时候会触发一个除数为0的异常
+
+```assembly
+__int64 __fastcall sub_7FF68B1C8A80(__int64 a1, __int64 a2, _DWORD *a3)
+{
+  char *v3; // rdi
+  __int64 i; // rcx
+  char v6; // [rsp+20h] [rbp+0h] BYREF
+  int v7[500]; // [rsp+30h] [rbp+10h] BYREF
+  int k; // [rsp+800h] [rbp+7E0h]
+  int j; // [rsp+824h] [rbp+804h]
+  int v10; // [rsp+844h] [rbp+824h]
+
+  v3 = &v6;
+  for ( i = 0x212i64; i; --i )
+  {
+    *(_DWORD *)v3 = 0xCCCCCCCC;
+    v3 += 4;
+  }
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  sub_7FF68B1C14B5((__int64)v7);
+  v10 = 0;
+  for ( j = *(_DWORD *)(a1 + 0x7D0) - 1; j >= 0; --j )
+  {
+    v7[j] = (0x2710 * v10 + *(_DWORD *)(a1 + 4i64 * j)) / *a3;
+    v10 = 0x2710 * v10 + *(_DWORD *)(a1 + 4i64 * j) - *a3 * v7[j];
+  }
+  for ( k = *(_DWORD *)(a1 + 0x7D0); !v7[k - 1] && k > 1; --k )
+    ;
+  sub_7FF68B1C152D(a2, (__int64)v7);
+  return a2;
+}
+```
+
+另外在sub_7FF68B1CC040函数中
+
+```assembly
+__int64 __fastcall sub_7FF68B1CC040(__int64 a1)
+{
+  __int64 v1; // rax
+  char v3[2112]; // [rsp+3F0h] [rbp+3D0h] BYREF
+
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  sub_7FF68B1C10B4(dword_7FF68B1DF8A0, 0i64, 0x1Ai64);
+  v1 = sub_7FF68B1C12C6(a1 + 8, (__int64)v3, dword_7FF68B1DF8A0);
+  return sub_7FF68B1C10A0(a1 + 8, v1);
+}
+```
+
+该函数中有一部分内容F5无法显示
+
+![]({{site.baseurl}}/img/dropper/disappear.jpg)
+
+sub_7FF68B1C187F为真正的处理函数
+
+```assembly
+__int64 __fastcall sub_7FF68B1CC6F0(__int64 a1, __int64 a2)
+{
+  char *v2; // rdi
+  __int64 i; // rcx
+  __int64 v4; // rax
+  __int64 v5; // rax
+  __int64 v6; // rax
+  __int64 v7; // rax
+  __int64 v8; // rax
+  __int64 v9; // rax
+  __int64 v10; // rax
+  __int64 v11; // rax
+  __int64 v12; // rax
+  __int64 v13; // rax
+  __int64 v14; // rax
+  __int64 v15; // rax
+  __int64 v16; // rax
+  __int64 v17; // rax
+  __int64 v18; // rax
+  __int64 v19; // rax
+  __int64 v20; // rax
+  __int64 v21; // rax
+  __int64 v22; // rax
+  __int64 v23; // rax
+  char v25; // [rsp+20h] [rbp+0h] BYREF
+  char v26[2048]; // [rsp+30h] [rbp+10h] BYREF
+  char v27[2048]; // [rsp+830h] [rbp+810h] BYREF
+  char v28[2048]; // [rsp+1030h] [rbp+1010h] BYREF
+  char v29[2048]; // [rsp+1830h] [rbp+1810h] BYREF
+  char v30[2048]; // [rsp+2030h] [rbp+2010h] BYREF
+  char v31[2048]; // [rsp+2830h] [rbp+2810h] BYREF
+  char v32[2048]; // [rsp+3030h] [rbp+3010h] BYREF
+  char v33[2048]; // [rsp+3830h] [rbp+3810h] BYREF
+  char v34[2048]; // [rsp+4030h] [rbp+4010h] BYREF
+  char v35[2048]; // [rsp+4830h] [rbp+4810h] BYREF
+  char v36[3576]; // [rsp+5030h] [rbp+5010h] BYREF
+  char v37[64]; // [rsp+5E28h] [rbp+5E08h] BYREF
+  char v38[64]; // [rsp+5E68h] [rbp+5E48h] BYREF
+  char v39[64]; // [rsp+5EA8h] [rbp+5E88h] BYREF
+  char v40[64]; // [rsp+5EE8h] [rbp+5EC8h] BYREF
+  char v41[64]; // [rsp+5F28h] [rbp+5F08h] BYREF
+  char v42[64]; // [rsp+5F68h] [rbp+5F48h] BYREF
+  char v43[64]; // [rsp+5FA8h] [rbp+5F88h] BYREF
+  char v44[64]; // [rsp+5FE8h] [rbp+5FC8h] BYREF
+  char v45[64]; // [rsp+6028h] [rbp+6008h] BYREF
+  char v46[72]; // [rsp+6068h] [rbp+6048h] BYREF
+  char v47[2048]; // [rsp+60B0h] [rbp+6090h] BYREF
+  char v48[2048]; // [rsp+68B0h] [rbp+6890h] BYREF
+  char v49[2048]; // [rsp+70B0h] [rbp+7090h] BYREF
+  char v50[2048]; // [rsp+78B0h] [rbp+7890h] BYREF
+  char v51[2048]; // [rsp+80B0h] [rbp+8090h] BYREF
+  char v52[2048]; // [rsp+88B0h] [rbp+8890h] BYREF
+  char v53[2048]; // [rsp+90B0h] [rbp+9090h] BYREF
+  char v54[2048]; // [rsp+98B0h] [rbp+9890h] BYREF
+  char v55[2048]; // [rsp+A0B0h] [rbp+A090h] BYREF
+  char v56[2024]; // [rsp+A8B0h] [rbp+A890h] BYREF
+  __int64 v57; // [rsp+B098h] [rbp+B078h]
+  __int64 v58; // [rsp+B0A0h] [rbp+B080h]
+
+  v2 = &v25;
+  for ( i = 0x2AA6i64; i; --i )
+  {
+    *(_DWORD *)v2 = 0xCCCCCCCC;
+    v2 += 4;
+  }
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  v57 = sub_7FF68B1C128A((__int64)v37, (__int64)&unk_7FF68B1DE680, 0x50i64);
+  v58 = v57;
+  v4 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v26, v4);
+  sub_7FF68B1C119A((__int64)v37);
+  v57 = sub_7FF68B1C128A((__int64)v38, (__int64)&unk_7FF68B1DE7C0, 0x50i64);
+  v58 = v57;
+  v5 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v27, v5);
+  sub_7FF68B1C119A((__int64)v38);
+  v57 = sub_7FF68B1C128A((__int64)v39, (__int64)&unk_7FF68B1DE900, 0x50i64);
+  v58 = v57;
+  v6 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v28, v6);
+  sub_7FF68B1C119A((__int64)v39);
+  v57 = sub_7FF68B1C128A((__int64)v40, (__int64)&unk_7FF68B1DEA40, 0x50i64);
+  v58 = v57;
+  v7 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v29, v7);
+  sub_7FF68B1C119A((__int64)v40);
+  v57 = sub_7FF68B1C128A((__int64)v41, (__int64)&unk_7FF68B1DEB80, 0x50i64);
+  v58 = v57;
+  v8 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v30, v8);
+  sub_7FF68B1C119A((__int64)v41);
+  v57 = sub_7FF68B1C128A((__int64)v42, (__int64)&unk_7FF68B1DECC0, 0x50i64);
+  v58 = v57;
+  v9 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v31, v9);
+  sub_7FF68B1C119A((__int64)v42);
+  v57 = sub_7FF68B1C128A((__int64)v43, (__int64)&unk_7FF68B1DEE00, 0x50i64);
+  v58 = v57;
+  v10 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v32, v10);
+  sub_7FF68B1C119A((__int64)v43);
+  v57 = sub_7FF68B1C128A((__int64)v44, (__int64)&unk_7FF68B1DEF40, 0x50i64);
+  v58 = v57;
+  v11 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v33, v11);
+  sub_7FF68B1C119A((__int64)v44);
+  v57 = sub_7FF68B1C128A((__int64)v45, (__int64)&unk_7FF68B1DF080, 0x50i64);
+  v58 = v57;
+  v12 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v34, v12);
+  sub_7FF68B1C119A((__int64)v45);
+  v57 = sub_7FF68B1C128A((__int64)v46, (__int64)&unk_7FF68B1DF1C0, 0x50i64);
+  v58 = v57;
+  v13 = sub_7FF68B1C10D2(v57);
+  sub_7FF68B1C110E(v35, v13);
+  sub_7FF68B1C119A((__int64)v46);
+  sub_7FF68B1C152D((__int64)v36, a2);
+  v14 = sub_7FF68B1C1857(v36, v47, v26);
+  sub_7FF68B1C10A0((__int64)v36, v14);
+  v15 = sub_7FF68B1C132F(v36, v48, v27);
+  sub_7FF68B1C10A0((__int64)v36, v15);
+  v16 = sub_7FF68B1C119F((__int64)v36, (__int64)v49, (__int64)v28);
+  sub_7FF68B1C10A0((__int64)v36, v16);
+  v17 = sub_7FF68B1C1857(v36, v50, v29);
+  sub_7FF68B1C10A0((__int64)v36, v17);
+  v18 = sub_7FF68B1C132F(v36, v51, v30);
+  sub_7FF68B1C10A0((__int64)v36, v18);
+  v19 = sub_7FF68B1C119F((__int64)v36, (__int64)v52, (__int64)v31);
+  sub_7FF68B1C10A0((__int64)v36, v19);
+  v20 = sub_7FF68B1C1857(v36, v53, v32);
+  sub_7FF68B1C10A0((__int64)v36, v20);
+  v21 = sub_7FF68B1C119F((__int64)v36, (__int64)v54, (__int64)v33);
+  sub_7FF68B1C10A0((__int64)v36, v21);
+  v22 = sub_7FF68B1C1857(v36, v55, v34);
+  sub_7FF68B1C10A0((__int64)v36, v22);
+  v23 = sub_7FF68B1C119F((__int64)v36, (__int64)v56, (__int64)v35);
+  sub_7FF68B1C10A0((__int64)v36, v23);
+  return sub_7FF68B1C10A0(a2, (__int64)v36);
+}
+```
+
+该函数和之前的虚表函数十分相似，其实这个函数才是真正的虚表函数
+
+我们可以直接在`call    sub_7FF68B1C12C6`的下一条汇编语句处下断点，按F9运行，出现异常警告
+
+![]({{site.baseurl}}/img/dropper/warning.jpg)
+
+点击yes
+
+但是不知道为什么，实际上程序不会断在`call    sub_7FF68B1C12C6`的下一条汇编语句处，而是直接退出sub_7FF68B1C1226函数
+
+程序运行到`(**v12)(v12, length);`，可以知道v12是个两次的指针，真正指向的是`off_1937CE79230 dq offset ??_7Myflag@@6B@`，点击查看就是sub_7FF68B1CC6F0函数，通过动态调试我们可以知道其中函数的作用，最开始是初始化一些数组的值，第二部分是一些对大数的加减乘操作
+
+```assembly
+__int64 __fastcall sub_7FF68B1CC6F0(__int64 a1, __int64 inputBase64Group)
+{
+  char *v2; // rdi
+  __int64 i; // rcx
+  __int64 v4; // rax
+  __int64 v5; // rax
+  __int64 v6; // rax
+  __int64 v7; // rax
+  __int64 v8; // rax
+  __int64 v9; // rax
+  __int64 v10; // rax
+  __int64 v11; // rax
+  __int64 v12; // rax
+  __int64 v13; // rax
+  __int64 v14; // rax
+  __int64 v15; // rax
+  __int64 v16; // rax
+  __int64 v17; // rax
+  __int64 v18; // rax
+  __int64 v19; // rax
+  __int64 v20; // rax
+  __int64 v21; // rax
+  __int64 v22; // rax
+  __int64 v23; // rax
+  char v25; // [rsp+20h] [rbp+0h] BYREF
+  char v26[2048]; // [rsp+30h] [rbp+10h] BYREF
+  char v27[2048]; // [rsp+830h] [rbp+810h] BYREF
+  char v28[2048]; // [rsp+1030h] [rbp+1010h] BYREF
+  char v29[2048]; // [rsp+1830h] [rbp+1810h] BYREF
+  char v30[2048]; // [rsp+2030h] [rbp+2010h] BYREF
+  char v31[2048]; // [rsp+2830h] [rbp+2810h] BYREF
+  char v32[2048]; // [rsp+3030h] [rbp+3010h] BYREF
+  char v33[2048]; // [rsp+3830h] [rbp+3810h] BYREF
+  char v34[2048]; // [rsp+4030h] [rbp+4010h] BYREF
+  char v35[2048]; // [rsp+4830h] [rbp+4810h] BYREF
+  char s[3576]; // [rsp+5030h] [rbp+5010h] BYREF
+  char v37[64]; // [rsp+5E28h] [rbp+5E08h] BYREF
+  char v38[64]; // [rsp+5E68h] [rbp+5E48h] BYREF
+  char v39[64]; // [rsp+5EA8h] [rbp+5E88h] BYREF
+  char v40[64]; // [rsp+5EE8h] [rbp+5EC8h] BYREF
+  char v41[64]; // [rsp+5F28h] [rbp+5F08h] BYREF
+  char v42[64]; // [rsp+5F68h] [rbp+5F48h] BYREF
+  char v43[64]; // [rsp+5FA8h] [rbp+5F88h] BYREF
+  char v44[64]; // [rsp+5FE8h] [rbp+5FC8h] BYREF
+  char v45[64]; // [rsp+6028h] [rbp+6008h] BYREF
+  char v46[72]; // [rsp+6068h] [rbp+6048h] BYREF
+  char v47[2048]; // [rsp+60B0h] [rbp+6090h] BYREF
+  char v48[2048]; // [rsp+68B0h] [rbp+6890h] BYREF
+  char v49[2048]; // [rsp+70B0h] [rbp+7090h] BYREF
+  char v50[2048]; // [rsp+78B0h] [rbp+7890h] BYREF
+  char v51[2048]; // [rsp+80B0h] [rbp+8090h] BYREF
+  char v52[2048]; // [rsp+88B0h] [rbp+8890h] BYREF
+  char v53[2048]; // [rsp+90B0h] [rbp+9090h] BYREF
+  char v54[2048]; // [rsp+98B0h] [rbp+9890h] BYREF
+  char v55[2048]; // [rsp+A0B0h] [rbp+A090h] BYREF
+  char v56[2024]; // [rsp+A8B0h] [rbp+A890h] BYREF
+  __int64 v57; // [rsp+B098h] [rbp+B078h]
+  __int64 v58; // [rsp+B0A0h] [rbp+B080h]
+
+  v2 = &v25;
+  for ( i = 0x2AA6i64; i; --i )
+  {
+    *(_DWORD *)v2 = 0xCCCCCCCC;
+    v2 += 4;
+  }
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  v57 = sub_7FF68B1C128A((__int64)v37, (__int64)&unk_7FF68B1DE680, 0x50i64);
+  v58 = v57;
+  v4 = copy(v57);
+  groupAtoi((__int64)v26, v4);
+  sub_7FF68B1C119A((__int64)v37);
+  v57 = sub_7FF68B1C128A((__int64)v38, (__int64)&unk_7FF68B1DE7C0, 0x50i64);
+  v58 = v57;
+  v5 = copy(v57);
+  groupAtoi((__int64)v27, v5);
+  sub_7FF68B1C119A((__int64)v38);
+  v57 = sub_7FF68B1C128A((__int64)v39, (__int64)&unk_7FF68B1DE900, 0x50i64);
+  v58 = v57;
+  v6 = copy(v57);
+  groupAtoi((__int64)v28, v6);
+  sub_7FF68B1C119A((__int64)v39);
+  v57 = sub_7FF68B1C128A((__int64)v40, (__int64)&unk_7FF68B1DEA40, 0x50i64);
+  v58 = v57;
+  v7 = copy(v57);
+  groupAtoi((__int64)v29, v7);
+  sub_7FF68B1C119A((__int64)v40);
+  v57 = sub_7FF68B1C128A((__int64)v41, (__int64)&unk_7FF68B1DEB80, 0x50i64);
+  v58 = v57;
+  v8 = copy(v57);
+  groupAtoi((__int64)v30, v8);
+  sub_7FF68B1C119A((__int64)v41);
+  v57 = sub_7FF68B1C128A((__int64)v42, (__int64)&unk_7FF68B1DECC0, 0x50i64);
+  v58 = v57;
+  v9 = copy(v57);
+  groupAtoi((__int64)v31, v9);
+  sub_7FF68B1C119A((__int64)v42);
+  v57 = sub_7FF68B1C128A((__int64)v43, (__int64)&unk_7FF68B1DEE00, 0x50i64);
+  v58 = v57;
+  v10 = copy(v57);
+  groupAtoi((__int64)v32, v10);
+  sub_7FF68B1C119A((__int64)v43);
+  v57 = sub_7FF68B1C128A((__int64)v44, (__int64)&unk_7FF68B1DEF40, 0x50i64);
+  v58 = v57;
+  v11 = copy(v57);
+  groupAtoi((__int64)v33, v11);
+  sub_7FF68B1C119A((__int64)v44);
+  v57 = sub_7FF68B1C128A((__int64)v45, (__int64)&unk_7FF68B1DF080, 0x50i64);
+  v58 = v57;
+  v12 = copy(v57);
+  groupAtoi((__int64)v34, v12);
+  sub_7FF68B1C119A((__int64)v45);
+  v57 = sub_7FF68B1C128A((__int64)v46, (__int64)&unk_7FF68B1DF1C0, 0x50i64);
+  v58 = v57;
+  v13 = copy(v57);
+  groupAtoi((__int64)v35, v13);
+  sub_7FF68B1C119A((__int64)v46);
+  copyArr((__int64)s, inputBase64Group);
+  v14 = add((__int64)s, (__int64)v47, (__int64)v26);
+  sub_7FF68B1C10A0((__int64)s, v14);
+  v15 = mul(s, v48, v27);
+  sub_7FF68B1C10A0((__int64)s, v15);
+  v16 = sub((__int64)s, (__int64)v49, (__int64)v28);
+  sub_7FF68B1C10A0((__int64)s, v16);
+  v17 = add((__int64)s, (__int64)v50, (__int64)v29);
+  sub_7FF68B1C10A0((__int64)s, v17);
+  v18 = mul(s, v51, v30);
+  sub_7FF68B1C10A0((__int64)s, v18);
+  v19 = sub((__int64)s, (__int64)v52, (__int64)v31);
+  sub_7FF68B1C10A0((__int64)s, v19);
+  v20 = add((__int64)s, (__int64)v53, (__int64)v32);
+  sub_7FF68B1C10A0((__int64)s, v20);
+  v21 = sub((__int64)s, (__int64)v54, (__int64)v33);
+  sub_7FF68B1C10A0((__int64)s, v21);
+  v22 = add((__int64)s, (__int64)v55, (__int64)v34);
+  sub_7FF68B1C10A0((__int64)s, v22);
+  v23 = sub((__int64)s, (__int64)v56, (__int64)v35);
+  sub_7FF68B1C10A0((__int64)s, v23);
+  return sub_7FF68B1C10A0(inputBase64Group, (__int64)s);
+}
+```
+
+从`(**v12)(v12, length);`函数出来后还有一个sub函数的操作，在该处下断点可以dump出操作数的值
+
+![]({{site.baseurl}}/img/dropper/oprator.jpg)
+
+最后sub_7FF68B1C1014函数为检查
+
+```assembly
+bool __fastcall sub_7FF68B1CBF00(_DWORD *a1)
+{
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  return a1[0x1F4] == 1 && !*a1;
+}
+```
+
+检查是否传入的值为0，而且a1[500]的值为1
+
+另外有一个地方需要注意，我们可以查看add函数‘
+
+```assembly
+__int64 __fastcall sub_7FF68B1C8840(__int64 a1, __int64 a2, __int64 a3)
+{
+  char *v3; // rdi
+  __int64 i; // rcx
+  char v6; // [rsp+20h] [rbp+0h] BYREF
+  int v7[500]; // [rsp+30h] [rbp+10h] BYREF
+  int v8; // [rsp+800h] [rbp+7E0h]
+  int j; // [rsp+824h] [rbp+804h]
+  int v10; // [rsp+844h] [rbp+824h]
+  int v11; // [rsp+C14h] [rbp+BF4h]
+
+  v3 = &v6;
+  for ( i = 0x212i64; i; --i )
+  {
+    *(_DWORD *)v3 = 0xCCCCCCCC;
+    v3 += 4;
+  }
+  sub_7FF68B1C17EE((__int64)&unk_7FF68B1E60F2);
+  copyArr((__int64)v7, a1);
+  if ( *(_DWORD *)(a3 + 0x7D0) <= *(_DWORD *)(a1 + 0x7D0) )
+    v11 = *(_DWORD *)(a1 + 0x7D0);
+  else
+    v11 = *(_DWORD *)(a3 + 0x7D0);
+  v10 = v11;
+  for ( j = 0; j < v10; ++j )
+  {
+    v7[j] += *(_DWORD *)(a3 + 4i64 * j);
+    if ( v7[j] > 0x270F )
+    {
+      ++v7[j + 1];
+      v7[j] -= 0x2710;
+    }
+  }
+  if ( v7[v10] )
+    v8 = v10 + 1;
+  else
+    v8 = v10;
+  copyArr(a2, (__int64)v7);
+  return a2;
+}
+```
+
+可以知道大数在数组中的存储是倒序的，因s进位时`++v7[j + 1];`，这与我们平时的顺序相反
+
+exp
+
+```assembly
+import base64
+
+
+data = [64584540291872516627894939590684951703479643371381420434698676192916126802789388,
+        11783410410469738048283152171898507679537812634841032055361622989575562121323526,
+        55440851777679184418972581091796582321001517732868509947716453414109025036506793,
+        17867047589171477574847737912328753108849304549280205992204587760361310317983607,
+        7537302706582391238853817483600228733479333152488218477840149847189049516952787,
+        80793226935699295824618519685638809874579343342564712419235587177713165502121664,
+        14385283226689171523445844388769467232023411467394422980403729848631619308579599,
+        55079029772840138145785005601340325789675668817561045403173659223377346727295749,
+        71119332457202863671922045224905384620742912949065190274173724688764272313900465,
+        57705573952449699620072104055030025886984180500734382250587152417040141679598894,
+        834572051814337070469744559761199605121805728622619480039894407167152612470842477813941120780374570205930952883661000998715107231695919001238818879944773516507366865633886966330912156402063735306303966193481658066437563587241718036562480496368592194719092339868512773222711600878782903109949779245500098606570248830570792028831133949440164219842871034275938433]
+
+t = 0
+t += data[10]
+t += data[9]
+t -= data[8]
+t += data[7]
+t -= data[6]
+t += data[5]
+t //= data[4]
+t -= data[3]
+t += data[2]
+t //= data[1]
+t -= data[0]
+print(t)
+
+r = '0' + bin(t)[2:]
+print(r)
+
+s = b""
+for i in range(len(r), 0, -7):
+    s += int(r[i-7:i],2).to_bytes(1,'big')
+print(s)
+print(base64.b64decode(s))
+```
+
+ACTF{dr0pp3r_1s_v3ry_int3r3st1ng_1d7a90a63039831c7fcaa53b766d5b2d!!!!!}
