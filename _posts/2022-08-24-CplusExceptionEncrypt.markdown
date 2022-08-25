@@ -710,7 +710,7 @@ LABEL_4:
         exit(0);
       }
     }
-    printf("\ncongratulations!!!!your flag is \nSCTF{%s}", data);
+    printf("\ncongratulations!!!!your flag is \nSCTF{ %s }", data);
     return 0;
   }
   if ( !w )
