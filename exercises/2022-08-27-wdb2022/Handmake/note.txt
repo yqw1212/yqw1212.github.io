@@ -1,0 +1,16 @@
+func ZlXDJkH3OZN4Mayd(swlvV []byte, S5aOL string, gLIhR string, QIErK string, mxqoA string, hTBet string) string {
+    eBS9X := make([]byte, 20)
+    WX5YT := [16]byte{
+        169, 43, 100, 115, 202, 185, 130, 174, 238, 233, 147, 43, 149, 7, 229, 119}
+    for i := 0; i < 16; i++ {
+        eBS9X[i] += WX5YT[i] ^ swlvV[i]
+    }
+
+    return string(eBS9X)
+}
+
+
+YsMgm9rKB7qiuQ1d
+HFpGdOwM3ur8B5qV
+JqZXm8BtAWL5cMEO
+wbDMTJ37rhg8lv2L
