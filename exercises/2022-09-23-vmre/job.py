@@ -1,0 +1,9 @@
+result = [0xF5C992B1889CD699, 0x6B56373A4D4D2F35, 0x7D705747140F304D, 0x9EC3DEC3AE8EA081]
+
+x = [0xAABADBEEFBADBEED, 0x1234567812345678, 0x1111223366666612, 0xADADEFABCDEFEDDE]
+
+flag = ""
+
+for i in range(4):
+    flag += str(hex(result[i]^x[i]))[2:]
+print(flag)

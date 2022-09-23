@@ -1,0 +1,3 @@
+"D:\Program Files\JetBrains\CLion 2020.2.4\bin\cmake\win\bin\cmake.exe" -E rm -f CMakeFiles\dai.dir/objects.a
+"D:\Program Files\MinGW\bin\ar.exe" cr CMakeFiles\dai.dir/objects.a @CMakeFiles\dai.dir\objects1.rsp
+"D:\Program Files\MinGW\bin\g++.exe" -g   -Wl,--whole-archive CMakeFiles\dai.dir/objects.a -Wl,--no-whole-archive  -o dai.exe -Wl,--out-implib,libdai.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\dai.dir\linklibs.rsp
