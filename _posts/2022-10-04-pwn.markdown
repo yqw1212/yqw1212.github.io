@@ -1,0 +1,89 @@
+---
+layout: post
+title:  baby_arm
+date:   2022-10-04 00:08:01 +0300
+image:  2022-10-04-ferris.jpg
+tags:   [ctf,pwn,arm,ROP]
+---
+
+arm64下，前8个参数是通过x0~x7传递，第8个参数需要通过sp访问，第9个参数需要通过sp + 8 访问，第n个参数需要通过sp + 8*(n-8)访问。
+
+main
+
+```assembly
+__int64 sub_400818()
+{
+  sub_400760();
+  write(1, "Name:", 5uLL);
+  read(0, &unk_411068, 0x200uLL);
+  sub_4007F0();
+  return 0LL;
+}
+```
+
+unk_411068在bss段
+
+sub_4007F0
+
+```assembly
+ssize_t sub_4007F0()
+{
+  __int64 v1; // [xsp+10h] [xbp+10h] BYREF
+
+  return read(0, &v1, 0x200uLL);
+}
+```
+
+这里存在栈溢出
+
+程序中有mprotect()函数，mprotect()函数可以用来修改一段指定内存区域的保护属性
+
+```assembly
+// attributes: thunk
+int mprotect(void *addr, size_t len, int prot)
+{
+  return mprotect(addr, len, prot);
+}
+```
+
+```assembly
+int mprotect(const void *start, size_t len, int prot);
+addr：修改保护属性区域的起始地址
+len：被修改保护属性区域的长度
+prot：可以取以下几个值，并且可以用“|”将几个属性合起来使用：
+	PROT_READ：表示内存段内的内容可写（二进制：0,1,0，十进制：2）
+	PROT_WRITE：表示内存段内的内容可读（二进制：1,2,0，十进制：4）
+	PROT_EXEC：表示内存段中的内容可执行（二进制：0,0,1，十进制：1）
+	PROT_NONE：表示内存段中的内容根本没法访问（二进制：0,0,0，十进制：0）
+	可读可写可执行权限，二进制为1,1,1，十进制7
+```
+
+所以我们在 bss 段写上 shellcode，通过 rop 调用 mprotect 改变 bss 的权限，最后返回到 bss 上的 shellcode
+
+csu_up
+
+```assembly
+.text:00000000004008AC loc_4008AC       ; CODE XREF: sub_400868+60↓j
+.text:00000000004008AC   LDR    X3, [X21,X19,LSL#3] ; 将x21寄存器中的值赋给x3（存放函数地址）
+.text:00000000004008B0   MOV    X2, X22 ; 将x22寄存器中的值赋给x2（部署3参）
+.text:00000000004008B4   MOV    X1, X23 ; 将x23寄存器中的值赋给x1（部署2参）
+.text:00000000004008B8   MOV    W0, W24 ; 将w24寄存器中的值赋给w0（部署1参）
+.text:00000000004008BC   ADD    X19, X19, #1 ; x19寄存器中的值加一
+.text:00000000004008C0   BLR    X3      ; 跳转至x3寄存器中存放的地址
+.text:00000000004008C4   CMP    X19, X20 ; 比较x19寄存器与x20寄存器中的值
+.text:00000000004008C8   B.NE   loc_4008AC ; 将x21寄存器中的值赋给x3（存放函数地址）
+```
+
+我们需要x3为save_mprotect_addr，x0为save_shellcode_addr，x1为0x1000，x2为7
+
+即x21为save_mprotect_addr，w24为save_shellcode_addr，x23为0x1000，x22为7。
+
+```assembly
+.text:00000000004008CC loc_4008CC       ; CODE XREF: sub_400868+3C↑j
+.text:00000000004008CC   LDP   X19, X20, [SP,#0x10] ; 将sp+0x10处数据给x19，sp+0x18处数据给0x20
+.text:00000000004008D0   LDP   X21, X22, [SP,#0x20] ; 将sp+0x20处数据给x21，sp+0x28处数据给0x22
+.text:00000000004008D4   LDP   X23, X24, [SP,#0x30] ; 将sp+0x30处数据给x23，sp+0x38处数据给0x24
+.text:00000000004008D8   LDP   X29, X30, [SP],#0x40 ; 将sp处数据给x29，sp+0x8处数据给0x30
+.text:00000000004008DC   RET   ; 返回x30寄存器中存放的地址
+```
+
