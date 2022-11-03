@@ -1,0 +1,489 @@
+---
+layout: post
+title:  BOP(Block Oriented Programming: Automating Data-Only Attacks)
+date:   2022-11-03 00:08:01 +0300
+image:  2022-11-03-dog.jpg
+tags:   [paper]
+---
+
+# BOP
+
+## 介绍
+
+控制流完整性仍然允许攻击者在两个维度上控制执行：分析的不精确性和 CFI 的无状态性；纯数据攻击允许攻击者任意影响条件分支。使用 CFI，漏洞利用变得高度依赖程序，因为可访问的gadget受到 CFI 策略的严格限制，因此漏洞利用必须遵循 CFG 中的有效路径。
+
+所以提出了 BOPC（**Block Oriented Programming Compiler**），这是一个自动框架，用于评估程序在强控制流劫持缓解下的剩余攻击面。BOPC 将“exploit”编译为程序trace，该trace在原始程序的 CFG 之上执行。为了灵活地表达期望的漏洞利用，BOPC 提供了图灵完备的高级语言：SPloit 语言（SPL）。BOPC 将 SPL 的payload和entry作为输入，并通过对 SPL 的payload进行编码的程序返回跟踪。
+
+首先，BOPC 将 SPL 有效负载转换为单个语句的约束，并且对于每个语句，在目标二进制文件中搜索满足这些约束的基本块（称为*候选块*）。此时，SPL 从底层架构中抽象出寄存器分配。其次，BOPC 为每个 SPL 语句推断资源（寄存器和状态）映射，遍历候选块集并将它们转换为可用于执行给定 SPL 语句的具体实例化的*功能块。**三、BOPC通过dispatcher blocks*构建连接各个功能块的trace. 由于映射过程是 NP 难的，为了在合理的时间内找到解决方案，BOPC 首先修剪每个语句的功能块集以限制搜索空间，然后在搜索时使用基于各个功能块接近度的排名作为启发式调度小工具。
+
+## 假设和威胁模型
+
+我们的威胁模型由一个具有已知内存损坏漏洞的二进制文件组成，该漏洞受到最先进的控制流劫持缓解措施的保护，例如 CFI 和*影子堆栈*。此外，二进制文件还通过 DEP、ASLR 和 Stack Canaries 进行了强化。
+
+我们假设目标二进制文件具有任意内存写入漏洞。攻击者可以将任何值写入任何（可写）地址，这称为*任意内存写入原语*（AWP）。为了绕过诸如 ASLR 之类的概率防御，我们假设攻击者可以访问信息泄漏，即允许她从称为*任意内存读取原语*(ARP) 的任何内存地址读取任何值的漏洞。
+
+我们还假设存在一个入口点，即程序在完成所有 AWP（和 ARP）后自然到达的位置。因此 BOPC 不需要代码指针损坏即可到达入口点。确定入口点被认为是漏洞发现过程的一部分。
+
+这些假设使 BOPC 能够将有效负载注入目标二进制文件的地址空间，修改其内存状态以执行有效负载。BOPC 假设 AWP（和/或 ARP）可能会被触发多次以修改目标二进制文件的内存状态。状态修改完成后，SPL 有效负载将在不进一步使用 AWP（和或 ARP）的情况下执行。
+
+## 设计
+
+1. SPL 有效载荷
+2. 选择功能块
+3. 搜索调度程序块
+4. 缝合防喷器小工具
+
+首先，BOPC 提供了一种称为 SPL 的漏洞利用编程语言，使分析人员能够独立于目标程序或底层架构定义漏洞利用。其次，为了自动发现 SPL 小工具，BOPC 从目标程序中找到实现各个 SPL 语句的基本块，称为*功能块*。第三，为了以符合 CFI 和影子堆栈的方式将基本块链接在一起，BOPC 在目标程序中搜索连接相邻功能块对的基本块序列，我们称之为*调度程序块*。第四，BOPC 模拟 BOP 链以生成一个有效负载，该有效负载从选定的 AWP 实现该 SPL 有效负载。
+
+BOPC 设计基于两个关键思想：*面向块的编程*和*块约束摘要*。首先，BOP 构造从目标程序的有效 CFG 中的基本块序列中利用称为 BOP 链的程序。每个 BOP gadget是一个功能块，它在 SPL 有效负载中实现一个语句，以及零个或多个调度程序块，它们以与 CFG 一起编译的方式将该功能块连接到下一个 BOP 小工具。
+
+其次，BOPC 将每个基本块从单独的指令抽象为*块约束摘要*，使块能够以各种不同的方式使用。也就是说，单个块可以通过将不同的寄存器组用于不同的目的来执行多个功能和/或分派操作。也就是说，以可以满足SPL语句的方式修改寄存器的基本块可以用作功能块，否则它可以被认为用作调度程序块。
+
+BOPC 利用块约束摘要在多个上下文中应用块。有两种情况：候选调度程序块的摘要约束表明它将通过功能块修改寄存器状态集和/或内存状态，称为*SPL 状态*，或者不会，使计算能够继续进行而不会受到干扰功能块的效果。
+
+BOP 和 ROP 之间的一个重要区别是计算 BOP 链的问题是 NP-hard。传统的 ROP 假设间接控制流可以针对内存中的任何可执行字节，而 BOP 必须遵循通过 CFG 的合法路径来处理任何块链，从而需要自动化。
+
+### 表达有效载荷
+
+BOPC 提供了一种称为 SPloit 语言的编程语言，它允许分析人员以一种独立于目标程序或处理器架构的紧凑高级语言来表达漏洞利用载荷。
+
+SPL 的架构独立性具有重要的优势。首先，相同的有效payload可以在不同的 ISA 或操作系统下执行。其次，SPL 使用一组虚拟寄存器，通过保留的易失性变量进行访问。
+
+SPL 的环境不同于传统语言的环境。我们的编译器不是直接在 CPU 上运行代码，而是将有效负载编码为指令到功能块的映射。也就是说，底层运行时环境是目标二进制文件及其程序状态，其中有payload作为底层二进制文件的副作用执行。
+
+### 选择功能块
+
+要为 SPL 有效负载生成 BOP 链，BOPC 必须找到实现 SPL 有效负载中每个语句的块序列，称为功能块。
+
+从概念上讲，BOPC 必须将每个块与每个 SPL 语句进行比较，以确定该块是否可以实现该语句。但是，块是机器代码，SPL 语句是高级程序语句。BOPC 计算**块约束摘要**，它定义了块对 SPL 状态的可能影响。块约束摘要灵活地提供了与 SPL 语句匹配的块，因为 SPL 语句及其虚拟寄存器到块及其对寄存器和状态的约束有多种可能的映射。
+
+每个基本块的约束摘要是通过**隔离和符号执行**得到的。执行基本块的效果会创建一组约束，将输入映射到结果输出。此类约束涉及寄存器、内存位置、跳转类型和外部操作（例如，库调用）。
+
+### 寻找 BOP gadgets
+
+功能块和调度程序块的组合称为**BOP gadgets**。但是，两个功能块之间的调度程序路径可能不存在，因为它们之间的 CFG 中没有合法路径，或者由于运行时约束不满足，控制流无法到达下一个块。
+
+BOP gadgets是易变的：小工具的可行性会根据目标二进制文件的先前gadgets的选择而改变。选择合适的功能块序列的问题，例如在 SPL 有效载荷中每个可能的控制流传输之间存在调度程序路径，是 NP 难的。
+
+我们提出了几种启发式方法和优化方法，以在合理的时间内找到解决方案。BOPC 利用基本块**邻近度**作为“排名”调度程序路径的指标，并将此信息组织到称为**delta图**的特殊数据结构中。
+
+### 搜索调度程序块
+
+当每个功能块执行一个语句时，BOPC 必须将多个功能块链接在一起以执行 SPL 有效负载。功能块通过零个或多个基本块连接，这些基本块不会破坏迄今为止计算的 SPL 状态。
+
+找到这样的块是具有挑战性的，因此，我们提出了一种称为**delta graph**的图数据结构，来表示搜索调度程序块的状态。增量图为每个功能块存储到下一个候选块的最短路径。
+
+delta图是一个多部分的有向图，每个有效负载语句都有一组功能块节点。两个功能块之间的边表示从一个功能块移动到另一个功能块的执行基本块的*最小数量，同时避免破坏块。*
+
+计算 CFG 中两个基本块之间的最短路径面临一个挑战：虽然 CFG 静态允许多个目标，但在运行时它们是上下文敏感的，并且只有一个具体目标。
+
+我们的上下文相关最短路径算法是 **Dijkstra 最短路径算法的递归版本**，可避免所有破坏块。最初，CFG 上的每条边的成本为 1。当它遇到带有调用指令的基本块时，它递归地计算从调用函数的入口块 (Be) 开始的最短路径。如果目标块 Bd 在被调用方内部，则最短路径是从开头到 Be 和从 Be 到 Bd 的两条单独最短路径的串联。否则，我们的算法会找到从 Be 到最近返回点的最短路径，并将该值用作该被调用者的边权重。
+
+在创建delta图之后，算法从每个集合（即有效负载语句）中精确选择一个节点（即功能块），以最小化生成的诱导子图的总权重。
+
+### 缝合BOP gadgets
+
+为了在两个功能块之间找到一个调度程序，BOPC 利用*了 concolic execution*，它收集了将执行引导到下一个功能块所需的约束。
+
+```assembly
+# simulate_edge(): This function is invoked for every edge in the induced subgraph Hk and it
+#       performs a symbolic execution from one accepted block to another. Essentially, its
+#       purpose is to find a "dispatcher gadget" (i.e., a sequence of non-clobbering blocks)
+#       between two SPL statements.
+#
+#       Unfortunately, the symbolic execution engine, may take forever to move from the one
+#       accepted block to the other To address this issue, we "guide" the symbolic execution,
+#       by selecting the exact subpath that will follow. This path however, is just an 
+#       estimation so it may not be correct. Therefore, simulate_edge() quickly generates
+#       candidate subpaths, starting from the shortest one.
+#
+#       simulate_edge() generates PARAMETER_P different subpaths. However, if we let it
+#       generate all possible paths, the result will be the same with the unguided symbolic
+#       execution.
+#
+# :Arg currb: Address of the current basic block
+# :Arg nextb: Address of the basic block that we want to reach
+# :Arg uid: Current UID of the payload
+# :Arg loopback: A boolean indicating whether we should simulate a path or a loop
+# :Ret: If function can extend the path, it returns the basic block path. Otherwise, it returns
+#   None.
+#
+def simulate_edge( self, currb, nextb, uid, loopback=False ):
+    dbg_prnt(DBG_LVL_2, "Simulating edge (0x%x, 0x%x) for UID = %d" % (currb, nextb, uid))
+
+
+    # indicate the boundaries 
+#        self.__blk_start = currb
+#        self.__blk_end   = currb + ADDR2NODE[currb].size
+#
+#        print 'BLK START', hex(self.__blk_start)
+#        print 'BLK ENDDD', hex(self.__blk_end)
+
+
+#        for a in self.__imm: print 'self.__imm', hex(a)        
+
+    # Check if current basic block matches with the address of the current state
+    if currb != self.__state.addr:              # base check            
+        raise Exception('Illegal transition from current state ' 
+                    '(starts from 0x%x, but state is at 0x%x)' % (currb, self.__state.addr))
+
+    if loopback and currb != nextb:             # base check
+        raise Exception('Loopback mode on distinct blocks')
+
+
+    # apply any memory reservations (even if currb == nextb)   
+    if not self.__mem_RSVPs( self.__state, cur_uid=uid, cur_blk=currb ):
+        return None
+
+
+    # print 'SELF CON', self.__state.se.constraints
+
+
+
+    self.__disable_hooks = True
+    
+    for var in self.FOO:
+        # print ' var', str(var)
+        if var.shallow_repr() in SYM2ADDR:
+            addr, size = SYM2ADDR[var.shallow_repr()]
+
+            MEM = self.__mread(self.__state, SYM2ADDR[var.shallow_repr()][0], 
+                                             SYM2ADDR[var.shallow_repr()][1])
+
+            if "mem_" not in MEM.shallow_repr():
+                self.__init_mem(self.__state, addr, size)
+    
+                MEM = self.__mread(self.__state, SYM2ADDR[var.shallow_repr()][0], 
+                                                 SYM2ADDR[var.shallow_repr()][1])
+
+
+           # print 'QQ', SYM2ADDR[var.shallow_repr()], '%%%%', len(var), '==', len(MEM), '|', var, '?', MEM
+            
+            
+            if len(var) != len(MEM):                                    
+                error('Symbolic variable alias found but size is inconsistent. Discard current path...')                    
+
+            # if it's already a concreate value don't add a constraint
+            else:
+                # print 'ADD CONSTRAINT FOO', var, MEM
+                self.__state.add_constraints(var == MEM)
+            
+        else:
+            pass
+        
+    # print 'ok'
+
+
+    # update immutable register set
+    if self.__IR[uid]['type'] == 'regset':
+        
+        reg = [r for v, r in self.__regmap if v == '__r%d' % self.__IR[uid]['reg']][0]
+
+        dbg_prnt(DBG_LVL_3, "Adding register '%s' to the immutable set." % reg)
+        self.__imm_regs.add(reg)
+
+
+    # ---------------------------------------------------------------------
+    # Loopback mode
+    # ---------------------------------------------------------------------
+    if loopback:
+        dbg_prnt(DBG_LVL_2, "Simluation a loop, starting from 0x%x ..." % self.__state.addr)
+        
+        # guide the symbolic execution: generate P shortest loops
+        for length, loop in self.__cfg_sp.k_shortest_loops(currb, uid, PARAMETER_P):
+
+            if length > MAX_ALLOWED_SUBPATH_LEN:    # if loop is too long, discard it
+                # This won't happen as the same check happens inside path.py, but we 
+                # should keep modules independent 
+
+                dbg_prnt(DBG_LVL_3, "Loop is too big (%d). Discard current path ..." % length)
+                break
+        
+
+            mode = [SIM_MODE_FUNCTIONAL] + [SIM_MODE_DISPATCH]*(len(loop)-2) + [SIM_MODE_FUNCTIONAL]
+
+            # if we need to simulate loop multiple times, we unroll current loop by a constant
+            # factor
+            if SIMULATED_LOOP_ITERATIONS > 2:
+                loop = loop[:-1]*(SIMULATED_LOOP_ITERATIONS-1)
+                mode = mode[:-1]*(SIMULATED_LOOP_ITERATIONS-1)
+
+            # warn('LOOP IS %s' % pretty_list(loop))
+
+            # do the actual symbolic execution and verify that loop is correct
+            nextst = self.__simulate_subpath(length, loop, mode)
+
+            if nextst != None:                      # success!
+                emph("Edge successfully simulated.", DBG_LVL_2)
+
+                del self.__state                    # we don't need current state
+                self.__state = nextst               # update state
+
+                return loop                         # return subpath
+        
+
+    # ---------------------------------------------------------------------
+    # Path mode
+    # ---------------------------------------------------------------------                    
+    else:
+        # guide the symbolic execution: generate P shortest paths
+        for slen, subpath in self.__cfg_sp.k_shortest_paths(currb, nextb, uid, PARAMETER_P):
+
+            if slen > MAX_ALLOWED_SUBPATH_LEN:      # if subpath is too long, discard it
+                break
+
+
+            mode = [SIM_MODE_FUNCTIONAL] + [SIM_MODE_DISPATCH]*(len(subpath)-1)
+
+            # do the actual symbolic execution and verify if subpath is correct
+            nextst = self.__simulate_subpath(slen, subpath, mode)
+
+            if nextst != None:                      # success!
+                dbg_prnt(DBG_LVL_2, "Edge successfully simulated.")
+
+                if slen > 0:
+                    # print 'unchecked_regsets', self.unchecked_regsets
+                    self.__check_regsets(nextst)
+
+
+                del self.__state                    # we don't need current state
+                self.__state = nextst               # update state
+        
+                return subpath                      # return subpath
+
+
+            # TODO: !!!
+            #   All paths that endup in some loop here get exeuted exactly once. #
+            #   It's very hard to follow and simulate > 1 times here. We leave it
+            #   as a future work.
+
+    # we cannot simulate this edge. Try another induced subgraph
+    dbg_prnt(DBG_LVL_2, "Cannot simulate egde. Discarding current induced subgraph...")
+    
+    return None                             # no subpath to return
+```
+
+为了从 BOP 链构建 SPL 有效负载，BOPC 从 BOP 链中的第一个功能块启动 concolic 执行，从空状态开始。在每一步，BOPC 都会尝试前 K 个最短的疏散路径，直到找到到达下一个功能块的路径。相应的约束被添加到当前状态。因此，搜索会逐渐将 BOP gadget添加到 BOP 链中。
+
+## 执行
+
+BOPC 需要三个不同的输入：
+
+- 以 SPL 表示的漏洞利用载荷，
+- 运行payload的易受攻击的应用程序，
+- 易受攻击的应用程序中的入口点，这是程序自然到达的位置，在所有 AWP 完成后出现。
+
+BOPC 的输出是一系列 ( *address* , *value* , *size* ) 元组，描述了在状态修改阶段应如何修改内存以执行有效负载。
+
+### 二进制前端
+
+使用 angr 将目标二进制文件提升为 VEX 中间表示以描述应用程序的 CFG。然后，我们将每个基本块转换为块约束摘要。BOPC 在隔离环境中执行每个基本块，其中每个动作（例如，寄存器和内存访问）都受到监控。因此，BOPC 不是使用每个基本块的指令，而是将其抽象用于所有操作。（**CFGa**）
+
+### SPL 前端
+
+SPL 前端将漏洞利用负载转换为基于图的**IR**以供进一步处理。对于每个语句序列，我们基于自定义版本的Kahn拓扑排序算法构建**dependence图**，以推断所有独立语句组，这些语句可以乱序执行。
+
+print.spl
+
+```assembly
+// 
+// BOPC Evaluation
+//
+// Print an arbitrary message to stdout using write()
+//
+void payload() 
+{ 
+    string msg = "This is my random message! :)\0";
+
+    __r0 = 0;
+    __r1 = &msg;
+    __r2 = 1;
+
+
+    write( __r0, __r1, __r2 );
+
+    // return 0x?? ;s
+}
+```
+
+print.spl.ir
+
+```assembly
+@__0 entry 
+@__2 varset msg num 5468697320697320 num 6d792072616e646f num 6d206d6573736167 num 6521203a2900 
+@__4 regset 0 num 0
+@__6 regset 1 var msg
+@__8 regset 2 num 1
+@__10 call write 0 1 2
+```
+
+### 定位候选块集
+
+SPL 是一种隐藏底层 ABI 的高级语言。因此，BOPC 找到了所有可能的方法来将单个元素从 SPL 环境映射到 ABI（尽管是候选块）。
+
+一旦生成了 CFGa 和 IR，BOPC 就会搜索并标记候选基本块。要使一个块**成为候选者**，它必须与一个（或多个）有效负载语句“语义匹配”。请注意，变量赋值、无条件跳转和返回不需要基本块，因此被排除在搜索之外。
+
+所有分配或修改寄存器的语句都需要基本块对其应用相同的操作。对于**函数调用**，基本块的要求是调用相同的调用，无论是作为系统调用还是作为库调用。
+
+成功匹配后，BPC 会构建以下数据结构：
+
+- 寄存器映射图，它是一个二分无向图。两组中的节点分别代表虚拟寄存器和硬件寄存器。边缘代表它们之间的潜在关联。
+- 变量映射图，将有效负载变量与底层内存地址相关联。
+- 内存取消引用集，它包含所有被取消引用的内存地址，并且它们的值被加载到寄存器中。
+
+### 识别功能块集。
+
+对于每个 SPL 语句，BOPC 迭代地识别哪些候选块可以用作功能块。该步骤为每个候选块确定是否存在满足块约束的资源映射。
+
+BOPC 标识执行所需语句的具体硬件寄存器和内存地址集。
+
+此步骤为每个语句确定保留哪些具体寄存器和内存地址。将此信息与一组候选块合并构建每个块的 SPL 状态，从而能够移除不可满足的候选块。
+
+### 选择功能块
+
+给定功能块集 Fb，此步骤搜索执行所有有效负载语句的子集。目标是为每个 IR 语句选择一个功能块，并找到 dispather 块将它们链接在一起。
+
+生成delta图后，此步骤将定位**最小诱导子图**，该子图包含执行 SPL 有效负载的完整功能块集。如果子图没有产生解决方案，则算法尝试下一个最小诱导子图，直到找到解决方案或达到限制。
+
+如果生成的delta图没有导致解决方案，则此步骤“打乱”乱序有效负载语句并构建新的增量图。
+
+### 发现调度程序块
+
+**simulation阶段**采用各个功能块并尝试找到合适的调度程序块来组成 BOP 小工具。它为相应的调度程序块返回一组内存分配。
+
+调用 BOPC 为最小诱导子图中的每条边找到一个调度程序路径。也就是说，我们需要在 SPL 有效载荷的邻接矩阵中模拟每个控制流传输。但是，到目前为止，调度程序是基于二进制文件的执行状态构建的，因此 BOP 小工具必须与源自入口点的程序当前流相关联。
+
+查找调度程序块依赖于 **concolic**（动态符号执行(concrete and symbolic)） 执行。我们的算法利用功能块邻近度作为调度程序路径质量的指标。但是，它无法预测解决哪些约束需要指数级的时间。因此，concolic 执行选择相对于当前 BOP 链的 K 条最短调度程序路径，并按顺序尝试它们，直到产生一组可满足的约束。
+
+当simulation开始时，它还会在变量映射期间保留的位置初始化任何 SPL 变量。这些地址被标记为不可变的，因此任何意外修改都会引发异常。
+
+模拟遍历最小诱导子图，并将 SPL 状态从一个 BOP gadget逐步扩展到下一个，确保新添加的约束保持可满足。当遇到条件语句时，BOPC 会克隆当前状态并继续独立地为两条路径构建跟踪。
+
+```assembly
+# ---------------------------------------------------------------------------------------------
+# __simulate_subpath(): This internal function performs the actual symbolic execution, for
+#       the candidate subpath. It guides symbolic execution through the specific subpath.
+#
+# :Arg sublen: The length of the subpath
+# :Arg subpath: The actual subpath
+# :Arg mode: The simluation mode for each step
+# :Ret: If the subpath can be simulated successfully, function returns the new state for the
+#       symbolic execution. Otherwise, function returns None.
+#
+def __simulate_subpath( self, sublen, subpath, mode ):
+    emph("Trying subpath (%d): %s" % (sublen, 
+                    ' -> '.join(['0x%x' % p for p in subpath])), DBG_LVL_2)
+
+
+    self.__disable_hooks = False                # enable hooks
+
+    # Register the signal function handler
+    signal.signal(signal.SIGALRM, self.__sig_handler)
+
+    # clone current state (so we can revert if subpath extension fails)
+    self.stash_context()
+
+    state = self.__state.copy()
+
+    # create hte simulation manager object
+    simgr = self.__proj.factory.simulation_manager(thing=state)
+    # angr.manager.l.setLevel(logging.ERROR)
+    
+
+    found = simgr.active[0]                     # a.k.a. state
+    
+    dbg_arb(DBG_LVL_3, "BEFORE Constraints: ", found.se.constraints)
+
+    # guide the symbolic execution: move from basic block to basic block
+    for blk in subpath[1:]:
+        simgr.drop(stash='errored')             # drop errored stashes
+        signal.alarm(SE_TRACE_TIMEOUT)          # define a timeout for the SE engine
+
+
+        self.__sim_mode = mode.pop(0)
+
+        try:
+            dbg_prnt(DBG_LVL_3, "Next basic block: 0x%x" % blk)
+            # simgr.explore(find=blk)             # try to move on the next block
+            # simgr.step()
+
+
+            node = ADDR2NODE[found.addr]
+            # print 'NODE ', node, len(node.instruction_addrs)
+
+            num_inst = len(node.instruction_addrs) if node is not None else None
+            if num_inst:
+                simgr.step(num_inst=num_inst)
+
+            else:
+                NEW = simgr.step()
+                # print 'NEW', NEW, NEW.errored
+
+
+        except Exception, msg:                   
+            dbg_prnt(DBG_LVL_3, "Subpath failed. Exception raised: '%s'" % bolds(str(msg)))
+            found = None                        # nothing found
+            break                               # abort
+
+        signal.alarm(0)                         # disable alarm
+
+        if not simgr.active:
+            # print 'Stashes', simgr.stashes
+            dbg_arb(DBG_LVL_3, "Constraints: ", found.se.constraints)
+
+            dbg_prnt(DBG_LVL_3, "Subpath failed (No 'active' stashes)")
+            found = None                        # nothing found
+            break                               # abort
+    
+
+        #print 'Stashes', simgr.stashes
+
+        found = None                     # nothing found
+
+        # print 'Stashes', simgr.stashes            
+        # print 'state.satisfiable():', simgr.active[0].satisfiable()
+
+        # drop any active stashes and make found stashes, active so you
+        # can continue the search           
+        simgr.move(from_stash='active', to_stash='found', \
+                        filter_func=lambda s: s.addr == blk)
+        
+        simgr.drop(stash='active')  # stash是保存状态的列表，这里只处理active状态
+        simgr.move(from_stash='found', to_stash='active')
+                
+        
+        if simgr.active:
+            found = simgr.active[0]             # TODO: Shall we use .copy() here?
+
+            dbg_prnt(DBG_LVL_3, "Block 0x%x found!" % blk)
+            dbg_arb(DBG_LVL_3, "Constraints: ", found.se.constraints)
+            
+        # print 'FOUND IS ', found
+        # self.__sim_mode = SIM_MODE_DISPATCH
+        
+
+    if not found:                               # if nothing found, drop cloned state
+        print 'Stashes', simgr.stashes
+
+        self.unstash_context()
+        del state
+    else:            
+        self.drop_context_stash()
+        dbg_prnt(DBG_LVL_3, "Subpath simulated successfully!")
+
+    signal.alarm(0)                             # disable alarm
+
+    self.__disable_hooks = True                 # hooks should be disabled        
+
+    return found                                # return state (if any)
+```
+
+### 综合利用
+
+如果simulation模块返回解决方案，最后一步是将执行跟踪编码为目标二进制文件中的一组内存写入。
+
+## 讨论和未来的工作
+
+BOPC 受限于基本块的粒度。也就是说，基本块的组合可能会导致执行所需的 SPL 语句，而单个块可能不会。
+
+BOPC 设置了几个由用户输入定义的上限。这些可配置边界包括 (1) SPL 有效载荷排列 P、(2) 连续块 L 的长度、(3) 从增量图 N 中提取的最小诱导子图的上限、(4) 一对功能块之间的调度程序路径的上限K. 这些上限以及符号执行的超时，减少了搜索空间，但修剪了一些可能有效的解决方案。
