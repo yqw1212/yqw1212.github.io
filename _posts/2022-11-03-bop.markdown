@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  BOP(Block Oriented Programming: Automating Data-Only Attacks)
+title:  BOP(Block Oriented Programming:Automating Data-Only Attacks)
 date:   2022-11-03 00:08:01 +0300
 image:  2022-11-03-dog.jpg
 tags:   [paper]
