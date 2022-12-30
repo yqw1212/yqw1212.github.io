@@ -6,6 +6,8 @@ image:  2022-10-12-night.jpg
 tags:   [algorithm]
 ---
 
+challenge
+
 ![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/master/img/codeplus/1.png)
 
 ![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/master/img/codeplus/2.png)
