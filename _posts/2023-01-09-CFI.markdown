@@ -1,0 +1,91 @@
+---
+layout: post
+title:  使用Clang中的控制流完整性(CFI)对抗攻击
+date:   2023-01-09 00:08:01 +0300
+image:  2023-01-09-ladybug.jpg
+tags:   [note]
+---
+
+clang 在编译时提取控制流图 (CFG)，以确定哪些函数可以合法地相互调用。然后，此信息用于生成代码，以验证由call 或 callq 指令表示的函数调用。在运行时，根据此信息对调用进行验证，并在检测到非法调用或返回时中断程序执行，以避免攻击者破坏程序的控制流。
+
+并不是所有的执行痕迹都可以通过静态分析提取出来；在某些情况下，部分执行跟踪只能在运行时确定。例如，在用 C++ 编写的软件中调用虚函数或类转换只能在执行期间确定。对于这些情况，clang 依赖于 LTO（链接时间优化）信息。要编译支持 CFI 的代码，必须在启用 LTO 的情况下进行编译。
+
+password.c
+
+```assembly
+#include <stdio.h>
+#include <string.h>
+
+#define AUTHMAX 4
+
+struct auth {
+    char pass[AUTHMAX];                
+    void (*func)(struct auth*);        
+};
+
+void success() {
+    printf("Authenticated successfully\n");
+}
+
+void failure() {
+    printf("Authentication failed\n");  
+}
+
+void auth(struct auth *a) {
+    if (strcmp(a->pass, "pass") == 0)  
+        a->func = &success;            
+    else                               
+        a->func = &failure;            
+}
+
+int main(int argc, char **argv) {
+    struct auth a;                     
+    a.func = &auth;                    
+    
+    printf("Enter your password:\n");  
+    scanf("%s", &a.pass);              
+    a.func(&a);                        
+} 
+```
+
+Compiling without CFI support:
+
+```assembly
+clang -o password_nocfi password.c
+```
+
+### Exploiting the vulnerability and taking the execution flow
+
+0x401150是success()函数的地址
+
+```assembly
+perl -e 'print "a"x8 . "\x50\x11\x40"' | ./password_nocfi
+```
+
+Let’s try again, but now compiling with CFI support:
+
+```assembly
+clang -o password password.c -flto -fsanitize=cfi -fvisibility=default
+```
+
+Ubuntu16.04的Clang3.5会报错
+
+```assembly
+clang: error: unsupported argument 'cfi' to option 'fsanitize='
+```
+
+可以使用Ubuntu20.04的clang10.0.0
+
+![]({{site.baseurl}}/img/2023-01-09-bypass.png)
+
+no_cfi的main函数
+
+![]({{site.baseurl}}/img/2023-01-09-no_cfi.png)
+
+cfi的main函数
+
+![]({{site.baseurl}}/img/2023-01-09-cfi.png)
+
+在0x401227将auth() 地址加载到 %rcx 寄存器中，该信息是在编译时基于 CFG 生成的。
+
+然后在0x401231比较两个地址，如果它们相等则跳转到正确的地址并调用存储在指针描述的地址处的函数。否则它将执行一条未定义的指令 ( ud2)，这将导致程序中止，从而避免攻击者引入的非法行为。 
