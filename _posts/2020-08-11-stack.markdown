@@ -3,7 +3,7 @@ layout: post
 title:  栈利用之对抗linux保护
 date:   2020-08-11 00:01:01 +0300
 image:  2020-08-11-girl.jpg
-tags:   [ctf,reverse]
+tags:   [ctf,pwn]
 ---
 
 # Linux保护技术概述
