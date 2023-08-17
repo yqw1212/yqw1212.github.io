@@ -1,0 +1,987 @@
+---
+layout: post
+title:  vT
+date:   2023-08-17 00:08:01 +0300
+image:  2023-08-17-woman.jpg
+tags:   [note]
+---
+
+VT，就是虚拟化技术(Virtualization Technology)的缩写。Intel VT就是指Intel的虚拟化技术。这种技术简单来说就是可以让一个CPU工作起来就像多个CPU并行运行，从而使得在一台电脑内可以同时运行多个操作系统。只有部分Intel的CPU才支持这种技术。
+
+​		IntelVT虚拟化技术和多任务（Multitasking）、Hyper-Threading超线程技术是完全不同的。多任务是指在一个操作系统中多个程序同时并行运行，而在虚拟化技术中，你可以拥有多个独立的操作系统同时运行，每一个操作系统中都有多个程序运行，每一个操作系统都运行在一个虚拟的CPU或虚拟主机（虚拟机）上。而Hyper-Threading超线程只是在SMP系统（SymmetricMultiProcessing）中单CPU模拟双CPU来平衡程序运行性能，这两个模拟出来的CPU是不能分离的，只能协同工作。
+
+​        当然了，如果一个CPU同时支持Hyper-Threading和虚拟化技术的话，每一个虚拟CPU在各自的操作系统中都被看成是两个对称多任务处理的CPU。
+
+# VT分类
+
+Intel VT技术，主要由三部分技术组成：VTx、VTd和VTc。
+
+VTx是处理器技术，提供内存以及虚拟机的硬件隔离，所涉及的技术有页表管理以及地址空间的保护。
+
+VTd是处理有关芯片组的技术，它提供一些针对虚拟机的特殊应用，如支持某些特定的虚拟机应用跨过处理器I/O管理程序，直接调用I/O资源，从而提高效率，通过直接连接I/O带来近乎完美的I/O性能。
+
+VTc是针对网络提供的管理，它可以在一个物理网卡上，建立针对虚拟机的设备队列。
+
+## IntelVT-x技术
+
+增强处理器的VT虚拟化技术，包括IntelVTFlexPriority、IntelVTFlexMigration（Intel虚拟化灵活迁移技术）、ExtendedPageTables（IntelVT扩展页表）。
+
+IntelVT-x可以让一个CPU工作起来像多个CPU在并行运行，从而使得在一台物理服务器内可以同时运行多个操作系统。能够降低（甚至消除）多个虚拟机操作系统之间的资源争夺和限制，从硬件上极大地改善虚拟机的安全性和性能，有助于提高基于软件的虚拟化解决方案的灵活性与稳定性。IntelVT-x技术可以消除VMM（VirtualMachineMonitor虚拟机监视器）参与虚拟机“中断”请求的处理与特定指令的执行，这样VMM操作和控制虚拟机时，将更加快速、可靠和安全。
+
+此外，IntelVT-x具备的虚拟机迁移特性还可为IT投资提供有力保护，并进一步提高故障切换、负载均衡、灾难恢复和维护的灵活性。
+
+IntelVTFlexPriority（灵活优先级）：当处理器执行任务时，往往会收到其它设备或应用发出的请求或“中断”命令。为了最大程度减少对性能的影响，处理器内的一个寄存器专用来监控任务优先级，只有优先级高于当前运行任务的请求或“中断”才被及时处理。
+
+IntelVTFlexMigration（灵活迁移）：虚拟化能够在无需停机的情况下，将运行中的虚拟机在物理服务器之间进行迁移。借助此项技术，管理程序能够在迁移池内的所有服务器中建立一套一致的指令，实现工作负载的无缝迁移。需注意的是，在不同厂商、不同型号的处理器之间迁移，可能由于指令集不同而出现故障或问题。
+
+ExtendedPageTables（扩展页表）：为了降低实现内存虚拟化的难度和提升内存虚拟化的性能，ExtendedPageTables直接在硬件上支持虚拟机内存的逻辑地址->虚拟机内存的物理地址->物理服务器内存的物理地址的两次转换。
+
+IntelVT-x已经扩展到了Intel多个产品系列中，包括Pentium、Celeron、Corei3、Corei5、Corei7、Core2Duo、CoreSolo、Core2Extreme、Core2Quad、Xeon、Quark、Atom、Itanium。
+
+## IntelVT-d技术
+
+支持直接I/O访问的IntelVT虚拟化技术。
+
+如果每台服务器上部署更多的虚拟机，虚拟机数据进出系统的I/O流量就会增加并且更趋复杂。如果没有硬件支持，VMM必须直接参与每项[I/O操作](https://baike.baidu.com/item/I%2FO操作/469761?fromModule=lemma_inlink)，不仅会减缓数据传输速度，还会由于VMM的频繁活动而增大服务器处理器的负载。这就如同在一个繁忙的停车场，每位车主都不得不通过独一的进出口，并且只由独一的门卫放行。这样不仅会耽误车主的时间，也会使门卫工作紧张无法处理其他事务。英特尔芯片组的IntelVT-d技术可以出色地解决上述问题。
+
+IntelVT-d通过VMM将特定[I/O设备](https://baike.baidu.com/item/I%2FO设备/9688581?fromModule=lemma_inlink)安全分配给特定虚拟机来实现，从而减少VMM参与管理I/O流量的工作，不但加速了数据传输，而且消除了大部分的性能开销。每个I/O设备在系统内存中都有一个专用区域，只有该I/O设备及分配到该设备的虚拟机才能对该内存区域进行访问。
+
+VMM完成初始分配之后，数据即可直接在虚拟机与为其分配的I/O设备之间进行传输。这样，就加快了I/O的流动，减少VMM活动及服务器处理器的负载。此外，由于特定设备或虚拟机的I/O数据内存区不能被其它硬件或虚拟机访问，系统的安全性与可用性也得到了增强。
+
+## IntelVT-c技术
+
+支持网络连接的Intel虚拟化技术，包括虚拟机设备队列（VMDq）、虚拟机直接互连（VMDc）。
+
+随着企业在虚拟化环境中部署越来越多的应用，并利用实时迁移来均衡负载或提升可用性，对虚拟化I/O设备的要求也在显著提高。通过将广泛的硬件辅助特性集成到I/O设备（该设备用于保持服务器与数据中心网络、存储基础设施及其它外部设备的连接）中，IntelVT-c可针对虚拟化进一步优化网络。这套技术组合的功能与邮局非常相似：将收到的信件、包裹分门别类，然后投递到各自的目的地。IntelVT-c在专用网络芯片上执行这些功能，大幅提高了交付速度，减少了VMM与服务器处理器的负载。IntelVT-c包括以下两项关键技术（当前所有的英特尔万兆服务器网卡及千兆服务器网卡均支持）。
+
+虚拟机设备队列（VMDq）：最大限度提高I/O吞吐率。在传统服务器虚拟化环境中，VMM必须对每个单独的数据包进行分类，并将其发送到相应的虚拟机。这样会占用大量的处理器周期。而借助VMDq，该分类功能可由英特尔服务器网卡内的专用硬件来执行，VMM只需负责将预分类的数据包组发送到相应的虚拟机。这将降低I/O延迟，使处理器获得更多的可用周期来处理业务应用。IntelVT-c可将[I/O吞吐量](https://baike.baidu.com/item/I%2FO吞吐量/451388?fromModule=lemma_inlink)提高一倍以上，使虚拟化应用达到接近物理服务器的吞吐率。
+
+虚拟机直接互连（VMDc）：大幅提升虚拟化性能。VMDc支持虚拟机直接访问网络I/O硬件，从而显著提升虚拟机性能。如：通过单个英特尔万兆服务器网卡，可为10个虚拟机中的每个虚拟机分配一个受保护的、1Gb/s的专用链路。这些通信链路直接绕过了VMM交换机，进一步提升了I/O性能并减少服务器处理器的负载。 [2]
+
+驱动代码基本框架
+
+```assembly
+#include <ntddk.h>
+
+VOID DriverUnload(PDRIVER_OBJECT driver){
+	DbgPrint("Driver is unloading...\r\n");
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT driver, PUNICODE_STRING RegistryPath){
+	__asm int 3
+	DbgPrint("Driver Entered!\r\n");
+	driver->DriverUnload = DriverUnload;
+
+	return STATUS_SUCCESS;
+}
+```
+
+SOURCES写法
+
+I386_SOURCES=i386\vtasm.asm
+
+一些命令
+
+link /lib vtasm.obj
+
+在汇编中声明C的函数
+
+fun Proto
+
+名词解释
+
+| VT VMX |                        | 保护模式，段页寻址    |
+| ------ | ---------------------- | --------------------- |
+| VMM    | host，root，hypervisor | ring0，kernel，driver |
+| VM     | guest，non-root        | ring3，user，app      |
+
+寄存器
+
+| 通用寄存器 | 段寄存器 | 表寄存器 | 控制寄存器 | 调试寄存器 | MSR  |
+| ---------- | -------- | -------- | ---------- | ---------- | ---- |
+| eax        | es       | gdtr     | cr0        | dr0        |      |
+| ecx        | cs       | idtr     | cr1        | dr1        |      |
+| edx        | ss       |          | cr2        | dr2        |      |
+| ebx        | ds       |          | cr3        | dr3        |      |
+| esp        | fs       |          | cr4        | dr4        |      |
+| ebp        | gs       |          | cr5        | dr5        |      |
+| esi        | ldtr     |          | cr6        | dr6        |      |
+| edi        | tr       |          | cr7        | dr7        |      |
+| eip        |          |          | cr8        | dr8        |      |
+| eflags     |          |          |            |            |      |
+
+# 虚拟机架构
+
+**描述**：虚拟机扩展定义了对IA-32处理器上的虚拟机的处理器级支持，支持**Virtual-machine monitors (VMM)** 和**Guest software**这两类主要的软件。
+
+## Virtual-machine monitors (VMM)
+
+描述：
+
+1. VMM充当主机，完全控制处理器和其他平台硬件。
+2. VMM为Guest software提供了虚拟处理器的抽象，并允许它直接在逻辑处理器上执行。
+3. VMM能够保留对处理器资源、物理内存、中断管理和I/O的选择性控制。
+4. 它是负责与虚拟机进行交互的管理器，当虚拟机发出一条指令时，会被VMM捕捉到，然后VMM会模拟执行这条指令，并将结果返回给虚拟机。
+5. 因为VMM需要有执行0环指令的权限，因此VMM需要运行在0环。
+6. 如果用户要在虚拟机中获得使用VT的权限，需要先在设置中开启相关选项。
+
+## Guest software
+
+描述：
+
+1. 每个虚拟机（VM）都是一个Guest software环境，由操作系统（OS）和应用软件组成。
+2. 每个虚拟机独立于其他虚拟机运行，并在同一接口上使用物理平台提供的处理器、内存、存储器、图形和I/O。
+3. 软件的行为就像它在没有VMM的平台上运行一样。
+4. 在虚拟机中执行的软件必须以较低的权限运行，以便VMM可以保留对平台资源的控制。
+
+# VMX
+
+描述：处理器对虚拟化的支持是通过一种称为VMX操作的处理器操作形式提供的。
+
+VMX操作有两种：
+
+1. VMX root
+2. VMX non-root
+
+通常，VMM将在VMX root中运行，而Guest software将在VMX non-root中运行。VMX root和VMX non-root之间的转换称为**VMX转换**。VMX转换有两种。过渡到VMX non-root称为**VM entries**。从VMX non-root过渡到VMX root称为**VM exits**。
+
+## VMX root
+
+描述：进入VMX root模式后，CPU唯一的区别是能够执行VMX指令，并能够有限地向部分控制寄存器中加载值。
+
+## VMX non-root
+
+描述：
+
+1. VMX non-root中的处理器行为受到限制和修改，以促进虚拟化实现。
+2. 某些指令(包括新的VMCALL指令)和事件会导致虚拟机退出，而不是通常的操作。这是由于这些虚拟机出口替换了普通行为，VMX non-root中的软件功能受到限制。正是这个限制允许VMM保留对处理器资源的控制。
+3. 由于不存在标志位表示当前系统是否处于VMX non-root状态，因此没有软件能够以此判断自己是否在虚拟机中。
+
+# 支持检测
+
+**三个因素**决定了系统是否支持VT：
+
+1. cpuid指令的返回值
+
+   **简单来说就是：**
+
+   1）将EAX置1
+
+   2）执行cpuid指令
+
+   3）查看ecx的下标第5位是否为1（1表示支持，0表示不支持）
+
+   **注意**：cpuid为3环指令，可以在OD中直接执行。
+
+2. IA32_FEATURE_CONTROL MSR
+
+   IA32_FEATURE_CONTROL MSR的第0位为锁定位，如果为0，即使cpu支持VT，也无法启用，此时，尝试在虚拟机设置中勾选VT时，会显示「此主机支持Intel VT-x，但Intel VT-x处于禁用状态」。
+
+3. Cr0 & Cr4
+
+   进入VT模式前，需要保证Cr0的PE位、PG位和NE位为1，即保证系统开启了保护模式和页保护模式，且启用了x87 协处理器错误的内部报告机制；Cr4的VMXE位（第13位）是用户可控的，表示系统是否进入VT模式，进入VT模式前需要手动置1，否则会触发保护异常，且退出VT模式前无法更改该标志位。
+
+# VT生命周期
+
+描述：
+
+1. 软件通过执行VMXON指令进入VMX操作。
+2. 使用VM entry，VMM可以将Guest输入到虚拟机中(一次一个)。VMM使用VMLAUNCH和VMRESUME指令开启虚拟机入口，并在需要时通过VM exit重新获得控制权。
+3. VM exit传输信号到VMM指定的入口点，VMM可以针对虚拟机退出的原因采取相应的操作，然后使用VM entry返回到虚拟机。
+4. 最终，VMM可能会决定关闭自己，并离开VMX的运行。它通过执行VMXOFF指令来实现。
+
+将这个流程比喻为：
+
+1. 开锁（将Cr4的VMXE位置1）
+2. 开柜门（VMXON）
+3. 拔电源（VMCLEAR，相当于初始化）
+4. 选中机器（VMPTRLOAD，选择需要处理的guest机）
+5. 装机（设置VMCS，通过VMWRITE）
+6. 开机（VMLAUNCH）
+7. 拔电源（依然是VMCLEAR）
+8. 关柜门（VMXOFF）
+9. 关锁（将Cr4的VMXE位置0）
+
+# VMXE
+
+描述：在进入VMX模式前，需要将Cr4的VMXE位置1，告知他人系统已进入VMX模式，否则会触发保护异常，且在退出VMX模式前无法更改该标志位。
+
+```assembly
+typedef union{
+	struct{
+		unsigned VME:1;
+		unsigned PVI:1;
+		unsigned TSD:1;
+		unsigned DE:1;
+		unsigned PSE:1;
+		unsigned PAE:1;
+		unsigned MCE:1;
+		unsigned PGE:1;
+		unsigned PCE:1;
+		unsigned OSFXSR:1;
+		unsigned PSXMMEXCPT:1;
+		unsigned UNKONOWN_1:1;		//These are zero
+		unsigned UNKONOWN_2:1;		//These are zero
+		unsigned VMXE:1;			//It's zero in normal
+		unsigned Reserved:18;		//These are zero
+		//unsigned Reserved_64:32;
+	};
+}_CR4;
+```
+
+# VMXON
+
+汇编指令，用于进入VMX操作模式。
+
+进入VMX模式前需要做的事情有：
+
+1. 使用**CPUID**指令查看系统是否支持
+
+2. 查看相关的MSR寄存器确定VMX支持能力
+3. 创建一个**4KB对齐的内存**，大小由**IA32_VMX_BASIC MSR**指定（称作**VMXON region**）。
+4. 清除申请内存的前四个字节，并设置**版本标识符**（IA32_VMX_BASIC MSR低4字节）
+5. 确保**Cr0**的PE位、PG位为1
+6. 确保**Cr4**的VMXE位为1
+7. 确保**IA32_FEATURE_CONTROL MSR**的Lock位为1（BIOS设置）
+8. 以申请内存的**物理地址**作为操作数，并在执行后检查**CF位是否为0**
+
+其中，第1、5、6、7点已经学习过，第2点目前来说不重要，先重点关注3、4、8这三点。
+
+## VMXON region
+
+在执行VMXON前，需要申请一块内存，用于实现VMX相关功能，例如存储VMM相关信息，由CPU负责维护，这块内存被称为VMXON region。
+
+VMXON region具体大小可从IA32_VMX_BASIC MSR中读取（偏移为480H），第44:32位形成的整数即所需大小。申请完内存后，需要将前四个字节设置为版本标识符（第30:0位）
+
+在进入VMX模式时，需要将这块内存的物理地址作为VMXON的参数，并在执行后检查CF位是否为0。
+
+# VMCS
+
+全称：virtual-machine control data structures
+
+描述：可参考Intel开发手册卷3第24章。
+
+1. 逻辑处理器在VMX操作时使用虚拟机控制数据结构（virtual-machine control data structures，VMCSs）。它们管理进入和退出VMX non-root(虚拟机入口和虚拟机出口)的过渡，以及VMX non-root中的处理器行为。这个结构由新的指令VMCLEAR、VMPTRLD、VMREAD和VMWRITE操作。
+2. VMX需要为每个虚拟机分配一个VMCS结构，将虚拟机信息保存在一个4KB对齐的内存页上（称作VMCS region），这块内存的第11:0位必须为0。
+3. 同一时刻，可以存在多个active VMCS，但最多只能存在一个current VMCS。
+
+**VMCLEAR**：初始化VMCS
+
+**VMPTRLD**：选中一个VMCS作为current VMCS，需要提供其物理地址作为参数，执行之后，其他VMCS切换到active状态
+
+**VMWRITE**：用于设置VMCS的各个字段，可以理解为填入VMCS的基本信息。由于在不同版本系统中相同字段的位置可能不同，因此没有采用直接对内存进行读写的方式来设置字段。
+
+## Fields
+
+描述：VMCS能够大致分为以下几个域（具体可参考Intel开发手册卷3第24.4~24.9小节）
+
+1. Guest-State Area
+2. Host-State Area
+3. VM-Control Fields
+4. VM-Exit Information Fields
+
+其中，控制域又可以分为三个部分：
+
+1. VM-Execution Control Fields
+2. VM-Exit Control Fields
+3. VM-Entry Information Fields
+
+### Host-State Area
+
+描述：Host-State域用于记录部分CPU的状态信息，因为CPU是在VMM与虚拟机中来回切换运行的，所以在VMCS中既要记录主机CPU的状态，也要记录虚拟机CPU的状态，这样才能保证虚拟机正常运行。
+
+根据Intel手册，目前Host-State域需要设置的字段：
+
+1. 控制寄存器：Cr0、Cr3、Cr4
+2. 段寄存器：CS、SS、DS、ES、FS、GS、TR
+3. 基址段寄存器：FS、GS、TR、GDTR、IDTR
+4. MSR寄存器：IA32_SYSENTER_CS、IA32_SYSENTER_ESP、IA32_SYSENTER_EIP
+
+### VM-Control Fields
+
+**描述**：用于控制虚拟机行为，例如中断方式，是否启用EPT，启用I/O端口，[MSR](https://so.csdn.net/so/search?q=MSR&spm=1001.2101.3001.7020)访问限制等等。
+
+控制域相关字段不能够随意设置，需要参考MSR寄存器。
+
+vtsystem.c
+
+```assembly
+#include "vtsystem.h"
+#include "vtasm.h"
+#include "exithandler.h"
+
+VMX_CPU g_VMXCPU;
+
+static ULONG  VmxAdjustControls(ULONG Ctl, ULONG Msr){
+    LARGE_INTEGER MsrValue;
+    MsrValue.QuadPart = Asm_ReadMsr(Msr);
+    Ctl &= MsrValue.HighPart;     /* bit == 0 in high word ==> must be zero */
+    Ctl |= MsrValue.LowPart;      /* bit == 1 in low word  ==> must be one  */
+    return Ctl;
+}
+
+void __declspec(naked) GuestEntry(){
+	 __asm{
+        mov ax, es
+        mov es, ax
+
+        mov ax, ds
+        mov ds, ax
+
+        mov ax, fs
+        mov fs, ax
+
+        mov ax, gs
+        mov gs, ax
+
+        mov ax, ss
+        mov ss, ax
+    }
+	 Vmx_VmCall();
+}
+
+void SetupVMCS(){
+	ULONG GdtBase, IdtBase;
+	GdtBase = Asm_GetGdtBase();
+	IdtBase = Asm_GetIdtBase();
+
+	// 1.Guest state fields
+	Vmx_VmWrite(GUEST_CR0, Asm_GetCr0());
+    Vmx_VmWrite(GUEST_CR3, Asm_GetCr3());
+    Vmx_VmWrite(GUEST_CR4, Asm_GetCr4());
+
+    Vmx_VmWrite(GUEST_DR7, 0x400);
+    Vmx_VmWrite(GUEST_RFLAGS, Asm_GetEflags() & ~0x200);  // cli
+
+    Vmx_VmWrite(GUEST_ES_SELECTOR, Asm_GetEs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_CS_SELECTOR, Asm_GetCs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_DS_SELECTOR, Asm_GetDs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_FS_SELECTOR, Asm_GetFs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_GS_SELECTOR, Asm_GetGs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_SS_SELECTOR, Asm_GetSs() & 0xFFF8);
+    Vmx_VmWrite(GUEST_TR_SELECTOR, Asm_GetTr() & 0xFFF8);
+
+    Vmx_VmWrite(GUEST_ES_AR_BYTES,      0x10000);
+    Vmx_VmWrite(GUEST_FS_AR_BYTES,      0x10000);
+    Vmx_VmWrite(GUEST_DS_AR_BYTES,      0x10000);
+    Vmx_VmWrite(GUEST_SS_AR_BYTES,      0x10000);
+    Vmx_VmWrite(GUEST_GS_AR_BYTES,      0x10000);
+    Vmx_VmWrite(GUEST_LDTR_AR_BYTES,    0x10000);
+
+    // 重要的段寄存器信息需要在进入Guest前加载
+    Vmx_VmWrite(GUEST_CS_AR_BYTES,  0xc09b);
+    Vmx_VmWrite(GUEST_CS_BASE,      0);
+    Vmx_VmWrite(GUEST_CS_LIMIT,     0xffffffff);
+
+    Vmx_VmWrite(GUEST_TR_AR_BYTES,  0x008b);
+    Vmx_VmWrite(GUEST_TR_BASE,      0x80042000);
+    Vmx_VmWrite(GUEST_TR_LIMIT,     0x20ab);
+
+
+    Vmx_VmWrite(GUEST_GDTR_BASE,    GdtBase);
+    Vmx_VmWrite(GUEST_GDTR_LIMIT,   Asm_GetGdtLimit());
+    Vmx_VmWrite(GUEST_IDTR_BASE,    IdtBase);
+    Vmx_VmWrite(GUEST_IDTR_LIMIT,   Asm_GetIdtLimit());
+
+    Vmx_VmWrite(GUEST_IA32_DEBUGCTL,        Asm_ReadMsr(MSR_IA32_DEBUGCTL)&0xFFFFFFFF);
+    Vmx_VmWrite(GUEST_IA32_DEBUGCTL_HIGH,   Asm_ReadMsr(MSR_IA32_DEBUGCTL)>>32);
+
+    Vmx_VmWrite(GUEST_SYSENTER_CS,          Asm_ReadMsr(MSR_IA32_SYSENTER_CS)&0xFFFFFFFF);
+    Vmx_VmWrite(GUEST_SYSENTER_ESP,         Asm_ReadMsr(MSR_IA32_SYSENTER_ESP)&0xFFFFFFFF);
+    Vmx_VmWrite(GUEST_SYSENTER_EIP,         Asm_ReadMsr(MSR_IA32_SYSENTER_EIP)&0xFFFFFFFF); // KiFastCallEntry
+
+    Vmx_VmWrite(GUEST_RSP,  ((ULONG)g_VMXCPU.pStack) + 0x1000);     //Guest 临时栈
+    Vmx_VmWrite(GUEST_RIP,  (ULONG)GuestEntry);                     // 客户机的入口点
+
+    Vmx_VmWrite(VMCS_LINK_POINTER, 0xffffffff);
+    Vmx_VmWrite(VMCS_LINK_POINTER_HIGH, 0xffffffff);
+
+	// 2.Host state fields
+	Vmx_VmWrite(HOST_CR0, Asm_GetCr0());
+    Vmx_VmWrite(HOST_CR3, Asm_GetCr3());
+    Vmx_VmWrite(HOST_CR4, Asm_GetCr4());
+
+	Vmx_VmWrite(HOST_ES_SELECTOR, Asm_GetEs() & 0xFFF8);
+    Vmx_VmWrite(HOST_CS_SELECTOR, Asm_GetCs() & 0xFFF8);
+    Vmx_VmWrite(HOST_DS_SELECTOR, Asm_GetDs() & 0xFFF8);
+    Vmx_VmWrite(HOST_FS_SELECTOR, Asm_GetFs() & 0xFFF8);
+    Vmx_VmWrite(HOST_GS_SELECTOR, Asm_GetGs() & 0xFFF8);
+    Vmx_VmWrite(HOST_SS_SELECTOR, Asm_GetSs() & 0xFFF8);
+    Vmx_VmWrite(HOST_TR_SELECTOR, Asm_GetTr() & 0xFFF8);
+
+	Vmx_VmWrite(HOST_TR_BASE,      0x80042000);
+
+	Vmx_VmWrite(HOST_GDTR_BASE,    GdtBase);
+    Vmx_VmWrite(HOST_IDTR_BASE,    IdtBase);
+
+	Vmx_VmWrite(HOST_IA32_SYSENTER_CS,  Asm_ReadMsr(MSR_IA32_SYSENTER_CS)&0xFFFFFFFF);
+    Vmx_VmWrite(HOST_IA32_SYSENTER_ESP, Asm_ReadMsr(MSR_IA32_SYSENTER_ESP)&0xFFFFFFFF);
+    Vmx_VmWrite(HOST_IA32_SYSENTER_EIP, Asm_ReadMsr(MSR_IA32_SYSENTER_EIP)&0xFFFFFFFF); // KiFastCallEntry
+
+    Vmx_VmWrite(HOST_RSP,   ((ULONG)g_VMXCPU.pStack) + 0x2000);     //Host 临时栈
+    Vmx_VmWrite(HOST_RIP,   (ULONG)VMMEntryPoint);                  //这里定义我们的VMM处理程序入口
+	// 3.vm-control fields
+		// 3.1 vm execution control
+		// rdmsr 481
+        // 虚拟机运行控制域
+		Vmx_VmWrite(PIN_BASED_VM_EXEC_CONTROL, VmxAdjustControls(0, MSR_IA32_VMX_PINBASED_CTLS));
+		Vmx_VmWrite(CPU_BASED_VM_EXEC_CONTROL, VmxAdjustControls(0, MSR_IA32_VMX_PROCBASED_CTLS));
+		// 3.2 vm entry control
+        // vm entry运行控制域
+		Vmx_VmWrite(VM_ENTRY_CONTROLS, VmxAdjustControls(0, MSR_IA32_VMX_ENTRY_CTLS));
+		// 3.3 vm exit control
+        // vm exit运行控制域
+		Vmx_VmWrite(VM_EXIT_CONTROLS, VmxAdjustControls(0, MSR_IA32_VMX_EXIT_CTLS));
+}
+
+NTSTATUS StartVirtualTechnology(){
+	_CR4 uCr4;
+	_EFLAGS uEflags;
+
+    if (!IsVTEnabled())
+        return STATUS_UNSUCCESSFUL;
+	
+	*((PULONG)&uCr4) = Asm_GetCr4();
+	uCr4.VMXE = 1;
+	Asm_SetCr4(*((PULONG)&uCr4));
+
+	g_VMXCPU.pVMXONRegion = ExAllocatePoolWithTag(NonPagedPool, 0x1000, 'vmx');
+	RtlZeroMemory(g_VMXCPU.pVMXONRegion, 0x1000);
+	// rdmsr 480
+	*(PULONG) g_VMXCPU.pVMXONRegion = 1;
+	g_VMXCPU.pVMXONRegion_PA = MmGetPhysicalAddress(g_VMXCPU.pVMXONRegion);
+
+	Vmx_VmxOn(g_VMXCPU.pVMXONRegion_PA.LowPart, g_VMXCPU.pVMXONRegion_PA.HighPart);
+
+	*((PULONG)&uEflags) = Asm_GetEflags();
+    if (uEflags.CF != 0){
+        Log("ERROR:VMXON指令调用失败!",0);
+		ExFreePool(g_VMXCPU.pVMXONRegion);
+        return STATUS_UNSUCCESSFUL;
+    }
+	Log("vmxon success", 0);
+
+	g_VMXCPU.pVMCSRegion = ExAllocatePoolWithTag(NonPagedPool, 0x1000, 'vmx');
+	RtlZeroMemory(g_VMXCPU.pVMCSRegion, 0x1000);
+	// rdmsr 480
+	*(PULONG) g_VMXCPU.pVMCSRegion = 1;
+	g_VMXCPU.pVMCSRegion_PA = MmGetPhysicalAddress(g_VMXCPU.pVMCSRegion);
+
+	Vmx_VmClear(g_VMXCPU.pVMCSRegion_PA.LowPart, g_VMXCPU.pVMCSRegion_PA.HighPart);
+	Vmx_VmPtrld(g_VMXCPU.pVMCSRegion_PA.LowPart, g_VMXCPU.pVMCSRegion_PA.HighPart);
+
+	g_VMXCPU.pStack = ExAllocatePoolWithTag(NonPagedPool, 0x2000, 'stck');
+	RtlZeroMemory(g_VMXCPU.pStack, 0x2000);
+
+	SetupVMCS();
+
+
+	Vmx_VmLaunch();                     //打开新世界大门
+	//==========================================================
+
+    Log("ERROR:VmLaunch指令调用失败!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", Vmx_VmRead(VM_INSTRUCTION_ERROR))
+    
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS StopVirtualTechnology(){
+	_CR4 uCr4;
+
+	Vmx_VmxOff();
+
+	*((PULONG)&uCr4) = Asm_GetCr4();
+	uCr4.VMXE = 0;
+	Asm_SetCr4(*((PULONG)&uCr4));
+
+	ExFreePool(g_VMXCPU.pVMXONRegion);
+	ExFreePool(g_VMXCPU.pVMCSRegion);
+	ExFreePool(g_VMXCPU.pStack);
+
+    return STATUS_SUCCESS;
+}
+
+
+BOOLEAN IsVTEnabled()
+{
+    ULONG       uRet_EAX, uRet_ECX, uRet_EDX, uRet_EBX;
+    _CPUID_ECX  uCPUID;
+    _CR0        uCr0;
+    _CR4    uCr4;
+    IA32_FEATURE_CONTROL_MSR msr;
+    //1. CPUID
+    Asm_CPUID(1, &uRet_EAX, &uRet_EBX, &uRet_ECX, &uRet_EDX);
+    *((PULONG)&uCPUID) = uRet_ECX;
+
+    if (uCPUID.VMX != 1)
+    {
+        Log("ERROR: 这个CPU不支持VT!",0);
+        return FALSE;
+    }
+
+	// 2. MSR
+    *((PULONG)&msr) = (ULONG)Asm_ReadMsr(MSR_IA32_FEATURE_CONTROL);
+    if (msr.Lock!=1)
+    {
+        Log("ERROR:VT指令未被锁定!",0);
+        return FALSE;
+    }
+    Log("SUCCESS:这个CPU支持VT!",0);
+
+    // 3. CR0 CR4
+    *((PULONG)&uCr0) = Asm_GetCr0();
+    *((PULONG)&uCr4) = Asm_GetCr4();
+
+    if (uCr0.PE != 1 || uCr0.PG!=1 || uCr0.NE!=1){
+        Log("ERROR:这个CPU没有开启VT!",0);
+        return FALSE;
+    }
+
+    if (uCr4.VMXE == 1){
+        Log("ERROR:这个CPU已经开启了VT!",0);
+        Log("可能是别的驱动已经占用了VT，你必须关闭它后才能开启。",0);
+        return FALSE;
+    }
+
+    
+    return TRUE;
+}
+```
+
+entry.c
+
+```assembly
+#include <ntddk.h>
+#include "vtsystem.h"
+
+VOID DriverUnload(PDRIVER_OBJECT driver)
+{
+	StopVirtualTechnology();
+    DbgPrint("Driver is unloading...\r\n");
+}
+
+
+NTSTATUS 
+  DriverEntry( 
+    PDRIVER_OBJECT  driver,
+    PUNICODE_STRING RegistryPath
+    )
+{
+
+    DbgPrint("Driver Entered!\r\n");
+	driver->DriverUnload = DriverUnload;
+
+	StartVirtualTechnology();
+
+	return STATUS_SUCCESS;
+}
+```
+
+exithandler.c
+
+```assembly
+#include "exithandler.h"
+#include "vtsystem.h"
+#include "vtasm.h"
+
+
+GUEST_REGS g_GuestRegs;
+
+static void VMMEntryPointEbd(void){
+	ULONG ExitReason;
+
+	ExitReason = Vmx_VmRead(VM_EXIT_REASON);
+
+	g_GuestRegs.esp = Vmx_VmRead(GUEST_RSP);
+	g_GuestRegs.eip = Vmx_VmRead(GUEST_RIP);
+
+	Log("g_GuestRegs.esp", g_GuestRegs.esp);
+	Log("g_GuestRegs.eip", g_GuestRegs.eip);
+
+}
+
+void __declspec(naked) VMMEntryPoint(void){
+    
+	__asm{
+        mov ax, fs
+        mov fs, ax
+        
+		mov ax, gs
+        mov gs, ax
+    }
+
+	VMMEntryPointEbd();
+
+}
+```
+
+# 调试技巧
+
+想要在Guest中触发INT 3中断，应该怎么做呢
+
+步骤：
+
+1. Guest执行INT 3指令，触发VM-Exit，进入Host
+2. 立刻保存Guest的各项状态信息。
+3. 收集错误码等重要参数
+4. 将CPU还原成Guest触发VM-Exit时的状态，继续执行INT 3后半部分
+5. 由于此时只是改变了EIP，权限不变，因此继续执行INT 3时能够成功。
+
+```assembly
+static void  VMMEntryPointEbd(void)
+{
+	ULONG ExitReason;
+
+	ExitReason = Vmx_VmRead(VM_EXIT_REASON);
+	Log("ExitReason", ExitReason);
+
+	g_GuestRegs.esp = Vmx_VmRead(GUEST_RSP);
+	g_GuestRegs.eip = Vmx_VmRead(GUEST_RIP);
+
+	Log("g_GuestRegs.esp", g_GuestRegs.esp);
+	Log("g_GuestRegs.eip", g_GuestRegs.eip);
+
+	__asm
+	{
+		// 还原Guest状态，继续执行INT 3后半部分
+		mov  eax, g_GuestRegs.eax
+		mov  ecx, g_GuestRegs.ecx
+		mov  edx, g_GuestRegs.edx
+		mov  ebx, g_GuestRegs.ebx
+		mov  esp, g_GuestRegs.esp
+		mov  ebp, g_GuestRegs.ebp
+		mov  esi, g_GuestRegs.esi
+		mov  edi, g_GuestRegs.edi
+
+		push g_GuestRegs.eflags
+		popfd
+
+		//此时处于VMX root权限，因此不会再次触发VM-Exit
+		jmp g_GuestRegs.eip
+	}
+}
+
+void __declspec(naked) VMMEntryPoint(void)
+{
+	__asm
+	{
+		//通过INT 3进来后，立刻保存Guest的状态
+		mov g_GuestRegs.eax, eax
+		mov g_GuestRegs.ecx, ecx
+		mov g_GuestRegs.edx, edx
+		mov g_GuestRegs.ebx, ebx
+		mov g_GuestRegs.esp, esp
+		mov g_GuestRegs.ebp, ebp
+		mov g_GuestRegs.esi, esi
+		mov g_GuestRegs.edi, edi
+
+		pushfd
+		pop eax
+		mov g_GuestRegs.eflags, eax
+
+		//需要设置fs和gs，否则无法正常运行
+		mov ax, fs
+		mov fs, ax
+		mov ax, gs
+		mov gs, ax
+	}
+
+	Log("VM Exit", 0);
+
+	//尽量不要在裸函数中定义局部变量，或实现太多功能，最好封装成函数
+	VMMEntryPointEbd();
+}
+```
+
+# VM-Exit Handler
+
+开启VT后,Reutrn To DriverEntry
+
+实现思路：
+
+1. 在开启VT前，将当前的CPU状态保存在栈里，然后记录ESP。
+2. 使用类似于在StartVirtualTechnology函数下方打标签的方式，保存其地址作为返回地址。
+3. 开启VT后，将EIP指向记录的返回地址，并将ESP指向之前保存的CPU状态。
+4. 恢复CPU状态，继续向下执行。
+
+driver.c
+
+```assembly
+NTSTATUS DriverEntry(PDRIVER_OBJECT pDriver, PUNICODE_STRING reg_path)
+{
+	DbgPrint("Driver load. \r\n");
+	
+	pDriver->DriverUnload = DriverUnload;
+
+	__asm
+	{
+		pushad
+		pushfd
+		mov g_ret_esp, esp
+		mov g_ret_eip, offset RET_EIP
+	}
+
+	StartVirtualTechnology();	//开启VT
+
+RET_EIP:
+
+	__asm
+	{
+		popfd
+		popad
+	}
+	
+	Log("Return To DriverEntry .", 0);
+
+	return STATUS_SUCCESS;
+}
+```
+
+exithandler.c
+
+```assembly
+//exithandler.c
+extern ULONG g_ret_esp;
+extern ULONG g_ret_eip;
+
+GUEST_REGS g_GuestRegs;
+
+static void  VMMEntryPointEbd(void)
+{
+	ULONG ExitReason;
+
+	ExitReason = Vmx_VmRead(VM_EXIT_REASON);
+	Log("ExitReason", ExitReason);
+
+	g_GuestRegs.esp = Vmx_VmRead(GUEST_RSP);
+	g_GuestRegs.eip = Vmx_VmRead(GUEST_RIP);
+
+	Log("g_GuestRegs.esp", g_GuestRegs.esp);
+	Log("g_GuestRegs.eip", g_GuestRegs.eip);
+
+	__asm
+	{
+		mov esp, g_ret_esp
+		jmp g_ret_eip
+	}
+}
+```
+
+CPU已经成功回到了DriverEntry，并能够关闭VT以及卸载驱动。
+
+## VM-Exit Handler
+
+**描述**：当Guest触发VM-Exit时，会进入Host进行处理。如果需要在Return To DriverEntry后使系统保持VT模式，则需要将返回代码写在Guest中，并在VM-Exit Handler中对各类VM-Exit事件进行处理。
+
+### External interrupt(1)
+
+**描述**：通过设置，可以使外部中断触发VM-Exit。
+
+### CPUID(10)
+
+**描述**：汇编指令，用于获取CPU的相关信息，当Guest调用该指令时，会触发VM-Exit信号。
+
+**处理方法**：在Host中模拟执行，并返回结果。
+
+### VMCALL(18)
+
+**描述**：执行VMCALL指令时，能够触发一次VM-Exit。
+
+**使用场景**：当需要退出VT模式时，如果直接调用VMXOFF指令，由于Guest将没有权限执行，因此将会出错。可行的思路是先使用VMCALL切换到VMX root模式，由Host来执行退出部分的代码。
+
+### Control-register accesses(28)
+
+描述：当Guest试图使用控制寄存器时会触发该事件，对应的退出码为0x1C。
+
+处理方式：当Guest试图使用控制寄存器，并触发VM-Exit来到Host后，Host通过读取相应的信息，帮助Guest完成对应的功能，然后回到触发该事件的下一句指令。
+
+**具体思路：**
+
+1. 如果分析错误信息后发现是**写**操作的话，就把对应的值写到VMCS相应的字段中。
+2. 如果发现是**读**操作的话，就先将其读到g_GuestRegs全局变量的对应寄存器成员中，然后在Resume前将其写到寄存器当中，调用Resume的时候会自动写到VMCS相应的字段中。
+
+### I/O instruction(30)
+
+**描述**：访问I/O时触发了VM-Exit，对应退出码1E。
+
+从手册对该退出码的描述可以看到，除了访问I/O，还需要满足两个条件。
+
+1. 对应MSR的「use I/O bitmaps」位为0以及「unconditional I/O exiting」位为1
+2. 「use I/O bitmaps」VM执行控制为1，与I/O指令访问的一个端口相关的位图中有一位为1。
+
+# EPT物理地址转换
+
+EPT
+
+描述：EPT全称为Extended Page Table，用于实现内存虚拟化。
+
+之前，在学习保护模式的时候，我们了解了MMU（虚拟内存管理器）是如何将虚拟地址转换成物理地址的，那便是通过分页模式，在XP系统中，学习了10-10-12分页和2-9-9-12分页两种分页模式，EPT的作用与此非常像，它能够将guest的物理地址（Guest Physical Address, GPA）转换成host的物理地址（Host Physical Address, HPA）。
+
+开启EPT后，真正的物理内存就被隐藏起来了，Guest中的所有人都访问不到，只有Host能访问到。
+
+## 支持检测
+
+**步骤**：检测IA32_VMX_PROCBASED_CTLS2 MSR(index 48BH)高32位的第2位，为1则表示支持。
+
+```assembly
+rdmsr 48b
+```
+
+## 9-9-9-9-12分页
+
+**描述**：EPT提供的分页模式为9-9-9-9-12分页，即最多支持48位地址的转换，也就是256T内存 。
+
+```assembly
+VMCS |              physical RAM
+     |
+EPTP → PML4E → PDPTE → PDE → PTE → physical addr
+```
+
+其中，EPTP的作用相当于Cr3，GPA通过它逐步找到HPA。
+
+### 实验：EPT物理地址转换
+
+**第一步**：分配内存，使其整体结构成为9-9-9-9-12模式，并挂入相应的物理页。
+
+**第二步**：运行驱动程序（注意，当Windbg获取中断时，此时并未开启VT以及EPT模式）
+
+**第三步**：读取当前cr3和esp的值
+
+**第四步**：获取当前esp的物理地址作为GPA，下面尝试将其转换成HPA（!vtop）
+
+**第五步**：将esp的物理地址拆分为9-9-9-9-12模式
+
+**第六步**：定位PLM4E（注意，此时EPTP即ept_PLM4T指针是虚拟地址，里面的值才是物理地址）
+
+**第七步**：定位PDPTE（这个时候开始就是物理地址了，记得去掉属性位）
+
+**第八步**：定位PDE
+
+**第九步**：定位PTE
+
+**第十步**：定位物理内存
+
+物理页中的内容和ESP里的值相同，说明整个过程没有问题。
+
+**总结**：不难发现，GPA经过转换后得到的HPA没有变化，但实际上，如果开启EPT模式，当Guest和Host访问同一个物理地址时，Guest只能对“虚拟的”物理内存进行读写，只有Host才能访问到真正的物理内存。
+
+# 开启EPT
+
+32-bit分页模式开启EPT
+
+**描述**：32-bit分页模式即10-10-12分页模式，接下来将学习如何在该模式下开启EPT
+
+## 设置VMCS字段
+
+### IA32_VMX_PROCBASED_CTLS2 [MSR](https://so.csdn.net/so/search?q=MSR&spm=1001.2101.3001.7020)字段
+
+IA32_VMX_PROCBASED_CTLS2 MSR寄存器中包含了与开启VT相关的标志位（参考Intel开发手册卷3附录A.3.3和表24-7）
+
+### IA32_VMX_PROCBASED_CTLS MSR字段
+
+只有当IA32_VMX_PROCBASED_CTLS MSR的第31位（最后一位）为1时，IA32_VMX_PROCBASED_CTLS2 MSR寄存器才会生效（参考Intel开发手册卷3表24-6）。
+
+### EPTP字段
+
+最关键的是设置EPTP字段，格式如下（参考Intel开发手册卷3第24.6.11小节）：
+
+首先除了后12位比特位为属性位以外，剩下的部分为物理地址，直接写入即可。
+
+属性位第2:0位表示是否开启缓存，但不能随意设置，需要参考IA32_VMX_EPT_VPID_CAP MSR寄存器的相关标志位（详见Intel开发手册卷3附录A.10），只有当它的第8位为1时，才能关闭缓存（UC），当14位为1时，才能开启缓存（WB）。
+然后属性位的第5:3位表示当前页表的极数，值比实际页数少1（比如是4级页表，就这个字段写3），这个值也不是随便写的，同样要参考IA32_VMX_EPT_VPID_CAP MSR寄存器，如果它的第6位为1，那么一定是4级页表。
+
+```assembly
+//for EPT
+EPTP = MmGetPhysicalAddress(MyEptInitialization()).QuadPart;
+Vmx_VmWrite(CPU_BASED_VM_EXEC_CONTROL, VmxAdjustControls(0x80000000, MSR_IA32_VMX_PROCBASED_CTLS));
+Vmx_VmWrite(SECONDARY_VM_EXEC_CONTROL, VmxAdjustControls(0x2, MSR_IA32_VMX_PROCBASED_CTLS2));
+Vmx_VmWrite(EPT_POINTER, (EPTP | 6 | (3 << 3)) & 0xFFFFFFFF);
+Vmx_VmWrite(EPT_POINTER_HIGH, (EPTP | 6 | (3 << 3)) >> 32);
+```
+
+## Triple fault
+
+三重错误是由于GPA转HPA的过程中出现了问题导致的。
+
+**细分来说**：
+
+1. 第一次GPA转HPA失败时，产生第一次异常，尝试进入对应的中断处理程序
+2. 进入中断处理程序失败，产生第二次异常，尝试进入二次异常处理程序
+3. 进入二次异常处理程序依然失败，也就导致了三重错误。
+
+修改boot.ini中的启动项配置以切换分页模式
+
+```assembly
+//PAE模式
+multi(0)disk(0)rdisk(0)partition(1)\WINDOWS="Microsoft Windows XP Professional Kernel Debugging" /noexecute=optin /fastdetect /debug /debugport=com1 /baudrate=115200
+//32-bit模式
+multi(0)disk(0)rdisk(0)partition(1)\WINDOWS="Microsoft Windows XP Professional Kernel Debugging" /execute=optin /fastdetect /debug /debugport=com1 /baudrate=115200
+```
+
+## PAE分页模式开启EPT
+
+**描述**：PAE分页模式即2-9-9-12分页模式，相比32-bit分页模式而言，想要开启EPT还需要在前者基础上做一些额外的事情。
+
+### 设置PDPTE字段
+
+**描述**：在PAE分页模式下，如果开启EPT，需要在VMCS中设置与PDPTE相关的寄存器字段，共4个（参考Intel开发手册卷3第24.4节）。
+
+每当切换Cr3时，CPU会把四个PDPTE里的值（即PDE的地址）写到高速缓存寄存器中，提高运行效率。
+
+在Windows操作系统中，PDE的基址为0xC0600000，我们就可以通过这个特性访问4个PDE。
+
+```assembly
+//for EPT with PAE
+Vmx_VmWrite(GUEST_PDPTR0, MmGetPhysicalAddress((PVOID)0xc0600000).LowPart | 1);	//最后一位为有效位
+Vmx_VmWrite(GUEST_PDPTR0_HIGH, MmGetPhysicalAddress((PVOID)0xc0600000).HighPart);
+Vmx_VmWrite(GUEST_PDPTR1, MmGetPhysicalAddress((PVOID)0xc0601000).LowPart | 1);
+Vmx_VmWrite(GUEST_PDPTR1_HIGH, MmGetPhysicalAddress((PVOID)0xc0601000).HighPart);
+Vmx_VmWrite(GUEST_PDPTR2, MmGetPhysicalAddress((PVOID)0xc0602000).LowPart | 1);
+Vmx_VmWrite(GUEST_PDPTR2_HIGH, MmGetPhysicalAddress((PVOID)0xc0602000).HighPart);
+Vmx_VmWrite(GUEST_PDPTR3, MmGetPhysicalAddress((PVOID)0xc0603000).LowPart | 1);
+Vmx_VmWrite(GUEST_PDPTR3_HIGH, MmGetPhysicalAddress((PVOID)0xc0603000).HighPart);
+```
+
+结果分析
+
+可以看到，驱动运行后能够成功开启了VT，但是在执行csrss.exe进程途中出现了错误（继续往下运行会走向蓝屏）。
+
+产生这种现象的原因是由于在切换线程时，Cr3寄存器的值会被切换，那也就意味着PDPTE的值也会发生变化。但是由于我们在VMCS中设置的PDPTE字段的值是固定的，所以一旦发生线程切换，下一个线程就无法正常寻址了，因此就会出现这种错误。对应的解决方式是在处理Cr3访问时，切换到对应进程的Cr3，然后同步更新一下4个PDPTE的值。
+
+```assembly
+void HandleCrAccess()
+{
+	ULONG		movcrControlRegister;
+	ULONG		movcrAccessType;
+	ULONG		movcrOperandType;	//只是读了，没有使用，通常都是寄存器
+	ULONG		movcrGeneralPurposeRegister;
+	ULONG		movcrLMSWSourceData;
+	ULONG		ExitQualification;
+
+	ExitQualification = Vmx_VmRead(EXIT_QUALIFICATION);			//获取具体信息
+	movcrControlRegister = (ExitQualification & 0x0000000F);	//控制寄存器下标
+	movcrAccessType = ((ExitQualification & 0x00000030) >> 4);	//读/写
+	movcrOperandType = ((ExitQualification & 0x00000040) >> 6);	//寄存器/内存
+	movcrGeneralPurposeRegister = ((ExitQualification & 0x00000F00) >> 8);	//寄存器下标
+
+	if (movcrControlRegister != 3) {    // not for cr3
+		__asm int 3
+	}
+
+	if (movcrAccessType == 0) {         // CR3 <-- reg32
+		Vmx_VmWrite(GUEST_CR3, *(PULONG)((ULONG)&g_GuestRegs + 4 * movcrGeneralPurposeRegister));
+		Asm_SetCr3(Vmx_VmRead(GUEST_CR3));	//切换到对应进程的Cr3
+		Vmx_VmWrite(GUEST_PDPTR0, MmGetPhysicalAddress((PVOID)0xc0600000).LowPart | 1);
+		Vmx_VmWrite(GUEST_PDPTR0_HIGH, MmGetPhysicalAddress((PVOID)0xc0600000).HighPart);
+		Vmx_VmWrite(GUEST_PDPTR1, MmGetPhysicalAddress((PVOID)0xc0601000).LowPart | 1);
+		Vmx_VmWrite(GUEST_PDPTR1_HIGH, MmGetPhysicalAddress((PVOID)0xc0601000).HighPart);
+		Vmx_VmWrite(GUEST_PDPTR2, MmGetPhysicalAddress((PVOID)0xc0602000).LowPart | 1);
+		Vmx_VmWrite(GUEST_PDPTR2_HIGH, MmGetPhysicalAddress((PVOID)0xc0602000).HighPart);
+		Vmx_VmWrite(GUEST_PDPTR3, MmGetPhysicalAddress((PVOID)0xc0603000).LowPart | 1);
+		Vmx_VmWrite(GUEST_PDPTR3_HIGH, MmGetPhysicalAddress((PVOID)0xc0603000).HighPart);
+	}
+	else {                            // reg32 <-- CR3
+		*(PULONG)((ULONG)&g_GuestRegs + 4 * movcrGeneralPurposeRegister) = Vmx_VmRead(GUEST_CR3);
+	}
+}
+```
+
