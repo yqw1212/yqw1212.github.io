@@ -1,0 +1,1857 @@
+---
+layout: post
+title:  LLVM IR API study
+date:   2023-09-13 00:08:01 +0300
+image:  2023-09-13-puppy.jpg
+tags:   [note,llvmm]
+---
+
+环境：clang-6.0
+
+# 使用LLVM提供的C接口和IRBuilder来生成LLVM IR(if 和 while 语句)
+
+## if语句
+
+对应C的伪代码：
+
+```assembly
+int main(){
+	a = 10;
+	b = 20;
+	return max(a, b);
+}
+
+int max(int a, int b){
+	if(a > b)
+		return a;
+	else
+		return b;
+}
+```
+
+API代码：
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main(){
+    static LLVMContext MyGlobalContext;
+    LLVMContext &context = MyGlobalContext;
+
+    //创建一个module
+    Module *module = new Module("test", context);
+
+    //声明一个函数
+    SmallVector<Type *, 2> functionArgs;
+    //各种类型都是通过get方法来构造对应的实例
+    functionArgs.push_back(Type::getInt32Ty(context));  //32为整型参数Tina及到vector数组中
+    functionArgs.push_back(Type::getInt32Ty(context));
+
+    Type *returnType = Type::getInt32Ty(context);
+    FunctionType *max_type = FunctionType::get(returnType, functionArgs, /*isVarArg*/ false);
+    //构建函数签名，包括返回类型和参数，这种方式有些特殊，到/usr/local/include/llvm/IR目录下看TypeBuilder.h源码就知道了
+	//下面这种构建函数类型的方式和上面的选一个就可以了，很显然下面这种可以用C++的类型，方便很多，语法也很简单，长得也好看
+	//FunctionType *max_type = TypeBuilder<int(int, int), false>::get(context);
+
+    //声明 int max(int,a int b); 函数
+	//cast将指针或者引用从基类转向为派生类，可以从http://llvm.org/docs/ProgrammersManual.html#the-c-standard-template-library这个链接学习
+    Function *max_fun = cast<Function>(module->getOrInsertFunction("max", max_type));
+
+
+    //函数体
+    Function::arg_iterator argsIT = max_fun->arg_begin(); //Function中的一个方法，获取参数的迭代器
+    Value *arg_a = argsIT++;
+    arg_a->setName("a");
+    Value *arg_b = argsIT++;
+    arg_b->setName("b");
+
+
+    //创建max函数的entry代码块
+    BasicBlock *entry_max = BasicBlock::Create(context, "entry", max_fun);
+    IRBuilder<> builder_max(entry_max); //创建max函数的entry代码块
+
+    //比较arg_a和arg_b的大小
+    Value *cmp_value = builder_max.CreateICmpSGT(arg_a, arg_b);
+
+
+    //创建一个if.then代码块
+	BasicBlock *if_then = BasicBlock::Create(context, "if_then", max_fun);
+	IRBuilder<> builder_then(if_then);
+	//创建一个if.else代码块
+	BasicBlock *if_else = BasicBlock::Create(context, "if_else", max_fun);
+	IRBuilder<> builder_else(if_else);
+
+    //根据cmp的值跳转，也就是if条件
+	builder_max.CreateCondBr(cmp_value, if_then, if_else);
+	
+	//创建返回值
+	builder_then.CreateRet(arg_a);
+	builder_else.CreateRet(arg_b);
+
+
+    //声明 int main() 函数
+    FunctionType *main_type = TypeBuilder<int(), false>::get(context);
+    Function *main_fun = cast<Function>(module->getOrInsertFunction("main", main_type));
+
+    BasicBlock *entry_main = BasicBlock::Create(context, "entry", main_fun);
+    IRBuilder<> builder_main(entry_main);
+	
+	//创建一个i32常量
+	Value *a_value = ConstantInt::get(Type::getInt32Ty(context), -10);
+	Value *b_value = ConstantInt::get(Type::getInt32Ty(context), 20);
+
+    
+    //构造实参列表
+    std::vector<Value *> putsargs;
+    putsargs.push_back(a_value);
+    putsargs.push_back(b_value);
+    ArrayRef<Value *> argsRef(putsargs);
+
+    Value *ret = builder_main.CreateCall(max_fun, argsRef);
+
+    //创建返回值
+	builder_main.CreateRet(ret);
+
+    // module->dump();
+    module->print(errs(), nullptr);
+
+
+    //使用JIT引擎---------------------------------------
+	//https://blog.csdn.net/xfxyy_sxfancy/article/details/50485090
+	InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+
+
+    //创建ExecutionEngine
+    ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+   
+}
+```
+
+编译
+
+```assembly
+clang++ -O3 main.cpp -o main `llvm-config --cflags --ldflags` `llvm-config --libs` `llvm-config --system-libs`
+```
+
+用API生成的IR代码：
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+define i32 @max(i32 %a, i32 %b) {
+entry:
+  %0 = icmp sgt i32 %a, %b
+  br i1 %0, label %if_then, label %if_else
+
+if_then:                                          ; preds = %entry
+  ret i32 %a
+
+if_else:                                          ; preds = %entry
+  ret i32 %b
+}
+
+define i32 @main() {
+entry:
+  %0 = call i32 @max(i32 -10, i32 20)
+  ret i32 %0
+}
+```
+
+## while语句
+
+对应C的伪代码：
+
+```assembly
+int main(){
+	int n = 10;
+	return sum(n);
+}
+
+int sum(int n){
+	int i = 0;
+	int sum = 0;
+	while(i <= n){
+		sum = sum + i;
+		i++;
+	}
+	return sum;
+}
+```
+
+API代码：
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+define i32 @sum(i32 %n) {
+entry:
+  %0 = alloca i32
+  %1 = alloca i32
+  store i32 0, i32* %0
+  store i32 0, i32* %1
+  br label %while_count
+
+while_count:                                      ; preds = %while_body, %entry
+  %2 = load i32, i32* %0
+  %3 = icmp sle i32 %2, %n
+  br i1 %3, label %while_body, label %while_end
+
+while_body:                                       ; preds = %while_count
+  %4 = load i32, i32* %1
+  %5 = add i32 %4, %2
+  store i32 %5, i32* %1
+  %6 = add i32 %2, 1
+  store i32 %6, i32* %0
+  br label %while_count
+
+while_end:                                        ; preds = %while_count
+  %7 = load i32, i32* %1
+  ret i32 %7
+}
+
+define i32 @main() {
+entry:
+  %0 = call i32 @sum(i32 10)
+  ret i32 %0
+}
+55
+```
+
+# 使用LLVM IR调用C的函数和全局变量
+
+## IR调用C的库函数
+
+C中使用`math.h`中的库函数` double pow(double a, double b)`
+
+```assembly
+#include<stdio.h>
+#include<math.h>
+
+int main() {
+	int a = 10;
+	int b = 2;
+	return pow(a, b);
+}
+```
+
+llvm代码
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+#include <algorithm>
+
+
+using namespace llvm;
+
+
+int main(){
+    static LLVMContext MyGlobalContext;
+    LLVMContext &context = MyGlobalContext;
+    Module *module = new Module("test", context);
+	IRBuilder<> builder(context);
+
+	FunctionType *pow_type = TypeBuilder<double(double, double), false>::get(context);
+	Function *fun_pow = cast<Function>(module->getOrInsertFunction("pow", pow_type));
+
+	// 在IR中声明一个函数bar，我们会用IR定义这个函数
+    FunctionType *bar_type = TypeBuilder<int(), false>::get(context);
+    Function *bar = cast<Function>(module->getOrInsertFunction("main", bar_type));
+	
+	// 创建函数bar的代码块
+    BasicBlock *entry = BasicBlock::Create(context, "entry", bar);
+	builder.SetInsertPoint(entry);
+	
+	//构造实参列表
+	Constant* a_value = ConstantFP::get(Type::getDoubleTy(context), 10.0);
+	Constant* b_value = ConstantFP::get(Type::getDoubleTy(context), 2.0);
+	
+	std::vector<Value*> putsargs;
+	putsargs.push_back(a_value);
+	putsargs.push_back(b_value);
+	ArrayRef<Value*>  argsRef(putsargs);
+	
+	// 调用函数pow
+	Value* ret_pow = builder.CreateCall(fun_pow, argsRef);
+	Value* ret = builder.CreateFPToSI(ret_pow, Type::getInt32Ty(context));
+	builder.CreateRet(ret);
+
+
+	// module->dump();
+    module->print(errs(), nullptr);
+
+
+	InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+	
+    ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+	void *barAddr = ee->getPointerToFunction(bar);
+	
+	//运行机器指令
+    typedef int (*FuncType)();
+    FuncType barFunc = (FuncType)barAddr;
+    ee->finalizeObject();
+	std::cout << barFunc() << std::endl;
+    
+    delete module;
+    return 0;
+}
+```
+
+生成的IR
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+declare double @pow(double, double)
+
+define i32 @main() {
+entry:
+  %0 = call double @pow(double 1.000000e+01, double 2.000000e+00)
+  %1 = fptosi double %0 to i32
+  ret i32 %1
+}
+100
+```
+
+## IR调用C中定义的函数和全局变量
+
+c代码
+
+```assembly
+int var_a = 20;
+int var_b = 30;
+
+int foo(int x, int y ) {
+    return max(x, y);
+}
+```
+
+llvm代码
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+#include <algorithm>
+ 
+using namespace llvm;
+
+
+int var_a = 20;
+int var_b = 30;
+
+
+int foo(int x, int y ) {
+    return std::max(x, y);
+}
+
+
+int main(){
+    static LLVMContext MyGlobalContext;
+    LLVMContext &context = MyGlobalContext;
+    Module *module = new Module("test", context);
+    
+	// 在IR代码中声明一个全局变量
+    GlobalVariable *v1 = cast<GlobalVariable>(module->getOrInsertGlobal("a", Type::getInt32Ty(context)));
+	GlobalVariable *v2 = cast<GlobalVariable>(module->getOrInsertGlobal("b", Type::getInt32Ty(context)));
+
+	// 在IR中声明一个函数，注意我们并不会在IR中定义foo，我们会将这个IR中声明的函数映射到C++代码中的函数
+    FunctionType *foo_type = TypeBuilder<int(int, int), false>::get(context);
+    Function *foo_fun = cast<Function>(module->getOrInsertFunction("foo", foo_type));
+    
+	// 在IR中声明一个函数bar，我们会用IR定义这个函数
+    FunctionType *bar_type = TypeBuilder<int(), false>::get(context);
+    Function *bar = cast<Function>(module->getOrInsertFunction("bar", bar_type));
+    
+	// 创建函数bar的代码块
+    BasicBlock *entry = BasicBlock::Create(context, "entry", bar);
+    IRBuilder<> builder(entry);
+    // 用一个局部变量获取全局变量v的值
+    Value *v_IR1 = builder.CreateLoad(v1);
+	Value *v_IR2 = builder.CreateLoad(v2);
+	//构建参数
+	std::vector<Value*> args;
+	args.push_back(v_IR1);
+	args.push_back(v_IR2);
+	ArrayRef<Value*> argRef(args);
+    // 调用函数foo
+    Value *ret = builder.CreateCall(foo_fun, argRef);
+    // 返回值
+    builder.CreateRet(ret);
+    
+	// module->dump();
+    module->print(errs(), nullptr);
+	
+	InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+	
+    ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+	ee->addGlobalMapping(v1, &var_a);
+	ee->addGlobalMapping(v2, &var_b);
+	ee->addGlobalMapping(foo_fun, (void *)foo);
+	void *barAddr = ee->getPointerToFunction(bar);
+	
+	//运行机器指令
+    typedef int (*FuncType)();
+    FuncType barFunc = (FuncType)barAddr;
+    ee->finalizeObject();
+	std::cout << barFunc() << std::endl;
+    
+    delete module;
+    return 0;
+}
+```
+
+IR代码
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+@a = external global i32
+@b = external global i32
+
+declare i32 @foo(i32, i32)
+
+define i32 @bar() {
+entry:
+  %0 = load i32, i32* @a
+  %1 = load i32, i32* @b
+  %2 = call i32 @foo(i32 %0, i32 %1)
+  ret i32 %2
+}
+30
+```
+
+# 将C/C++中定义的结构体作为LLVM IR中函数的实参
+
+定义一个结构体`%Number`，用两个结构体类型作为函数`@func`的形参，在执行时传入C++中与之定义相同的结构体实参：
+
+```assembly
+//定义结构体
+struct Number{
+	int precision;
+	int scale;
+	double value;
+};
+
+//结构体变量
+Number number1,number2;
+number1.precision = 13;
+number1.scale = 2;
+number1.value = 15.3;
+number2.precision = 18;
+number2.scale = 5;
+number2.value = 17.3333;
+
+%Number = type { i32, i32, double }
+
+define double @func(%Number* %num1, %Number* %num2) {
+	...
+}
+```
+
+llvm代码
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+
+
+using namespace llvm;
+
+
+struct Number{
+	int precision;
+	int scale;
+	double value;
+};
+
+
+int main(){
+	static LLVMContext llvmContext;
+	LLVMContext& context = llvmContext;
+	Module* module = new Module("test", context);
+	
+	//定义一个结构体,定义结构体的步骤是：
+	//创建一个StructType，再创建elements并set到其中
+	StructType* structType = StructType::create(context, "Number");
+	std::vector<Type*> elements;
+	elements.push_back(Type::getInt32Ty(context));
+	elements.push_back(Type::getInt32Ty(context));
+	elements.push_back(Type::getDoubleTy(context));
+	structType->setBody(elements);
+	
+	//定义一个函数 double(*func)(struct Number, struct Number),以结构体做函数的参数的时候，
+	//需要一个指针指向结构体，然后以指针作为参数
+	PointerType *pstructType1 = PointerType::get(structType, 0);
+	PointerType *pstructType2 = PointerType::get(structType, 0);
+	SmallVector<Type*, 2> functionArgs;
+	functionArgs.push_back(pstructType1);
+	functionArgs.push_back(pstructType2);
+	Type* returnType = Type::getDoubleTy(context);
+	FunctionType* functionType = FunctionType::get(returnType, functionArgs, false);
+	Function* func = cast<Function>(module->getOrInsertFunction("func", functionType));
+	
+	//创建函数的入口基本块
+	BasicBlock* entry = BasicBlock::Create(context);
+	entry->insertInto(func);
+	IRBuilder<> builder(context);
+	builder.SetInsertPoint(entry);
+	
+	//arg_begin()方法返回的是一个迭代器，迭代器相当于一个指针，可以对其进行加减操作，
+	//arg_iterator迭代器是 Argument *类型，而 Argument是Value的子类，所以这里用Value*接受
+	Function::arg_iterator argsIT = func->arg_begin();
+	Value* arg1 = argsIT++;
+	Value* arg2 = argsIT;
+	
+	//通过GEP指令获取结构体参数中元素的指针，这里索引是0、2，所以获取的是第三个元素的指针，
+	//然后将两个指针对应的值相加
+	Value* const_0 = ConstantInt::get(IntegerType::getInt32Ty(context), 0);
+	Value* const_2 = ConstantInt::get(IntegerType::getInt32Ty(context), 2);
+	SmallVector<Value*, 2> indexVector;
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_2);
+	Value* number_ptr_1 = builder.CreateGEP(arg1, indexVector);
+	Value* number_ptr_2 = builder.CreateGEP(arg2, indexVector);
+	Value* loaded_number1 = builder.CreateLoad(number_ptr_1);
+	Value* loaded_number2 = builder.CreateLoad(number_ptr_2);
+	Value* add_value = builder.CreateFAdd(loaded_number1, loaded_number2);
+	builder.CreateRet(add_value);
+	
+
+	// module->dump();
+    module->print(errs(), nullptr);
+	
+
+	InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+	
+	ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+	
+	//C++复杂类型的声明，FuncType是一个函数指针指针类型为double(*)(Number*, Number*)
+	typedef double(*FuncType)(Number*, Number*);
+	FuncType add_fun = (FuncType)ee->getPointerToFunction(func); //(FuncType)ee->getFunctionAddress("func");使用这种方式也可以
+	ee->finalizeObject();
+	
+	Number number1,number2;
+	number1.precision = 13;
+	number1.scale = 2;
+	number1.value = 15.3;
+	number2.precision = 18;
+	number2.scale = 5;
+	number2.value = 17.3333;
+	
+	//将结构体参数参入到add_fun方法中，也就是上面定义的func方法
+	std::cout<<"Result: "<<add_fun(&number1, &number2)<<std::endl;
+	
+	delete module;
+	return 0;
+}
+```
+
+GEP需要额外的Indexing，第一个索引解开第一层指针，这时取出是你的vector数组本身，其余的索引才是索引这个结构体/数组/vector内部具体的元素。
+
+用API生成的IR代码：
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+%Number = type { i32, i32, double }
+
+define double @func(%Number*, %Number*) {
+  %3 = getelementptr %Number, %Number* %0, i32 0, i32 2
+  %4 = getelementptr %Number, %Number* %1, i32 0, i32 2
+  %5 = load double, double* %3
+  %6 = load double, double* %4
+  %7 = fadd double %5, %6
+  ret double %7
+}
+Result: 32.6333
+```
+
+# 操作IR的字符串、全局变量、全局常量及数组
+
+## 操作字符串
+
+llvm ir中的字符串是以全局常量`GlobalVariable`的形式存放的。
+
+```assembly
+//创建字符串常量
+llvm::Constant *strConst1 = llvm::ConstantDataArray::getString(context, "exception_name");
+llvm::Value *globalVar1 = new llvm::GlobalVariable(*module, strConst1->getType(), true, llvm::GlobalValue::PrivateLinkage, strConst1, "globalVar1");
+	
+//ir长这样
+@globalVar1 = private constant [15 x i8] c"exception_name\00"
+```
+
+llvm代码
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+
+
+using namespace llvm;
+
+
+int main() {
+	static LLVMContext llvmContext;
+	LLVMContext &context = llvmContext;
+    Module *module = new Module("test", context);
+
+	//定义一个结构体,定义结构体的步骤是：
+	//创建一个StructType，再创建elements并set到其中
+	StructType *structType = StructType::create(context, "_Exception");
+	std::vector<Type*> elements;
+	elements.push_back(Type::getInt8PtrTy(context));
+	elements.push_back(Type::getInt32Ty(context));
+	elements.push_back(Type::getInt8PtrTy(context));
+	structType->setBody(elements);
+
+	//定义一个函数 double(*func)(struct Number, struct Number),以结构体做函数的参数的时候，
+	//需要一个指针指向结构体，然后以指针作为参数
+	SmallVector<Type*, 0> functionArgs;
+	Type *returnType = Type::getInt32Ty(context);
+	FunctionType *functionType = FunctionType::get(returnType, functionArgs, false);
+	Function *func = cast<Function>(module->getOrInsertFunction("func", functionType));
+
+	//创建字符串常量
+	Constant *strConst1 = ConstantDataArray::getString(context, "exception_name");
+	Value *globalVar1 = new GlobalVariable(*module, strConst1->getType(), true, GlobalValue::PrivateLinkage, strConst1, "globalVar1");
+	Constant *strConst2 = ConstantDataArray::getString(context, "uuid");
+	Value *globalVar2 = new GlobalVariable(*module, strConst2->getType(), true, GlobalValue::PrivateLinkage, strConst2, "globalVar2");
+
+	//创建函数的入口基本块
+	BasicBlock *entry = BasicBlock::Create(context);
+	entry->insertInto(func);
+	IRBuilder<> builder(context);
+	builder.SetInsertPoint(entry);
+
+	AllocaInst *alloca_Struct = builder.CreateAlloca(structType);
+	SmallVector<Value*, 2> indexVector;
+
+	Value *const_0 = ConstantInt::get(IntegerType::getInt32Ty(context), 0);
+	Value *const_1 = ConstantInt::get(IntegerType::getInt32Ty(context), 1);
+	Value *const_2 = ConstantInt::get(IntegerType::getInt32Ty(context), 2);
+
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_0);
+	Value *number_ptr_1 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	indexVector.clear();
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_1);
+	Value *number_ptr_2 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	indexVector.clear();
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_2);
+	Value *number_ptr_3 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	builder.CreateStore(builder.CreatePointerCast(globalVar1, builder.getInt8PtrTy()), number_ptr_1);
+	builder.CreateStore(const_2, number_ptr_2);
+	builder.CreateStore(builder.CreatePointerCast(globalVar2, builder.getInt8PtrTy()), number_ptr_3);
+
+	builder.CreateRet(builder.CreateLoad(Type::getInt32Ty(context), number_ptr_2));
+
+
+	// module->dump();
+    module->print(errs(), nullptr);
+
+
+	InitializeNativeTarget();
+	InitializeNativeTargetAsmPrinter();
+	InitializeNativeTargetAsmParser();
+
+	ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+
+	//C++复杂类型的声明，FuncType是一个函数指针指针类型为double(*)(Number*, Number*)
+	typedef int (*FuncType)();
+	FuncType add_fun = (FuncType) ee->getPointerToFunction(func); // (FuncType)ee->getFunctionAddress("func");使用这种方式也可以
+	ee->finalizeObject();
+
+	//将结构体参数参入到add_fun方法中，也就是上面定义的func方法
+	std::cout << "Result: " << add_fun() << std::endl;
+
+	delete module;
+	return 0;
+}
+```
+
+生成的IR
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+%_Exception = type { i8*, i32, i8* }
+
+@globalVar1 = private constant [15 x i8] c"exception_name\00"
+@globalVar2 = private constant [5 x i8] c"uuid\00"
+
+define i32 @func() {
+  %1 = alloca %_Exception
+  %2 = getelementptr %_Exception, %_Exception* %1, i32 0, i32 0
+  %3 = getelementptr %_Exception, %_Exception* %1, i32 0, i32 1
+  %4 = getelementptr %_Exception, %_Exception* %1, i32 0, i32 2
+  store i8* getelementptr inbounds ([15 x i8], [15 x i8]* @globalVar1, i32 0, i32 0), i8** %2
+  store i32 2, i32* %3
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @globalVar2, i32 0, i32 0), i8** %4
+  %5 = load i32, i32* %3
+  ret i32 %5
+}
+Result: 2
+```
+
+## 全局变量、全局常量及数组
+
+`sum` 是一个全局变量；`globa_array`是一个全局数组常量，也就是它的值一旦初始化就不会在改变；`array`是一个局部数组变量。
+
+```assembly
+int sum = 0;
+int globa_array[4] = {1,2,3,4};
+
+int main(){
+	int array[4] = {5,6,7,8};
+	for(int i = 0; i < 4; i++)
+		sum = sum + array[i] + globa_array[i];
+	
+	return sum;
+}
+```
+
+llvm代码
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+
+
+using namespace llvm;
+
+
+int main(){
+	static LLVMContext llvmContext;
+	LLVMContext& context = llvmContext;
+	Module* module = new Module( "array_test", context);
+	IRBuilder<> builder(context);
+	
+	//定义常量
+	Constant* con_0 = ConstantInt::get(Type::getInt32Ty(context), 0);
+	Constant* con_1 = ConstantInt::get(Type::getInt32Ty(context), 1);
+	Constant* con_2 = ConstantInt::get(Type::getInt32Ty(context), 2);
+	Constant* con_3 = ConstantInt::get(Type::getInt32Ty(context), 3);
+	Constant* con_4 = ConstantInt::get(Type::getInt32Ty(context), 4);
+	Constant* con_5 = ConstantInt::get(Type::getInt32Ty(context), 5);
+	Constant* con_6 = ConstantInt::get(Type::getInt32Ty(context), 6);
+	Constant* con_7 = ConstantInt::get(Type::getInt32Ty(context), 7);
+	Constant* con_8 = ConstantInt::get(Type::getInt32Ty(context), 8);
+	
+	//定义一个int类型的全局变量
+	GlobalVariable* sum_global = new GlobalVariable(/*Module=*/*module,
+		/*Type=*/Type::getInt32Ty(context),
+		/*isConstant=*/false,
+		/*Linkage=*/GlobalValue::PrivateLinkage,
+		/*Initializer=*/0, // has initializer, specified below
+		/*Name=*/"sum");
+	sum_global->setInitializer(con_0);//对全局变量初始化，按照ir的语法是必须要初始化的
+	
+	//定义一个int类型的全局数组常量
+	ArrayType* array_type = ArrayType::get(Type::getInt32Ty(context), 4);
+	GlobalVariable* array_global = new GlobalVariable(/*Module=*/*module,
+		/*Type=*/array_type,
+		/*isConstant=*/true,
+		/*Linkage=*/GlobalValue::PrivateLinkage,
+		/*Initializer=*/0, // has initializer, specified below
+		/*Name=*/"array_global");
+	array_global->setAlignment(16);
+	std::vector<Constant*> const_array_elems;
+	const_array_elems.push_back(con_1);
+	const_array_elems.push_back(con_2);
+	const_array_elems.push_back(con_3);
+	const_array_elems.push_back(con_4);
+	Constant* const_array = ConstantArray::get(array_type, const_array_elems);//数组常量
+	array_global->setInitializer(const_array);//将数组常量初始化给全局常量
+	
+	//定义函数
+	FunctionType* main_type = TypeBuilder<int(), false>::get(context);
+	Function* main_func = cast<Function>(module->getOrInsertFunction("main", main_type));
+	
+	//entry基本块
+	BasicBlock* entry_main = BasicBlock::Create(context, "entry", main_func);
+	builder.SetInsertPoint(entry_main);
+	//int array[4] = {5,6,7,8};
+	Type* arrayType = ArrayType::get(Type::getInt32Ty(context), 4);
+	Value* array = builder.CreateAlloca(arrayType);
+	builder.CreateStore(con_5, builder.CreateConstGEP2_32(arrayType, array, 0, 0));
+	builder.CreateStore(con_6, builder.CreateConstGEP2_32(arrayType, array, 0, 1));
+	builder.CreateStore(con_7, builder.CreateConstGEP2_32(arrayType, array, 0, 2));
+	builder.CreateStore(con_8, builder.CreateConstGEP2_32(arrayType, array, 0, 3));
+	Value* i_allo = builder.CreateAlloca(Type::getInt32Ty(context));
+	builder.CreateStore(con_0, i_allo);
+	BasicBlock* for_cont = BasicBlock::Create(context, "for.cond", main_func);
+	BasicBlock* for_body = BasicBlock::Create(context, "for.body", main_func);
+	BasicBlock* for_end = BasicBlock::Create(context, "for.end", main_func);
+	builder.CreateBr(for_cont);
+	
+	//for_cont基本块
+	builder.SetInsertPoint(for_cont);
+	Value* i_load = builder.CreateLoad(i_allo);
+	Value* icmp = builder.CreateICmpSLT(i_load, con_4);
+	builder.CreateCondBr(icmp, for_body, for_end);
+	
+	//for_body基本块
+	builder.SetInsertPoint(for_body);
+	Value *Idxs[] = {con_0, i_load};
+	Value* array_i = builder.CreateGEP(array, Idxs);//使用gep指令获取元素地址的指令的方式有好几个，最好都掌握
+	Value* array_i_load = builder.CreateLoad(array_i);
+	Value* array_global_i_gep = builder.CreateGEP(array_global, Idxs);
+	Value* array_global_i_load = builder.CreateLoad(array_global_i_gep);
+	Value* sum = builder.CreateLoad(sum_global);
+	Value* add_sum = builder.CreateAdd(builder.CreateAdd(array_i_load, sum), array_global_i_load);
+	builder.CreateStore(add_sum, sum_global);
+	Value* i_add = builder.CreateAdd(i_load, con_1);
+	builder.CreateStore(i_add, i_allo);
+	builder.CreateBr(for_cont);
+	
+	//for_end基本块，注意这里的返回值不能直接使用for_body中的sum，而是要用load指令再取一次
+	builder.SetInsertPoint(for_end);
+	Value* ret_sum = builder.CreateLoad(Type::getInt32Ty(context), sum_global);
+	builder.CreateRet(ret_sum);
+	
+	// module->dump();
+    module->print(errs(), nullptr);
+	
+    
+	InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+	
+	ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+	void *mainAddr = ee->getPointerToFunction(main_func);
+	typedef int(*FuncType)();
+	FuncType mianFunc = (FuncType)mainAddr;
+	ee->finalizeObject();
+	std::cout<<"Result: "<<mianFunc()<<std::endl;
+	
+	delete module;
+	return 0;
+}
+```
+
+用API生成的IR代码：
+
+```assembly
+; ModuleID = 'array_test'
+source_filename = "array_test"
+
+@sum = private global i32 0
+@array_global = private constant [4 x i32] [i32 1, i32 2, i32 3, i32 4], align 16
+
+define i32 @main() {
+entry:
+  %0 = alloca [4 x i32]
+  %1 = getelementptr [4 x i32], [4 x i32]* %0, i32 0, i32 0
+  store i32 5, i32* %1
+  %2 = getelementptr [4 x i32], [4 x i32]* %0, i32 0, i32 1
+  store i32 6, i32* %2
+  %3 = getelementptr [4 x i32], [4 x i32]* %0, i32 0, i32 2
+  store i32 7, i32* %3
+  %4 = getelementptr [4 x i32], [4 x i32]* %0, i32 0, i32 3
+  store i32 8, i32* %4
+  %5 = alloca i32
+  store i32 0, i32* %5
+  br label %for.cond
+
+for.cond:                                         ; preds = %for.body, %entry
+  %6 = load i32, i32* %5
+  %7 = icmp slt i32 %6, 4
+  br i1 %7, label %for.body, label %for.end
+
+for.body:                                         ; preds = %for.cond
+  %8 = getelementptr [4 x i32], [4 x i32]* %0, i32 0, i32 %6
+  %9 = load i32, i32* %8
+  %10 = getelementptr [4 x i32], [4 x i32]* @array_global, i32 0, i32 %6
+  %11 = load i32, i32* %10
+  %12 = load i32, i32* @sum
+  %13 = add i32 %9, %12
+  %14 = add i32 %13, %11
+  store i32 %14, i32* @sum
+  %15 = add i32 %6, 1
+  store i32 %15, i32* %5
+  br label %for.cond
+
+for.end:                                          ; preds = %for.cond
+  %16 = load i32, i32* @sum
+  ret i32 %16
+}
+Result: 36
+```
+
+# 使用LLVM提供的C接口和IRBuilder来生成LLVM IR常用方法总结
+
+自动生成IR有以下几种方式：
+
+1. 通过c++直接使用Instructions.h文件中的命令来生成IR。这个现在很少有人采用，基本都是利用2、3结合。
+2. 使用llvm提供的c接口来生成IR，[c接口官方文档](https://llvm.org/doxygen/group__LLVMC.html)
+3. 使用IRBuilder来生成IR ，[irbuilder官方文档](http://llvm.org/doxygen/classllvm_1_1IRBuilder.html)
+
+这里有一个官网的编码指导文档，与上面两个链接结合着学习：[API编程指导文档](http://llvm.org/docs/ProgrammersManual.html#)
+
+重要类的介绍：
+
+- 官网都有对这些的解释：[http://llvm.org/docs/ProgrammersManual.html#the-core-llvm-class-hierarchy-reference](http://llvm.org/docs/ProgrammersManual.html)
+
+## 一、类型定义
+
+### **基本类型**
+
+基本类型定义常用的方式有三种，一种是通过Type类，如Type::getInt32Ty(context)；另一种是通过IRBuilder中封装的方法，如builder.getInt32Ty()；一般用第一种，因为第二种的封装就是将第一种的方法包了起来。还可以使用每种类型对应封装类的get方法，如IntegerType::get(context, 32)
+
+```assembly
+IntegerType type_i32 = Type::getInt32Ty(context);	//int
+//int,使用IntegerType的get方法和Type的getInt32Ty方法是一样的，一般用第一种，感觉方便
+IntegerType type_i32 = IntegerType::get(context, 32);	
+
+Type::getInt64Ty(context);	//long
+Type::getFloatTy(context);	//float
+Type::getDoubleTy(context);	//double
+Type::getInt8Ty(context);	//char
+Type::getVoidTy(context);	//void
+```
+
+### **指针类型**
+
+指针类型的创建方式和基本类型大径相同，只不过凡是指针都是要指向一个类型，包括基本类型、数组、结构体等。
+
+【注】`i8*`对应C/C++的`char*`和`void*`，在使用时需要注意一下，有时候将函数指针、数组指针等转成`i8*`，此时的`i8*`相当于`void*`，而不是`char*`。
+
+```assembly
+//int* int&，int指针和引用，其他类型都一样，改变Type::getInt32Ty(context)为预期类型即可
+PointerType* int_pointer = Type::getInt32PtrTy(context);
+PointerType* int_pointer = PointerType::get(Type::getInt32Ty(context), 0);	
+
+//char*、void*对应的类型都是i8*
+PointerType* char_pointer = PointerType::get(IntegerType::get(mod->getContext(), 8), 0);
+```
+
+### **数组类型**
+
+数组类型`Type`类并没有提供快捷的创建方法，一般都是使用`ArrayType`类的`get`方法，第一个参数表元素类型，第二个表元素个数。
+
+```assembly
+//长度为4的整型数组，int[4]
+ArrayType* array_type = ArrayType::get(Type::getInt32Ty(context), 4);
+```
+
+### **结构体类型**
+
+结构体类型创建完之后只是一个类型，并不是一个结构体变量。
+
+```assembly
+struct Number{
+	int precision;
+	int scale;
+	double value;
+	char* name;
+};
+
+/*
+*这里创建的结构体与上面C的结构体类型对应
+*/
+StructType *structType = mod->getTypeByName("Number");//获取当前module中名为Number的结构体
+if (!structType) {	//如果当前module中没有，就创建一个
+	structType = StructType::create(context, "Number");
+}
+std::vector<Type*> elements;	//添加结构体元素
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getDoubleTy(context));
+elements.push_back(PointerType::get(Type::getInt8Ty(context), 0));
+structType->setBody(elements);
+```
+
+## 二、常量定义
+
+### **基本类型常量**
+
+常量只是一个字面量或者字面值，不能直接用来操作，必须依附于其对应的类型的变量或者指针。整型
+
+```assembly
+//int值：10,下面方式同上面一样，long类型就是将32换成64
+Constant* con_10 = ConstantInt::get(Type::getInt32Ty(context), 10);	
+
+ConstantInt* con_10 = ConstantInt::get(context, APInt(32, StringRef("100"), 10));
+
+//float值：11.11，注意这里用的是ConstantFP类
+Constant* con_11f = ConstantFP::get(Type::getFloatTy(context), 11.11);	
+ConstantFP* con_11f = ConstantFP::get(context, APFloat(4.342340e+02f));
+Constant* con_a = ConstantInt::get(Type::getInt8Ty(context), 97);	//字符：a
+ConstantInt* con_a = ConstantInt::get(context, APInt(8, StringRef("97"), 10));
+```
+
+### **字符串常量**
+
+字符串常量用`ConstantDataArray`类的`getString`方法来定义。`ConstantDataArray`是一个常量数组（即里面存放的元素时常量），元素类型可以是`1/2/4/8-byte`的整型常量或`float/double`常量。字符串是由字符（`char`）数组构成，字符（`char`）在`ir`中对应的类型是`i8`，所以可以以此来构建字符串常量。
+
+【注】clang将C中的字符串编译成ir时都是按全局常量来处理的，但我们编译的时候不这么用，看后面存取值部分关于字符串的操作
+
+```assembly
+Constant* const_string = ConstantDataArray::getString(context, "hello world", true);
+```
+
+### **数组常量**
+
+数组常量使用`ConstantArray`类来定义，下面用例定义一个一维数组常量。如果要用二位数组，先创建几个一维数组，再把一维数组常量作为另一个一维数组常量的元素来使用，就构成了二维数组常量。
+
+```assembly
+Constant* con_1 = ConstantInt::get(Type::getInt32Ty(context), 1);
+Constant* con_2 = ConstantInt::get(Type::getInt32Ty(context), 2);
+Constant* con_3 = ConstantInt::get(Type::getInt32Ty(context), 3);
+Constant* con_4 = ConstantInt::get(Type::getInt32Ty(context), 4);
+std::vector<Constant*> const_array_elems;
+const_array_elems.push_back(con_1);
+const_array_elems.push_back(con_2);
+const_array_elems.push_back(con_3);
+const_array_elems.push_back(con_4);
+/**
+ *array_type是数组常量的类型，需要自己定义，参照上面数组类型的定义 
+ *二维或多维数组常量的类型的元素类型不再是基本类型，而是数组类型，有点绕，捋一捋
+ */
+Constant* const_array = ConstantArray::get(array_type, const_array_elems);
+```
+
+### **结构体常量**
+
+结构体常量的定义用`ConstantStruct`定义，其构建需要用到结构体类型和每个结构体元素的常量。
+
+```assembly
+//结构体类型
+StructType *structType = StructType::create(context, "Number");
+std::vector<Type*> elements;	//添加结构体元素
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getDoubleTy(context));
+structType->setBody(elements);
+
+//每个元素对应的常量
+std::vector<Constant*> ele_vec;
+ele_vec.push_back(ConstantInt::get(Type::getInt32Ty(context), 1));
+ele_vec.push_back(ConstantInt::get(Type::getInt32Ty(context), 2));	
+ele_vec.push_back(ConstantFP::get(Type::getDoubleTy(context), 10.0));
+
+//构建结构体常量
+Constant *struct_value = ConstantStruct::get(structType, ele_vec);
+```
+
+可以用结构体常量直接对`alloca`出来的结构体类型的变量进行`store`操作，即不需要GEP取出每个元素的`alloca`地址一一`store`。
+
+```assembly
+//alloca一个结构体类型变量
+Value* alloca_struct = builder.CreateAlloca(structType);
+//对变量store值
+builder.CreateStore(struct_value, alloca_struct);
+```
+
+## 三、函数定义
+
+定义一个函数的步骤可以简单分为五步：返回值类型 - 参数类型 - 前两者构成函数类型 - 根据函数类型声明函数 - 获取函数参数(如果有参数)，定义函数体；
+
+**如果对一个函数只完成前面四个步骤，没有最后一步函数体的定义，相当于只声明了一个函数，只有最后一步完成才是定义了一个函数**。所以，如果只是声明一个函数，只需要完成前四个步骤，不定义函数体也是OK的。
+
+什么时候需要定义一个函数，什么时候需要声明一个函数？
+
+- 当你想用llvm ir的语法实现一个函数的功能的时候，就需要定义函数
+- 当你想用外部函数，比如C中定义的函数，只需声明，然后在执行前将声明的函数与外部函数映射到一块就可以，[llvm ir 调用C函数](https://blog.csdn.net/qq_42570601/article/details/107958398)
+
+定义一个函数，以`int max(int,a int b){...}`为例
+
+```assembly
+//返回值类型
+Type *returnType = Type::getInt32Ty(context);
+
+//参数类型
+SmallVector<Type *, 2> functionArgs;
+functionArgs.push_back(Type::getInt32Ty(context));
+functionArgs.push_back(Type::getInt32Ty(context));
+
+//根据前两者构成函数类型
+FunctionType *max_type = FunctionType::get(returnType, functionArgs, /*isVarArg*/ false);
+
+/*
+ *下面这种构建函数类型的方式和上面的选一个就可以了，很显然下面这种可以用C++的类型，方便很多，语法也很简单，长得也好看,
+ *这种方式有些特殊，到/usr/local/include/llvm/IR目录下看一下TypeBuilder.h源码
+ */
+FunctionType *max_type = TypeBuilder<int(int, int), false>::get(context);
+
+//cast将指针或者引用从基类转向为派生类，可以从http://llvm.org/docs/ProgrammersManual.html#the-c-standard-template-library这个链接学习
+Function *max_fun = cast<Function>(module->getOrInsertFunction("max", max_type));//将函数插入module
+
+//存储参数（获取参数的引用）
+Function::arg_iterator argsIT = max_fun->arg_begin();//Function中的一个方法，获取参数的迭代器
+Value *arg_a = argsIT++;//获取第一个参数
+arg_a->setName("a");//设置第一个参数名为a
+Value *arg_b = argsIT++;
+arg_b->setName("b");
+
+/*
+	函数体...
+	用arg_a、arg_b就可以对函数体定义，此时的arg_a、arg_b相当于alloca出来的Value*，可以对其进行store和load操作
+*/
+```
+
+## 四、调用函数
+
+函数调用一般都是采用`call`指令，如果有异常处理机制，就需要`invoke`指令。
+
+```assembly
+//构造实参列表
+Value* arg1_value = ConstantInt::get(Type::getInt32Ty(context), 10);
+Value* arg2_value = ConstantInt::get(Type::getInt32Ty(context), 10);
+std::vector<Value*> putsargs;
+putsargs.push_back(arg1_value);
+putsargs.push_back(arg2_value);
+
+//注意builder所在基本块的位置
+builder.SetInsertPoint(entry_mian);
+
+// 调用函数max
+Value *ret_value = builder.CreateCall(max_fun, putsargs);
+```
+
+## 五、基本块的定义
+
+常用控制语句的基本块定义，在使用是注意一下几点：
+
+- 基本块一旦创建，就会存在，且必须要有一个终端指令来结束这个块
+- 如果使用同一个name创建基本块，生成的`ir block`会在name的后面加个数字
+- 在做`codeGen`时，块的逻辑并不受块创建的顺序影响
+
+```assembly
+if{
+}
+else{
+}
+//BasicBlock有4个参数： @1:context, @2:"字符串"//char*, @3:函数名//Function*, @4:0
+BasicBlock* entry = BasicBlock::Create(context, "entry",function,0);
+BasicBlock* label_if_then = BasicBlock::Create(context, "if.then",function,0);
+BasicBlock* label_if_else = BasicBlock::Create(context, "if.else",function,0);
+BasicBlock* label_if_end = BasicBlock::Create(context, "if.end",function,0);
+
+for{
+}
+BasicBlock* entry = BasicBlock::Create(context, "entry",function,0);
+BasicBlock* label_for_cond = BasicBlock::Create(context, "for.cond",function,0);
+BasicBlock* label_for_body = BasicBlock::Create(context, "for.body",function,0);
+BasicBlock* label_for_inc = BasicBlock::Create(context, "for.inc",function,0);
+BasicBlock* label_for_end = BasicBlock::Create(context, "for.end",function,0);
+
+while{
+}
+BasicBlock* entry = BasicBlock::Create(context, "entry",function,0);
+BasicBlock* label_while_cond = BasicBlock::Create(context, "while.cond",function,0);
+BasicBlock* label_while_body = BasicBlock::Create(context, "while.body",function,0);
+BasicBlock* label_while_end = BasicBlock::Create(context, "while.end",function,0);
+```
+
+## 六、存值、取值操作
+
+### **基本类型存取值**
+
+存值取值都是针对`alloca`出来的地址进行的。
+
+```assembly
+//float f1 = 1.25
+llvm::Constant* con_1 = llvm::ConstantFP::get(llvm::Type::getFloatTy(context), 1.25);//常量值
+llvm::Value* f1_alloca = builder.CreateAlloca(llvm::Type::getFloatTy(context));//申请内存
+builder.CreateStore(con_1, f1_alloca);//存值
+llvm::Value* f1_load = builder.CreateLoad(f1_alloca);//取值
+```
+
+### **字符串存取值操作**
+
+通过`getType()`方法，可以获取常量类型，该方法在`Value`类中。
+
+```assembly
+//字符串常量
+Constant *str_const = ConstantDataArray::getString(context, "hello world");
+//str_alloc变量类型为[12 x i8]*
+AllocaInst *str_alloc = builder.CreateAlloca(str_const->getType(),
+		ConstantExpr::getSizeOf(str_const->getType()));
+builder.CreateStore(str_const, str_alloc);//存值
+LoadInst *loadVal = builder.CreateLoad(str_alloc);//取值
+```
+
+### **数组、结构体存取值**
+
+数组类型变量的存取值同结构体一样，都是取出每个元素的地址，然后分别对每个元素操作。
+
+```assembly
+//int array[4] = {5,6,7,8};
+llvm::Constant* con_5 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 5);
+llvm::Constant* con_6 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 6);
+llvm::Constant* con_7 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 7);
+llvm::Constant* con_8 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 8);
+llvm::Type* arrayType = llvm::ArrayType::get(llvm::Type::getInt32Ty(context), 4);//如果是结构体这里就是一个结构体类型
+llvm::Value* array = builder.CreateAlloca(arrayType);//申请内存
+//存值
+builder.CreateStore(con_5, builder.CreateConstGEP2_32(arrayType, array, 0, 0));
+builder.CreateStore(con_6, builder.CreateConstGEP2_32(arrayType, array, 0, 1));
+builder.CreateStore(con_7, builder.CreateConstGEP2_32(arrayType, array, 0, 2));
+builder.CreateStore(con_8, builder.CreateConstGEP2_32(arrayType, array, 0, 3));
+//取值
+llvm::Value *Idxs[] = {con_0, i_load};//con_0是一个i32类型值为0的常量，i_load是一个i32值为0,1,2,3中的某一个的常量，省掉了循环
+llvm::Value* array_i = builder.CreateGEP(array, Idxs);
+/*区分CreateGEP和CreateConstGEP2_32的使用区别，gep指令获取元素地址的指令的方式有好几个，最好都掌握*/
+```
+
+结构体也可以直接对结构体地址操作，数组还没有试过，估计也可以。
+
+```assembly
+StructType *structType = StructType::create(context, "Number");
+std::vector<Type*> elements;	//添加结构体元素
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getInt32Ty(context));
+elements.push_back(Type::getDoubleTy(context));
+structType->setBody(elements);
+
+std::vector<Constant*> ele_vec;
+ele_vec.push_back(ConstantInt::get(Type::getInt32Ty(context), 1));
+ele_vec.push_back(ConstantInt::get(Type::getInt32Ty(context), 2));	
+ele_vec.push_back(ConstantFP::get(Type::getDoubleTy(context), 10.0));
+Constant *struct_value = ConstantStruct::get(structType, ele_vec);
+
+Value* alloca_struct = builder.CreateAlloca(structType);
+
+builder.CreateStore(struct_value, alloca_struct);
+```
+
+## 七、从函数中获取一个指定名称的基本块
+
+```assembly
+llvm::Function *catchFun = NULL;
+llvm::StringRef destName("lpad");
+llvm::BasicBlock *bb = NULL;
+for (llvm::Function::iterator iter = catchFun->getBasicBlockList().begin(); iter != catchFun->getBasicBlockList().end(); iter++) {
+	llvm::StringRef currentName = iter->getName();
+	if (currentName == destName) {
+		bb = cast<llvm::BasicBlock>(iter);
+		break;
+	}
+}
+```
+
+# LLVM异常处理（Exception Handling in LLVM）
+
+## 一、相关资料介绍
+
+建议先读后面，在看资料，之所以把资料写到前面是因为很重要
+
+- 官方文档有关于llvm异常的介绍：[Exception Handling in LLVM](http://llvm.org/docs/ExceptionHandling.html)
+- 对官方文档比较好的一个翻译：[LLVM里的异常处理](https://blog.csdn.net/wuhui_gdnt/article/details/51859729)
+
+- 基于Itanium异常处理ABI规范：[Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html)
+- 这个有点杂，不过应该也会有点帮助：https://www.zhihu.com/question/266617658
+- 这个也可以看看，也可以看看这个博主的其他文章：[llvm异常重设计](https://blog.csdn.net/wuhui_gdnt/article/details/51859710?utm_medium=distribute.pc_relevant.none-task-blog-title-2&spm=1001.2101.3001.4242)
+
+## 二、clang编译C++异常
+
+1、 创建一个main.cpp文件来编写源码，以测试[异常处理机制](https://so.csdn.net/so/search?q=异常处理机制&spm=1001.2101.3001.7020)：
+
+```assembly
+class Ex1 {
+};
+
+void throw_exception(int a, int b) {
+	Ex1 ex1;
+	if (a > b) {
+		throw ex1;
+	}
+}
+
+int test_try_catch() {
+	try {
+		throw_exception(2, 1);
+	} catch (...) {
+		return 1;
+	}
+	return 0;
+}
+```
+
+2、使用`clang++ -emit-llvm -S main.cpp -o main.ll`命令生成main.ll文件
+3、查看main.ll文件
+
+```assembly
+; ModuleID = 'test.cpp'
+source_filename = "test.cpp"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-pc-linux-gnu"
+
+%class.Ex1 = type { i8 }
+
+$_ZTS3Ex1 = comdat any
+
+$_ZTI3Ex1 = comdat any
+
+@_ZTVN10__cxxabiv117__class_type_infoE = external global i8*
+@_ZTS3Ex1 = linkonce_odr constant [5 x i8] c"3Ex1\00", comdat
+@_ZTI3Ex1 = linkonce_odr constant { i8*, i8* } { i8* bitcast (i8** getelementptr inbounds (i8*, i8** @_ZTVN10__cxxabiv117__class_type_infoE, i64 2) to i8*), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_ZTS3Ex1, i32 0, i32 0) }, comdat
+
+; Function Attrs: noinline optnone uwtable
+define void @_Z15throw_exceptionii(i32, i32) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca %class.Ex1, align 1
+  store i32 %0, i32* %3, align 4
+  store i32 %1, i32* %4, align 4
+  %6 = load i32, i32* %3, align 4
+  %7 = load i32, i32* %4, align 4
+  %8 = icmp sgt i32 %6, %7
+  br i1 %8, label %9, label %12
+
+; <label>:9:                                      ; preds = %2
+  %10 = call i8* @__cxa_allocate_exception(i64 1) #1
+  %11 = bitcast i8* %10 to %class.Ex1*
+  call void @__cxa_throw(i8* %10, i8* bitcast ({ i8*, i8* }* @_ZTI3Ex1 to i8*), i8* null) #2
+  unreachable
+
+; <label>:12:                                     ; preds = %2
+  ret void
+}
+
+declare i8* @__cxa_allocate_exception(i64)
+
+declare void @__cxa_throw(i8*, i8*, i8*)
+
+; Function Attrs: noinline optnone uwtable
+define i32 @_Z14test_try_catchv() #0 personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*) {
+  %1 = alloca i32, align 4
+  %2 = alloca i8*
+  %3 = alloca i32
+  invoke void @_Z15throw_exceptionii(i32 2, i32 1)
+          to label %4 unwind label %5
+
+; <label>:4:                                      ; preds = %0
+  br label %12
+
+; <label>:5:                                      ; preds = %0
+  %6 = landingpad { i8*, i32 }
+          catch i8* null
+  %7 = extractvalue { i8*, i32 } %6, 0
+  store i8* %7, i8** %2, align 8
+  %8 = extractvalue { i8*, i32 } %6, 1
+  store i32 %8, i32* %3, align 4
+  br label %9
+
+; <label>:9:                                      ; preds = %5
+  %10 = load i8*, i8** %2, align 8
+  %11 = call i8* @__cxa_begin_catch(i8* %10) #1
+  store i32 1, i32* %1, align 4
+  call void @__cxa_end_catch()
+  br label %13
+
+; <label>:12:                                     ; preds = %4
+  store i32 0, i32* %1, align 4
+  br label %13
+
+; <label>:13:                                     ; preds = %12, %9
+  %14 = load i32, i32* %1, align 4
+  ret i32 %14
+}
+
+declare i32 @__gxx_personality_v0(...)
+
+declare i8* @__cxa_begin_catch(i8*)
+
+declare void @__cxa_end_catch()
+
+attributes #0 = { noinline optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind }
+attributes #2 = { noreturn }
+
+!llvm.module.flags = !{!0}
+!llvm.ident = !{!1}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{!"clang version 6.0.1-14 (tags/RELEASE_601/final)"}
+```
+
+## 三、工作原理
+
+LLVM是这样实现异常的：当异常被抛出，运行时（runtime）会查 找异常处理器。它会查找抛出异常的那个函数对应的异常帧，而这个异 常处理器与异常帧相关联，并且包含异常表的引用，而异常表中则包含 了异常处理的具体实现，也就是如果这门编程语言支持异常处理，抛出 异常时如何处理。如果这门语言不支持异常处理，那么关于如何展开当 前活动记录和还原前一个活动记录的状态的相关信息则会在异常帧中。
+
+让我们通过之前的例子来看看异常处理在LLVM中是如何具体实现的。
+
+try区块在LLVM中被翻译成invoke指令：
+
+```assembly
+invoke void @_Z15throw_exceptionii(i32 2, i32 1)
+        to label %invoke.cont unwind label %lpad
+```
+
+上面的代码告诉编译器如果throw_exception函数抛出异常，它应该 如何处理这个异常。如果throw_exception没有抛出异常，正常执行跳转 到%invoke.cont，否则跳转到%lpad，即landing pad，这对应了try/catch中 的catch机制。如果程序执行在landing pad重新开始，它会接收一个异常 结构体，以及与抛出的异常类型对应的选择器的值。这个选择器用于决 定哪一个catch函数来真正处理这个异常。在本例中，它看起来像这样：
+
+```assembly
+%0 = landingpad { i8*, i32 }
+        catch i8* null
+```
+
+上面一段代码描述了异常信息。`{i8*, i32}`部分描述异常类型，`i8*` 是异常指针，而`i32`是异常选择器的值。在这里我们只有一个选择器的值，所以catch函数会接受所有抛出类型的异常。
+
+```assembly
+define i32 @_Z14test_try_catchv() #0 personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*){
+	...
+}
+```
+
+@\__gxx_personality_v0函数是personality函数，它接受异常的上下文（context），即一个包含异常对象类型和值的异常结构体，以及一个当前函数异常表的引用。当前编译单元的personality函数在公共异常帧指定。本例中， @__gxx_personality_v0函数则表示我们在处理C++异常。
+
+所以`%1 = extractvalue { i8*, i32 } %0, 0` 表示异常对象，而`%2 = extractvalue { i8*, i32 } %0, 1`则表示选择器值。
+
+**下面是一些值得注意的IR函数。** 在[lib c++ 规范](https://libcxxabi.llvm.org/spec.html)中有详细介绍
+
+- __cxa_thorw：用于抛出异常的函数。
+
+- __cxa_begin_catch：接受一个异常结构体的引用作为参数，返回异 常对象的值。
+- __cxa_end_catch：处理最近捕捉的异常，减少handler计数，如果计 数为0则停止异常捕捉。
+
+## 四、用API写异常处理
+
+1、api对应的main.cpp代码:
+
+```assembly
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/TypeBuilder.h"
+#include <iostream>
+#include <algorithm>
+
+using namespace llvm;
+using namespace std;
+
+int main() {
+	static LLVMContext MyGlobalContext;
+	LLVMContext &context = MyGlobalContext;
+	Module *module = new Module("test", context);
+	IRBuilder<> builder(context);
+
+	static Type *ret_type; //返回值类型
+	static SmallVector<Type*, 3> fun_args; //函数参数类型
+	static FunctionType *fun_type;
+
+	//定义一个全局常量,这玩意是用来存放异常结构体类型信息的
+	GlobalVariable *ZTIi = cast<GlobalVariable>(module->getOrInsertGlobal("_ZTIi", Type::getInt8PtrTy(context)));
+	ZTIi->setConstant(true);
+
+	//创建一个结构体，捕获异常的时候用
+	StructType *padStruct = StructType::create(context, "pad_struct");
+	vector<Type*> elements;	//结构体元素
+	elements.push_back(builder.getInt8PtrTy());
+	elements.push_back(builder.getInt32Ty());
+	padStruct->setBody(elements);
+
+	//创建一个异常结构体类型，抛出的异常就是用这个结构体
+	StructType *exceptionStruct = StructType::create(context, "exception_struct");
+	vector<Type*> elements1;	//结构体元素
+	elements1.push_back(builder.getInt8PtrTy());
+	elements1.push_back(builder.getInt8PtrTy());
+	elements1.push_back(builder.getInt32Ty());
+	exceptionStruct->setBody(elements1);
+
+	//===----------------------------- 这部分为抛出异常-----------------------------------===//
+	//
+	//
+
+	//声明 i8* @__cxa_allocate_exception(i64) 函数，参数是sizeof(抛出的异常结构体类型)
+	ret_type = Type::getInt8PtrTy(context);
+	fun_args.push_back(Type::getInt64Ty(context));
+	fun_type = FunctionType::get(ret_type, fun_args, /*isVarArg*/false);
+	Function *cxa_allocate = cast<Function>(module->getOrInsertFunction("__cxa_allocate_exception", fun_type));
+	fun_args.clear();
+
+	//声明 void @__cxa_throw(i8*, i8*, i8*) 函数，
+	ret_type = Type::getVoidTy(context);
+	fun_args.push_back(Type::getInt8PtrTy(context));
+	fun_args.push_back(Type::getInt8PtrTy(context));
+	fun_args.push_back(Type::getInt8PtrTy(context));
+	fun_type = FunctionType::get(ret_type, fun_args, /*isVarArg*/false);
+	Function *cxa_throw = cast<Function>(module->getOrInsertFunction("__cxa_throw", fun_type));
+	fun_args.clear();
+
+	//声明结束-----------------------
+
+	// 在IR中声明一个函数foo，会用这个函数抛出异常
+	fun_type = TypeBuilder<int(), false>::get(context);
+	Function *foo = cast<Function>(module->getOrInsertFunction("foo", fun_type));
+
+	// 创建函数foo的entry代码块
+	BasicBlock *entry = BasicBlock::Create(context, "entry", foo);
+	builder.SetInsertPoint(entry);
+
+	//>>>------------------------------------------------------------------------
+	Constant *strConst1 = ConstantDataArray::getString(context,"exception_name");
+	Value *globalVar1 = new GlobalVariable(*module,strConst1->getType(), true, GlobalValue::PrivateLinkage, strConst1);
+	Constant *strConst2 = ConstantDataArray::getString(context, "uuid");
+	Value *globalVar2 = new GlobalVariable(*module, strConst2->getType(), true, GlobalValue::PrivateLinkage, strConst2);
+	ConstantInt *constSqlCode = ConstantInt::get(IntegerType::getInt32Ty(context), 52081);
+
+	//<<<------------------------------------------------------------------------
+
+	//调用@__cxa_allocate_exception(i64)
+	Value *arg1_value = ConstantInt::get(Type::getInt64Ty(context), 16);/*---这里暂时先写成死的*/
+	vector<Value*> putsargs_1;
+	putsargs_1.push_back(arg1_value);
+	ArrayRef<Value*> argsRef_1(putsargs_1);
+	Value *exception_alloca = builder.CreateCall(cxa_allocate, argsRef_1, "excep");
+
+	//>>>给结构体赋值------------------------------------------------------
+	PointerType *pstructType = PointerType::get(exceptionStruct, 0);
+	Value *alloca_Struct = builder.CreateBitCast(exception_alloca, pstructType);
+	SmallVector<Value*, 2> indexVector;
+
+	Value *const_0 = ConstantInt::get(IntegerType::getInt32Ty(context), 0);
+	Value *const_1 = ConstantInt::get(IntegerType::getInt32Ty(context), 1);
+	Value *const_2 = ConstantInt::get(IntegerType::getInt32Ty(context), 2);
+
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_0);
+	Value *number_ptr_1 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	indexVector.clear();
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_1);
+	Value *number_ptr_2 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	indexVector.clear();
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_2);
+	Value *number_ptr_3 = builder.CreateGEP(alloca_Struct, indexVector);
+
+	builder.CreateStore(builder.CreatePointerCast(globalVar1, builder.getInt8PtrTy()), number_ptr_1);
+	builder.CreateStore(builder.CreatePointerCast(globalVar2, builder.getInt8PtrTy()), number_ptr_2);
+	builder.CreateStore(constSqlCode, number_ptr_3);
+	//<<<------------------------------------------------------------------------
+
+	//调用@__cxa_throw(i8*, i8*, i8*)
+	vector<Value*> putsargs_2;
+	putsargs_2.push_back(exception_alloca);
+	Value *ZTIi_temp = builder.CreateBitCast(ZTIi, Type::getInt8PtrTy(context));
+	putsargs_2.push_back(ZTIi_temp);
+	Constant *null_value = ConstantPointerNull::get(Type::getInt8PtrTy(context));
+	putsargs_2.push_back(null_value);
+	ArrayRef<Value*> argsRef_2(putsargs_2);
+	builder.CreateCall(cxa_throw, argsRef_2);
+
+	//函数返回值
+	Constant *a_value = ConstantInt::get(Type::getInt32Ty(context), 0);
+	builder.CreateRet(a_value);
+
+	//
+	//
+	//===---------------------------------------------------------------------------------===//
+
+	//===----------------------------- 这部分为捕获异常-----------------------------------===//
+	//
+	//
+
+	//声明personality函数 i32 @__gxx_personality_v0(...)
+	Function *personalityFn = Function::Create(FunctionType::get(Type::getInt32Ty(context), true), Function::ExternalLinkage, "__gxx_personality_v0", module);
+
+	//声明内置函数 i32 @llvm.eh.typeid.for(i8*)
+	Function *typeid_for = Intrinsic::getDeclaration(module, Intrinsic::eh_typeid_for);
+
+	//声明 i8* @__cxa_begin_catch(i8*) 函数，参数是sizeof(抛出的异常结构体类型)
+	ret_type = Type::getInt8PtrTy(context);
+	fun_args.push_back(Type::getInt8PtrTy(context));
+	fun_type = FunctionType::get(ret_type, fun_args, /*isVarArg*/false);
+	Function *begin_catch = cast<Function>(module->getOrInsertFunction("__cxa_begin_catch", fun_type));
+	fun_args.clear();
+
+	//声明 void @__cxa_end_catch() 函数，参数是sizeof(抛出的异常结构体类型)
+	ret_type = Type::getVoidTy(context);
+	fun_type = FunctionType::get(ret_type, fun_args, /*isVarArg*/false);
+	Function *end_catch = cast<Function>(module->getOrInsertFunction("__cxa_end_catch", fun_type));
+	fun_args.clear();
+
+	//声明结束-----------------------
+
+	// 在IR中声明一个函数bar，会用这个函数捕获异常
+	fun_type = TypeBuilder<int(), false>::get(context);
+	Function *bar = cast<Function>(module->getOrInsertFunction("bar", fun_type));
+
+	//设置函数的personality
+	Function *personality0 = (Function*) builder.CreateBitCast(personalityFn, Type::getInt8PtrTy(context));
+	bar->setPersonalityFn(personality0);
+
+	// entry basicblock
+	BasicBlock *entry_bar = BasicBlock::Create(context, "entry", bar);
+	builder.SetInsertPoint(entry_bar);
+	ConstantInt *con_1 = ConstantInt::get(Type::getInt32Ty(context), 1);
+	AllocaInst *res_allo = builder.CreateAlloca(Type::getInt32Ty(context), con_1, "res");
+	AllocaInst *exn_slot = builder.CreateAlloca(Type::getInt8PtrTy(context), con_1, "exn.slot");
+	AllocaInst *ehselector_slot = builder.CreateAlloca(Type::getInt32Ty(context), con_1, "ehselector.slot");
+	AllocaInst *exc = builder.CreateAlloca(Type::getInt32Ty(context), con_1, "exc");
+	ConstantInt *con_0 = ConstantInt::get(Type::getInt32Ty(context), 0);
+	builder.CreateStore(con_0, res_allo);
+
+	//捕获异常用到的块
+	BasicBlock *invoke_cont = BasicBlock::Create(context, "invoke.cont", bar);
+	BasicBlock *lpad = BasicBlock::Create(context, "lpad", bar);
+	BasicBlock *catch_dispatch = BasicBlock::Create(context, "catch.dispatch", bar);
+	BasicBlock *catch_block = BasicBlock::Create(context, "catch", bar);
+	BasicBlock *try_cont = BasicBlock::Create(context, "try.cont", bar);
+	BasicBlock *eh_end = BasicBlock::Create(context, "eh.end", bar);
+	BasicBlock *eh_resume = BasicBlock::Create(context, "eh.resume", bar);
+
+	//通过invoke指令调用throw方法的异常
+	InvokeInst *invoke_retValue = builder.CreateInvoke(foo, invoke_cont, lpad);
+
+	//invoke.cont basicblock
+	builder.SetInsertPoint(invoke_cont);
+	builder.CreateStore(invoke_retValue, res_allo);
+	builder.CreateBr(try_cont);
+
+	//try.cont basicblock
+	builder.SetInsertPoint(try_cont);
+	builder.CreateBr(eh_end);
+
+	//eh.end basicblock
+	builder.SetInsertPoint(eh_end);
+	LoadInst *res_load = builder.CreateLoad(res_allo);
+	builder.CreateRet(res_load);
+
+	//lpad basicblock
+	builder.SetInsertPoint(lpad);
+	LandingPadInst *landingPad = builder.CreateLandingPad(padStruct, 0);
+	// LandingPadInst* landingPad = LandingPadInst::Create(exceptionStruct, personalityFn, 0, "lad", lpad);
+
+	landingPad->addClause((Constant*) builder.CreateBitCast(ZTIi, Type::getInt8PtrTy(context)));
+	Value *unwindException = builder.CreateExtractValue(landingPad, 0);
+	builder.CreateStore(unwindException, exn_slot);
+	Value *retTypeInfoIndex = builder.CreateExtractValue(landingPad, 1);
+	builder.CreateStore(retTypeInfoIndex, ehselector_slot);
+	builder.CreateBr(catch_dispatch);
+
+	//catch.dispatch basicblock
+	builder.SetInsertPoint(catch_dispatch);
+	LoadInst *sel = builder.CreateLoad(ehselector_slot);
+	vector<Value*> putsargs_3;
+	putsargs_3.push_back(builder.CreateBitCast(ZTIi, Type::getInt8PtrTy(context)));
+	ArrayRef<Value*> argsRef_3(putsargs_3);
+	Value *type_f = builder.CreateCall(typeid_for, argsRef_3);
+	Value *matches = builder.CreateICmpEQ(sel, type_f, "matches");
+	builder.CreateCondBr(matches, catch_block, eh_resume);
+
+	//catch basicblock
+	builder.SetInsertPoint(catch_block);
+	Value *exn = builder.CreateLoad(exn_slot);
+	vector<Value*> putsargs_4;
+	putsargs_4.push_back(exn);
+	ArrayRef<Value*> argsRef_4(putsargs_4);
+	Value *bc_call = builder.CreateCall(begin_catch, argsRef_4);
+	Value *bitCast_allo = builder.CreateBitCast(bc_call, pstructType);
+	indexVector.clear();
+	indexVector.push_back(const_0);
+	indexVector.push_back(const_2);
+	Value *allo_3 = builder.CreateGEP(bitCast_allo, indexVector);
+	Value *bitCast_load = builder.CreateLoad(allo_3);
+	builder.CreateStore(bitCast_load, exc);
+	builder.CreateStore(bitCast_load, res_allo);
+	ArrayRef<Value*> argsRef_5;
+	builder.CreateCall(end_catch, argsRef_5);
+	builder.CreateBr(eh_end);
+
+	//eh.resume basicblock
+	builder.SetInsertPoint(eh_resume);
+	Value *exn1 = builder.CreateLoad(exn_slot);
+	Value *sel1 = builder.CreateLoad(ehselector_slot);
+	Constant *undef_value = UndefValue::get(padStruct);
+	Value *lpad_val = builder.CreateInsertValue(undef_value, exn1, 0);
+	Value *lpad_val3 = builder.CreateInsertValue(lpad_val, sel1, 1);
+	builder.CreateResume(lpad_val3);
+
+	//
+	//
+	//===---------------------------------------------------------------------------------===//
+
+	// module->dump();
+    module->print(errs(), nullptr);
+
+	InitializeNativeTarget();
+	InitializeNativeTargetAsmPrinter();
+	InitializeNativeTargetAsmParser();
+
+	ExecutionEngine *ee = EngineBuilder(unique_ptr<Module>(module)).setEngineKind(EngineKind::JIT).create();
+	void *barAddr = ee->getPointerToFunction(bar);
+
+	//运行机器指令
+	typedef int (*FuncType)();
+	FuncType barFunc = (FuncType) barAddr;
+	ee->finalizeObject();
+	cout << barFunc() << endl;
+
+	delete module;
+	return 0;
+}
+```
+
+生成的ir代码和函数的返回值
+
+```assembly
+; ModuleID = 'test'
+source_filename = "test"
+
+%exception_struct = type { i8*, i8*, i32 }
+%pad_struct = type { i8*, i32 }
+
+@_ZTIi = external constant i8*
+@0 = private constant [15 x i8] c"exception_name\00"
+@1 = private constant [5 x i8] c"uuid\00"
+
+declare i8* @__cxa_allocate_exception(i64)
+
+declare void @__cxa_throw(i8*, i8*, i8*)
+
+define i32 @foo() {
+entry:
+  %excep = call i8* @__cxa_allocate_exception(i64 16)
+  %0 = bitcast i8* %excep to %exception_struct*
+  %1 = getelementptr %exception_struct, %exception_struct* %0, i32 0, i32 0
+  %2 = getelementptr %exception_struct, %exception_struct* %0, i32 0, i32 1
+  %3 = getelementptr %exception_struct, %exception_struct* %0, i32 0, i32 2
+  store i8* getelementptr inbounds ([15 x i8], [15 x i8]* @0, i32 0, i32 0), i8** %1
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8** %2
+  store i32 52081, i32* %3
+  call void @__cxa_throw(i8* %excep, i8* bitcast (i8** @_ZTIi to i8*), i8* null)
+  ret i32 0
+}
+
+declare i32 @__gxx_personality_v0(...)
+
+; Function Attrs: nounwind readnone
+declare i32 @llvm.eh.typeid.for(i8*) #0
+
+declare i8* @__cxa_begin_catch(i8*)
+
+declare void @__cxa_end_catch()
+
+define i32 @bar() personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*) {
+entry:
+  %res = alloca i32
+  %exn.slot = alloca i8*
+  %ehselector.slot = alloca i32
+  %exc = alloca i32
+  store i32 0, i32* %res
+  %0 = invoke i32 @foo()
+          to label %invoke.cont unwind label %lpad
+
+invoke.cont:                                      ; preds = %entry
+  store i32 %0, i32* %res
+  br label %try.cont
+
+lpad:                                             ; preds = %entry
+  %1 = landingpad %pad_struct
+          catch i8* bitcast (i8** @_ZTIi to i8*)
+  %2 = extractvalue %pad_struct %1, 0
+  store i8* %2, i8** %exn.slot
+  %3 = extractvalue %pad_struct %1, 1
+  store i32 %3, i32* %ehselector.slot
+  br label %catch.dispatch
+
+catch.dispatch:                                   ; preds = %lpad
+  %4 = load i32, i32* %ehselector.slot
+  %5 = call i32 @llvm.eh.typeid.for(i8* bitcast (i8** @_ZTIi to i8*))
+  %matches = icmp eq i32 %4, %5
+  br i1 %matches, label %catch, label %eh.resume
+
+catch:                                            ; preds = %catch.dispatch
+  %6 = load i8*, i8** %exn.slot
+  %7 = call i8* @__cxa_begin_catch(i8* %6)
+  %8 = bitcast i8* %7 to %exception_struct*
+  %9 = getelementptr %exception_struct, %exception_struct* %8, i32 0, i32 2
+  %10 = load i32, i32* %9
+  store i32 %10, i32* %exc
+  store i32 %10, i32* %res
+  call void @__cxa_end_catch()
+  br label %eh.end
+
+try.cont:                                         ; preds = %invoke.cont
+  br label %eh.end
+
+eh.end:                                           ; preds = %catch, %try.cont
+  %11 = load i32, i32* %res
+  ret i32 %11
+
+eh.resume:                                        ; preds = %catch.dispatch
+  %12 = load i8*, i8** %exn.slot
+  %13 = load i32, i32* %ehselector.slot
+  %14 = insertvalue %pad_struct undef, i8* %12, 0
+  %15 = insertvalue %pad_struct %14, i32 %13, 1
+  resume %pad_struct %15
+}
+
+attributes #0 = { nounwind readnone }
+52081
+```
+
