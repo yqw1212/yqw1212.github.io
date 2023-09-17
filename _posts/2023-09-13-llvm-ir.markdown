@@ -3,7 +3,7 @@ layout: post
 title:  LLVM IR API study
 date:   2023-09-13 00:08:01 +0300
 image:  2023-09-13-puppy.jpg
-tags:   [note,llvmm]
+tags:   [note,llvm]
 ---
 
 环境：clang-6.0
