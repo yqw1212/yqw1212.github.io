@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  Revery: From Proof-of-Concept to Exploitable
+title:  Revery, From Proof-of-Concept to Exploitable
 date:   2024-01-15 00:08:01 +0300
 image:  2024-01-15-alphabet.jpg
 tags:   [note,paper]
