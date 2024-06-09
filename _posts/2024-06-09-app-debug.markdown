@@ -1,0 +1,173 @@
+---
+layout: post
+title:  androidso_re(CISCN2024)
+date:   2024-06-09 00:08:01 +0300
+image:  2024-06-09-woman.jpg
+tags:   [ctf,android,frida,reverse,unidbg]
+---
+
+Java层
+
+```assembly
+public class inspect {
+    public inspect() {
+        super();
+    }
+
+    public static boolean inspect(String arg12) {
+        boolean v0 = true;
+        try {
+            byte[] v1_1 = arg12.getBytes(StandardCharsets.UTF_8);
+            byte[] v2 = jni.getkey().getBytes(StandardCharsets.UTF_8);
+            Arrays.copyOf(v2, 8);
+            SecretKeySpec v4 = new SecretKeySpec(v2, "AES");
+            IvParameterSpec v6 = new IvParameterSpec(jni.getiv().getBytes(StandardCharsets.UTF_8));
+            Cipher v7 = Cipher.getInstance("DES/CBC/PKCS5Padding");
+            v7.init(1, ((Key)v4), ((AlgorithmParameterSpec)v6));
+            if(Base64.encodeToString(v7.doFinal(v1_1), 0).trim().equals("JqslHrdvtgJrRs2QAp+FEVdwRPNLswrnykD/sZMivmjGRKUMVIC/rw==")) {
+                return false;
+            }
+        }
+        catch(Exception v1) {
+            v1.printStackTrace();
+            return 1;
+        }
+
+        return v0;
+    }
+}
+```
+
+jni
+
+```assembly
+package com.example.re11113;
+
+public class jni {
+    static {
+        System.loadLibrary("Secret_entrance");
+    }
+
+    public jni() {
+        super();
+    }
+
+    public static native String getiv() {
+    }
+
+    public static native String getkey() {
+    }
+}
+```
+
+getiv函数和getkey在native层
+
+## frida
+
+使用frida hook直接获取函数的返回值
+
+```
+function main(){
+    Java.perform(()=>{
+        var abc = Java.use("com.example.re11113.jni");
+        var key = abc.getkey();
+        var iv = abc.getiv();
+        console.log(key);
+        console.log(iv);
+    })
+}
+main();
+```
+
+hook
+
+> frida -UF -l script.js
+
+得到iv和key
+
+## unidbg
+
+```assembly
+package com.melody;
+
+import com.github.unidbg.AndroidEmulator;
+import com.github.unidbg.Module;
+import com.github.unidbg.linux.android.AndroidEmulatorBuilder;
+import com.github.unidbg.linux.android.AndroidResolver;
+import com.github.unidbg.linux.android.dvm.*;
+import com.github.unidbg.memory.Memory;
+
+import java.io.File;
+import java.io.IOException;
+
+/**
+ * @author: yqw
+ * @date: 2024/6/9
+ * @description:
+ */
+public class Ciscn2024 extends AbstractJni {
+    private final AndroidEmulator emulator;
+    private final VM vm;
+    private final Module module;
+    private final Memory memory;
+    private final DalvikModule dm;
+
+    public Ciscn2024(String apkFilePath, String soFilePath, String apkProcessname) throws IOException {
+        emulator = AndroidEmulatorBuilder.for64Bit().setProcessName(apkProcessname).build();
+        memory = emulator.getMemory();
+        memory.setLibraryResolver(new AndroidResolver(23));
+        vm = emulator.createDalvikVM(new File(apkFilePath));
+        vm.setVerbose(false);
+        dm = vm.loadLibrary(new File(soFilePath), true);
+        module = dm.getModule();
+        vm.setJni(this);
+        dm.callJNI_OnLoad(emulator);
+        vm.setVerbose(true);
+    }
+
+    public Ciscn2024(AndroidEmulator emulator, VM vm, Module module, Memory memory, DalvikModule dm) {
+        this.emulator = emulator;
+        this.vm = vm;
+        this.module = module;
+        this.memory = memory;
+        this.dm = dm;
+    }
+
+    public String GETKEY() {
+        DvmClass dvmClass = vm.resolveClass("com.example.re11113.jni");
+        DvmObject<?> object = dvmClass.newObject(null);
+        DvmObject object1 = object.callJniMethodObject(emulator, "getkey()Ljava/lang/String;");
+        String resultValue = object1.getValue().toString();
+        return resultValue;
+    }
+
+    public String GETIV() {
+        DvmClass dvmClass = vm.resolveClass("com.example.re11113.jni");
+        DvmObject<?> object = dvmClass.newObject(null);
+        DvmObject object1 = object.callJniMethodObject(emulator, "getiv()Ljava/lang/String;");
+        String resultValue = object1.getValue().toString();
+        return resultValue;
+    }
+
+    public static void main(String[] args) throws IOException {
+        String soFilePath = "D:\\文档\\CTF\\ciscn2024\\androidso_re\\app-debug\\lib\\arm64-v8a\\libSecret_entrance.so";
+        String apkFilePath = "D:\\文档\\CTF\\ciscn2024\\androidso_re\\app-debug.apk";
+        String apkProcessname = "com.tencent.callre2";
+        //创建一个实例
+        Ciscn2024 re2app = new Ciscn2024(apkFilePath, soFilePath, apkProcessname);
+        //解出key和iv
+        String KEY = re2app.GETKEY();
+        String IV = re2app.GETIV();
+        System.out.println("getKeyresult: " + KEY);
+        System.out.println("getivresult: " + IV);
+    }
+}
+```
+
+最后得到结果
+
+```assembly
+Key: A8UdWaeq
+iv : Wf3DLups
+```
+
