@@ -1,0 +1,168 @@
+---
+layout: post
+title:  ez unity(XYCTF2024)
+date:   2024-06-19 00:08:01 +0300
+image:  2024-06-19-woman.jpg
+tags:   [ctf,unity,frida,reverse,hook]
+---
+
+查看下目录结构
+
+```assembly
+D:.
+|   baselib.dll
+|   ez unity.exe
+|   GameAssembly.dll
+|   UnityCrashHandler64.exe
+|   UnityPlayer.dll
+|
+\---ez unity_Data
+    |   app.info
+    |   boot.config
+    |   globalgamemanagers
+    |   globalgamemanagers.assets
+    |   globalgamemanagers.assets.resS
+    |   level0
+    |   resources.assets
+    |   resources.assets.resS
+    |   RuntimeInitializeOnLoads.json
+    |   ScriptingAssemblies.json
+    |   sharedassets0.assets
+    |   sharedassets0.assets.resS
+    |
+    +---il2cpp_data
+    |   +---Metadata
+    |   |       global-metadata.dat
+    |   |
+    |   \---Resources
+    |           mscorlib.dll-resources.dat
+    |
+    +---Plugins
+    |   \---x86_64
+    |           lib_burst_generated.dll
+    |
+    \---Resources
+            unity default resources
+            unity_builtin_extra
+```
+
+使用Il2CppDumper工具dump但是报错
+
+```assembly
+Initializing metadata...
+System.IO.InvalidDataException: ERROR: Metadata file supplied is not valid metadata file.
+   在 Il2CppDumper.Metadata..ctor(Stream stream) 位置 C:\projects\il2cppdumper\Il2CppDumper\Il2Cpp\Metadata.cs:行号 54
+   在 Il2CppDumper.Program.Init(String il2cppPath, String metadataPath, Metadata& metadata, Il2Cpp& il2Cpp) 位置 C:\projects\il2cppdumper\Il2CppDumper\Program.cs:行号 126
+   在 Il2CppDumper.Program.Main(String[] args) 位置 C:\projects\il2cppdumper\Il2CppDumper\Program.cs:行号 100
+```
+
+官方github仓库说
+
+`ERROR: Metadata file supplied is not valid metadata file.`
+
+global-metadata.dat已被加密。
+
+学习frida-il2cpp-bridge工具的使用方法
+
+> pip install frida frida-tools
+>
+> npm i frida-il2cpp-bridge
+
+This is a Frida TypeScript module, so it follows any other TypeScript (`npm`) project:
+
+```assembly
+playground
+├── index.ts
+├── package.json
+└── tsconfig.json
+```
+
+This is how it should looke like:
+
+**index.ts**
+This is where you write the code. More info [here](https://github.com/vfsfitvnm/frida-il2cpp-bridge/wiki/Installation#initialization).
+
+```assembly
+import "frida-il2cpp-bridge";
+ 
+Il2Cpp.perform(() => {
+    console.log(Il2Cpp.unityVersion);
+ 
+    Il2Cpp.dump("dump.cs", "./")
+});
+```
+
+**packages.json**
+
+```assembly
+{
+  "name": "playground",
+  "main": "index.ts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "frida-compile -o _.js -w index.ts",
+    "attach": "run() { frida -U \"$1\" -l _.js --runtime=v8; }; run",
+    "spawn": "run() { frida -U -f \"$1\" -l _.js --no-pause --runtime=v8; }; run",
+    "app0-spawn": "npm run spawn com.example.application0",
+    "app1": "npm run \"Application1 Name\"",
+    "app1-spawn": "npm run spawn com.example.application1"
+  },
+  "devDependencies": {
+    "@types/frida-gum": "^18.3.1",
+    "frida-compile": "^16.2.2",
+    "frida-il2cpp-bridge": "*"
+  }
+}
+```
+
+**tsconfig.json**
+
+```assembly
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": [ "es2022" ],
+    "experimentalDecorators": true,
+    "module": "esnext",
+    "allowJs": false,
+    "noEmit": false,
+    "esModuleInterop": false,
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "sourceMap": true
+  },
+  "files": [ "index.ts" ]
+}
+```
+
+然后打开要 hook 的程序，在任务管理器中查看其进程 pid，执行
+
+> frida -p pid -l ./_.js
+
+得到dump.cs
+
+GameAssembly.dll用UPX脱壳，拖入IDA
+
+trace来hook字符串
+
+```assembly
+import "frida-il2cpp-bridge";
+ 
+Il2Cpp.perform(() => {
+    console.log(Il2Cpp.unityVersion);
+ 
+    const String = Il2Cpp.corlib.class("System.String");
+    Il2Cpp.trace(true).classes(String).and().attach();
+});
+```
+
+得到hook的字符串
+
+```assembly
+il2cpp:
+0x0077afd0 ┌─System.String::op_Equality(a = "iicWd5cAPzmiG9nnxRYQ7Q==", b = "pNufkEIU9dHjKXYXWiFyrthHYFEfqJAWcPM/t8/zX1w=")
+0x0077afd0 └─System.String::op_Equality = false
+```
+
